@@ -7,7 +7,6 @@
         "test": "tests/js/tests"
     },
     "dependencies": {
-        "@composer-asset/yiisoft--yii2": "file:./vendor/php-forge/composer-asset/yiisoft/yii2",
         "inputmask": "^5.0.8",
         "jquery": "~3.6.4",
         "jquery-pjax": "^2.0.1",

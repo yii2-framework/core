@@ -50,6 +50,12 @@ jobs:
       - name: Checkout.
         uses: actions/checkout@v5
 
+      - name: Setup PHP with Composer.
+        uses: ./.github/actions/php-setup
+        with:
+          coverage-driver: none
+          php-version: 8.5
+
       - name: Install dependencies.
         run: composer update $DEFAULT_COMPOSER_FLAGS
 

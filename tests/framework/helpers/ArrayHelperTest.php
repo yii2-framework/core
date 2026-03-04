@@ -939,18 +939,59 @@ class ArrayHelperTest extends TestCase
     public function testGetValueNonexistingProperties1(): void
     {
         $object = new Post1();
+        $warningMessage = null;
+
+        set_error_handler(
+            static function (int $severity, string $message) use (&$warningMessage): bool {
+                if ($severity !== E_WARNING) {
+                    return false;
+                }
+
+                $warningMessage = $message;
+
+                return true;
+            }
+        );
 
         try {
             $this->assertNull(ArrayHelper::getValue($object, 'nonExisting'));
         } catch (Throwable $th) {
             $this->assertEquals('Undefined property: yiiunit\framework\helpers\Post1::$nonExisting', $th->getMessage());
+        } finally {
+            restore_error_handler();
+        }
+
+        if ($warningMessage !== null) {
+            $this->assertEquals('Undefined property: yiiunit\framework\helpers\Post1::$nonExisting', $warningMessage);
         }
     }
 
     public function testGetValueNonexistingPropertiesForArrayObject(): void
     {
         $arrayObject = new ArrayObject(['id' => 23], ArrayObject::ARRAY_AS_PROPS);
-        $this->assertNull(ArrayHelper::getValue($arrayObject, 'nonExisting'));
+        $warningMessage = null;
+
+        set_error_handler(
+            static function (int $severity, string $message) use (&$warningMessage): bool {
+                if ($severity !== E_WARNING) {
+                    return false;
+                }
+
+                $warningMessage = $message;
+
+                return true;
+            }
+        );
+
+        try {
+            $this->assertNull(ArrayHelper::getValue($arrayObject, 'nonExisting'));
+        } finally {
+            restore_error_handler();
+        }
+
+        if ($warningMessage !== null) {
+            $this->assertEquals('Undefined array key "nonExisting"', $warningMessage);
+        }
     }
 
     public function testGetValueFromArrayAccess(): void
@@ -989,7 +1030,29 @@ class ArrayHelperTest extends TestCase
             'null'  => null,
         ]);
 
-        $this->assertEquals(null, ArrayHelper::getValue($arrayAccessibleObject, 'four'));
+        $warningMessage = null;
+
+        set_error_handler(
+            static function (int $severity, string $message) use (&$warningMessage): bool {
+                if ($severity !== E_WARNING) {
+                    return false;
+                }
+
+                $warningMessage = $message;
+
+                return true;
+            }
+        );
+
+        try {
+            $this->assertNull(ArrayHelper::getValue($arrayAccessibleObject, 'four'));
+        } finally {
+            restore_error_handler();
+        }
+
+        if ($warningMessage !== null) {
+            $this->assertEquals('Undefined property: yiiunit\\framework\\helpers\\ArrayAccessibleObject::$four', $warningMessage);
+        }
     }
 
     /**

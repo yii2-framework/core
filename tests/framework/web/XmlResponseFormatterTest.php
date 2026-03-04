@@ -1,0 +1,182 @@
+<?php
+
+/**
+ * @link https://www.yiiframework.com/
+ * @copyright Copyright (c) 2008 Yii Software LLC
+ * @license https://www.yiiframework.com/license/
+ */
+
+namespace yiiunit\framework\web;
+
+use SplStack;
+use yii\web\XmlResponseFormatter;
+use yiiunit\base\web\BaseFormatter;
+use yiiunit\framework\web\stubs\ModelStub;
+
+/**
+ * @author Qiang Xue <qiang.xue@gmail.com>
+ * @since 2.0
+ *
+ * @group web
+ */
+class XmlResponseFormatterTest extends BaseFormatter
+{
+    /**
+     * @param array $options
+     * @return XmlResponseFormatter
+     */
+    protected function getFormatterInstance($options = [])
+    {
+        return new XmlResponseFormatter($options);
+    }
+
+    private const XML_HEAD = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n";
+
+    private static function addXmlHead(array $data): array
+    {
+        foreach ($data as &$item) {
+            $item[1] = self::XML_HEAD . $item[1];
+        }
+
+        return $data;
+    }
+
+    public static function formatScalarDataProvider(): array
+    {
+        return self::addXmlHead([
+            [1, "<response>1</response>\n"],
+            ['abc', "<response>abc</response>\n"],
+            [true, "<response>true</response>\n"],
+            [false, "<response>false</response>\n"],
+            ['<>', "<response>&lt;&gt;</response>\n"],
+            ['a&b', "<response>a&amp;b</response>\n"],
+        ]);
+    }
+
+    public static function formatArrayDataProvider(): array
+    {
+        return self::addXmlHead([
+            [[], "<response/>\n"],
+            [[1, 'abc'], "<response><item>1</item><item>abc</item></response>\n"],
+            [[
+                'a' => 1,
+                'b' => 'abc',
+            ], "<response><a>1</a><b>abc</b></response>\n"],
+            [
+                ['image:loc' => 'url'],
+                "<response><image:loc>url</image:loc></response>\n"
+            ],
+            [[
+                1,
+                'abc',
+                [2, 'def'],
+                true,
+            ], "<response><item>1</item><item>abc</item><item><item>2</item><item>def</item></item><item>true</item></response>\n"],
+            [[
+                'a' => 1,
+                'b' => 'abc',
+                'c' => [2, '<>'],
+                false,
+            ], "<response><a>1</a><b>abc</b><c><item>2</item><item>&lt;&gt;</item></c><item>false</item></response>\n"],
+
+            // Checks if empty keys and keys not valid in XML are processed.
+            // See https://github.com/yiisoft/yii2/pull/10346/
+            [[
+                '' => 1,
+                '2015-06-18' => '2015-06-18',
+                'b:c' => 'b:c',
+                'a b c' => 'a b c',
+                'äøñ' => 'äøñ',
+            ], "<response><item>1</item><item>2015-06-18</item><b:c>b:c</b:c><item>a b c</item><äøñ>äøñ</äøñ></response>\n"],
+        ]);
+    }
+
+    public static function formatTraversableObjectDataProvider(): array
+    {
+        $expectedXmlForStack = '';
+
+        $postsStack = new SplStack();
+
+        $postsStack->push(new Post(915, 'record1'));
+        $expectedXmlForStack = '<Post><id>915</id><title>record1</title></Post>' .
+          $expectedXmlForStack;
+
+        $postsStack->push(new Post(456, 'record2'));
+        $expectedXmlForStack = '<Post><id>456</id><title>record2</title></Post>' .
+          $expectedXmlForStack;
+
+        $data = [
+            [$postsStack, "<response>$expectedXmlForStack</response>\n"],
+        ];
+
+        return self::addXmlHead($data);
+    }
+
+    public static function formatObjectDataProvider(): array
+    {
+        return self::addXmlHead([
+            [new Post(123, 'abc'), "<response><Post><id>123</id><title>abc</title></Post></response>\n"],
+            [[
+                new Post(123, 'abc'),
+                new Post(456, 'def'),
+            ], "<response><Post><id>123</id><title>abc</title></Post><Post><id>456</id><title>def</title></Post></response>\n"],
+            [[
+                new Post(123, '<>'),
+                'a' => new Post(456, 'def'),
+            ], "<response><Post><id>123</id><title>&lt;&gt;</title></Post><a><Post><id>456</id><title>def</title></Post></a></response>\n"],
+        ]);
+    }
+
+    public static function formatModelDataProvider(): array
+    {
+        return self::addXmlHead([
+            [
+                new ModelStub(['id' => 123, 'title' => 'abc', 'hidden' => 'hidden']),
+                "<response><ModelStub><id>123</id><title>abc</title></ModelStub></response>\n",
+            ],
+        ]);
+    }
+
+    public function testCustomRootTag(): void
+    {
+        $rootTag = 'custom';
+        $formatter = $this->getFormatterInstance([
+            'rootTag' => $rootTag,
+        ]);
+
+        $this->response->data = 1;
+        $formatter->format($this->response);
+        $this->assertEquals(self::XML_HEAD . "<$rootTag>1</$rootTag>\n", $this->response->content);
+    }
+
+    public function testRootTagRemoval(): void
+    {
+        $formatter = $this->getFormatterInstance([
+            'rootTag' => null,
+        ]);
+
+        $this->response->data = 1;
+        $formatter->format($this->response);
+        $this->assertEquals(self::XML_HEAD . "1\n", $this->response->content);
+    }
+
+    public function testNoObjectTags(): void
+    {
+        $formatter = $this->getFormatterInstance([
+            'useObjectTags' => false,
+        ]);
+
+        $this->response->data = new Post(123, 'abc');
+        $formatter->format($this->response);
+        $this->assertEquals(self::XML_HEAD . "<response><id>123</id><title>abc</title></response>\n", $this->response->content);
+    }
+
+    public function testObjectTagToLowercase(): void
+    {
+        $formatter = $this->getFormatterInstance(['objectTagToLowercase' => true]);
+
+        $this->response->data = new Post(123, 'abc');
+        $formatter->format($this->response);
+        $this->assertEquals(self::XML_HEAD . "<response><post><id>123</id><title>abc</title></post></response>\n", $this->response->content);
+    }
+}

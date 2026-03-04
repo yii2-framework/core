@@ -1,0 +1,47 @@
+<?php
+
+namespace yiiunit\base\db;
+
+use yiiunit\base\db\BaseDatabase;
+use yiiunit\data\ar\ActiveRecord;
+
+abstract class BaseActiveRecordTemplate extends BaseDatabase
+{
+    protected function setUp(): void
+    {
+        parent::setUp();
+        ActiveRecord::$db = $this->getConnection();
+    }
+
+    public static function provideArrayValueWithChange(): array
+    {
+        return [
+            'not an associative array with data change' => [
+                [1, 2, 3],
+                [1, 3, 2],
+            ],
+
+            'associative array with data change case 1' => [
+                ['pineapple' => 2, 'apple' => 5, 'banana' => 1],
+                ['apple' => 5, 'pineapple' => 1, 'banana' => 3],
+            ],
+            'associative array with data change case 2' => [
+                ['pineapple' => 2, 'apple' => 5, 'banana' => 1],
+                ['pineapple' => 2, 'apple' => 3, 'banana' => 1],
+            ],
+            'multi-dimensional array' => [
+                ['foo' => ['c', 'b', 'a']],
+                ['foo' => ['b', 'c', 'a']],
+            ],
+
+            'filling an empty array' => [
+                [],
+                ['pineapple' => 3, 'apple' => 1, 'banana' => 1],
+            ],
+            'zeroing the array' => [
+                ['pineapple' => 3, 'apple' => 1, 'banana' => 17],
+                [],
+            ],
+        ];
+    }
+}

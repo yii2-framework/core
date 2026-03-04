@@ -1,21 +1,44 @@
----
-on:
-  pull_request: &ignore-paths
-    paths-ignore:
-      - ".gitattributes"
-      - ".gitignore"
-      - "CHANGELOG.md"
-      - "docs/**"
-      - "README.md"
-
-  push: *ignore-paths
-
 name: static analysis
 
 permissions:
   contents: read
   pull-requests: write
 
+on:
+  pull_request: &ignore-paths
+    paths-ignore:
+      - ".appveyor.yml"
+      - ".dockerignore"
+      - ".editorconfig"
+      - ".git-blame-ignore-revs"
+      - ".gitattributes"
+      - ".github/CONTRIBUTING.md"
+      - ".github/FUNDING.yml"
+      - ".github/ISSUE_TEMPLATE.md"
+      - ".github/PULL_REQUEST_TEMPLATE.md"
+      - ".github/SECURITY.md"
+      - ".gitignore"
+      - ".gitlab-ci.yml"
+      - "code-of-conduct.md"
+      - "docs/**"
+      - "framework/.gitignore"
+      - "framework/.phpstorm.meta.php"
+      - "framework/CHANGELOG.md"
+      - "framework/LICENSE.md"
+      - "framework/README.md"
+      - "framework/UPGRADE.md"
+      - "eslint.config.js"
+      - "LICENSE.md"
+      - "README.md"
+      - "ROADMAP.md"
+
+  push: *ignore-paths
+
 jobs:
   phpstan:
-    uses: yii2-framework/actions/.github/workflows/phpstan.yml@main
+    uses: yiisoft/yii2-actions/.github/workflows/phpstan.yml@master
+    with:
+      configuration: phpstan.dist.neon
+      concurrency-group: phpstan-${{ github.ref }}
+      extensions: apcu, curl, dom, imagick, intl, mbstring, mcrypt, memcached
+      php-version: '["8.5"]'

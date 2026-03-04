@@ -24,7 +24,7 @@
     },
     "scripts": {
         "test": "./node_modules/.bin/mocha tests/js/tests/*.test.js --timeout 0 --colors",
-        "lint": "eslint --max-warnings=79 ./framework/assets ./tests/js"
+        "lint": "eslint --max-warnings=79 ./src/assets ./tests/js"
     },
     "repository": {
         "type": "git",

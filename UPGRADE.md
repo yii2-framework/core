@@ -1,4 +1,6 @@
-## Upgrade notes
+# Upgrade notes
+
+## 0.1.0 Under development
 
 ### Yii autoloader removal
 

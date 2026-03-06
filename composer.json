@@ -31,7 +31,10 @@
     "autoload": {
         "psr-4": {
             "yii\\": "src"
-        }
+        },
+        "classmap": [
+            "src/Yii.php"
+        ]
     },
     "autoload-dev": {
         "psr-4": {

@@ -29,7 +29,7 @@
         "yii2-extensions/phpstan": "^0.4"
     },
     "replace": {
-        "yiisoft/yii2": "^2.0.54 || ^22"
+        "yiisoft/yii2": "^2.0.54"
     },
     "autoload": {
         "classmap": [

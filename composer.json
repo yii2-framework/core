@@ -28,13 +28,23 @@
         "phpunit/phpunit": "^10.5",
         "yii2-extensions/phpstan": "^0.4"
     },
+    "replace": {
+        "yiisoft/yii2": "^2.0.54"
+    },
     "autoload": {
-        "psr-4": {
-            "yii\\": "src"
-        },
         "classmap": [
             "src/Yii.php"
-        ]
+        ],
+        "exclude-from-classmap": [
+            "/src/**/migrations/",
+            "/src/requirements/YiiRequirementChecker.php"
+        ],
+        "files": [
+            "src/requirements/YiiRequirementChecker.php"
+        ],
+        "psr-4": {
+            "yii\\": "src"
+        }
     },
     "autoload-dev": {
         "psr-4": {

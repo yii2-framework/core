@@ -4,7 +4,7 @@ services:
     ports:
       - "11211:11211"
     healthcheck:
-      test: ["CMD", "timeout", "5", "bash", "-c", "cat < /dev/null > /dev/tcp/127.0.0.1/11211"]
+      test: ["CMD-SHELL", "exec 3<>/dev/tcp/127.0.0.1/11211 && echo 'stats' >&3 && grep -q STAT <&3"]
       interval: 10s
       timeout: 5s
       retries: 5

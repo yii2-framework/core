@@ -120,7 +120,6 @@ abstract class BaseDatabase extends TestCase
             case 'mysql':
             case 'sqlite':
                 return str_replace(['[[', ']]'], '`', $sql);
-            case 'cubrid':
             case 'oci':
                 return str_replace(['[[', ']]'], '"', $sql);
             case 'pgsql':

@@ -1,15 +1,15 @@
 services:
-  php:
-    depends_on:
-      postgres:
-        condition: service_healthy
-
   postgres:
-    image: ${DOCKER_POSTGRES_IMAGE}
+    image: ${DOCKER_POSTGRES_IMAGE:-postgres:latest}
     environment:
       POSTGRES_DB: yiitest
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - type: tmpfs
+        target: /var/lib/postgresql
     healthcheck:
       test: ["CMD", "pg_isready"]
       interval: 10s

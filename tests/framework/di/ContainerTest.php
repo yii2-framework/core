@@ -623,22 +623,13 @@ class ContainerTest extends TestCase
 
     public function testUnionTypeWithNullConstructorParameters(): void
     {
-        if (PHP_VERSION_ID < 80000) {
-            $this->markTestSkipped('Can not be tested on PHP < 8.0');
-            return;
-        }
-
         $unionType = (new Container())->get(UnionTypeNull::class);
+
         $this->assertInstanceOf(UnionTypeNull::class, $unionType);
     }
 
     public function testUnionTypeWithoutNullConstructorParameters(): void
     {
-        if (PHP_VERSION_ID < 80000) {
-            $this->markTestSkipped('Can not be tested on PHP < 8.0');
-            return;
-        }
-
         $unionType = (new Container())->get(UnionTypeNotNull::class, ['value' => 'a']);
         $this->assertInstanceOf(UnionTypeNotNull::class, $unionType);
 
@@ -657,11 +648,6 @@ class ContainerTest extends TestCase
 
     public function testUnionTypeWithClassConstructorParameters(): void
     {
-        if (PHP_VERSION_ID < 80000) {
-            $this->markTestSkipped('Can not be tested on PHP < 8.0');
-            return;
-        }
-
         $unionType = (new Container())->get(UnionTypeWithClass::class, ['value' => new Beta()]);
         $this->assertInstanceOf(UnionTypeWithClass::class, $unionType);
         $this->assertInstanceOf(Beta::class, $unionType->value);
@@ -672,11 +658,6 @@ class ContainerTest extends TestCase
 
     public function testResolveCallableDependenciesUnionTypes(): void
     {
-        if (PHP_VERSION_ID < 80000) {
-            $this->markTestSkipped('Can not be tested on PHP < 8.0');
-            return;
-        }
-
         $this->mockApplication([
             'components' => [
                 Beta::class,
@@ -704,11 +685,6 @@ class ContainerTest extends TestCase
 
     public function testResolveCallableDependenciesIntersectionTypes(): void
     {
-        if (PHP_VERSION_ID < 80100) {
-            $this->markTestSkipped('Can not be tested on PHP < 8.1');
-            return;
-        }
-
         Yii::$container->set('yiiunit\framework\di\stubs\QuxInterface', [
             'class' => Qux::class,
         ]);

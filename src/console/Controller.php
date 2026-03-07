@@ -234,11 +234,7 @@ class Controller extends BaseController
                         unset($params[$jKey]);
                     }
                 } else {
-                    if (PHP_VERSION_ID >= 80000) {
-                        $isArray = ($type = $param->getType()) instanceof \ReflectionNamedType && $type->getName() === 'array';
-                    } else {
-                        $isArray = $param->isArray();
-                    }
+                    $isArray = ($type = $param->getType()) instanceof \ReflectionNamedType && $type->getName() === 'array';
                     if ($isArray) {
                         $params[$key] = $params[$key] === '' ? [] : preg_split('/\s*,\s*/', $params[$key]);
                     }
@@ -246,8 +242,7 @@ class Controller extends BaseController
                     unset($params[$key]);
                 }
             } elseif (
-                PHP_VERSION_ID >= 70100
-                && ($type = $param->getType()) !== null
+                ($type = $param->getType()) !== null
                 && $type instanceof \ReflectionNamedType
                 && !$type->isBuiltin()
             ) {
@@ -612,17 +607,13 @@ class Controller extends BaseController
         foreach ($method->getParameters() as $i => $parameter) {
             $type = null;
             $comment = '';
-            if (PHP_MAJOR_VERSION > 5 && $parameter->hasType()) {
+            if ($parameter->hasType()) {
                 $reflectionType = $parameter->getType();
-                if (PHP_VERSION_ID >= 70100) {
-                    $types = method_exists($reflectionType, 'getTypes') ? $reflectionType->getTypes() : [$reflectionType];
-                    foreach ($types as $key => $reflectionType) {
-                        $types[$key] = $reflectionType->getName();
-                    }
-                    $type = implode('|', $types);
-                } else {
-                    $type = (string) $reflectionType;
+                $types = method_exists($reflectionType, 'getTypes') ? $reflectionType->getTypes() : [$reflectionType];
+                foreach ($types as $key => $reflectionType) {
+                    $types[$key] = $reflectionType->getName();
                 }
+                $type = implode('|', $types);
             }
             // find PhpDoc tag by property name or position
             $key = isset($phpDocParams[$parameter->name]) ? $parameter->name : (isset($phpDocParams[$i]) ? $i : null);

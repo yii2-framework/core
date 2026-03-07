@@ -1653,20 +1653,20 @@ SQL;
 
     public function testBindValuesSupportsEnums(): void
     {
-        if (version_compare(PHP_VERSION, '8.1.0') >= 0) {
-            $db = $this->getConnection();
-            $command = $db->createCommand();
+        $db = $this->getConnection();
 
-            $command->setSql('SELECT :p1')->bindValues([':p1' => Status::Active]);
-            $this->assertSame('Active', $command->params[':p1']);
+        $command = $db->createCommand();
 
-            $command->setSql('SELECT :p1')->bindValues([':p1' => StatusTypeString::Active]);
-            $this->assertSame('active', $command->params[':p1']);
+        $command->setSql('SELECT :p1')->bindValues([':p1' => Status::Active]);
 
-            $command->setSql('SELECT :p1')->bindValues([':p1' => StatusTypeInt::Active]);
-            $this->assertSame(1, $command->params[':p1']);
-        } else {
-            $this->markTestSkipped('Enums are not supported in PHP < 8.1');
-        }
+        $this->assertSame('Active', $command->params[':p1']);
+
+        $command->setSql('SELECT :p1')->bindValues([':p1' => StatusTypeString::Active]);
+
+        $this->assertSame('active', $command->params[':p1']);
+
+        $command->setSql('SELECT :p1')->bindValues([':p1' => StatusTypeInt::Active]);
+
+        $this->assertSame(1, $command->params[':p1']);
     }
 }

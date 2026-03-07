@@ -1,5 +1,17 @@
 <?xml version="1.0" encoding="utf-8"?>
-<phpunit xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" backupGlobals="true" bootstrap="./tests/bootstrap.php" colors="true" executionOrder="default" failOnRisky="true" failOnWarning="true" stopOnFailure="false" stderr="true" xsi:noNamespaceSchemaLocation="https://schema.phpunit.de/10.5/phpunit.xsd" cacheDirectory=".phpunit.cache">
+<phpunit
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:noNamespaceSchemaLocation="https://schema.phpunit.de/10.5/phpunit.xsd"
+  backupGlobals="true"
+  bootstrap="./tests/bootstrap.php"
+  cacheDirectory=".phpunit.cache"
+  colors="true"
+  executionOrder="default"
+  failOnRisky="true"
+  failOnWarning="true"
+  stderr="true"
+  stopOnFailure="false"
+>
   <testsuites>
     <testsuite name="Yii2Framework-Core">
       <directory>./tests</directory>
@@ -19,4 +31,7 @@
       <directory suffix=".php">src/requirements</directory>
     </exclude>
   </source>
+  <extensions>
+    <bootstrap class="yiiunit\support\MockerExtension"/>
+  </extensions>
 </phpunit>

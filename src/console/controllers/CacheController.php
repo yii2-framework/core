@@ -9,7 +9,7 @@
 namespace yii\console\controllers;
 
 use Yii;
-use yii\caching\ApcCache;
+use yii\caching\ApcuCache;
 use yii\caching\CacheInterface;
 use yii\console\Application;
 use yii\console\Controller;
@@ -36,7 +36,7 @@ use yii\helpers\Console;
  * configured are different from web application, web application cache won't be cleared. In order to fix it please
  * duplicate web application cache components in console config. You can use any component names.
  *
- * APC is not shared between PHP processes so flushing cache from command line has no effect on web.
+ * APCu is not shared between PHP processes so flushing cache from command line has no effect on web.
  * Flushing web cache could be either done by:
  *
  * - Putting a php file under web root and calling it via HTTP
@@ -307,6 +307,6 @@ class CacheController extends Controller
      */
     private function canBeFlushed($className)
     {
-        return !is_a($className, ApcCache::className(), true) || PHP_SAPI !== 'cli';
+        return !is_a($className, ApcuCache::class, true) || PHP_SAPI !== 'cli';
     }
 }

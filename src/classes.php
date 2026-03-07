@@ -69,7 +69,7 @@ return [
   'yii\behaviors\OptimisticLockBehavior' => YII2_PATH . '/behaviors/OptimisticLockBehavior.php',
   'yii\behaviors\SluggableBehavior' => YII2_PATH . '/behaviors/SluggableBehavior.php',
   'yii\behaviors\TimestampBehavior' => YII2_PATH . '/behaviors/TimestampBehavior.php',
-  'yii\caching\ApcCache' => YII2_PATH . '/caching/ApcCache.php',
+  'yii\caching\ApcuCache' => YII2_PATH . '/caching/ApcuCache.php',
   'yii\caching\ArrayCache' => YII2_PATH . '/caching/ArrayCache.php',
   'yii\caching\Cache' => YII2_PATH . '/caching/Cache.php',
   'yii\caching\CacheInterface' => YII2_PATH . '/caching/CacheInterface.php',

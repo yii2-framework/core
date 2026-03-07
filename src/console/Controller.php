@@ -717,21 +717,33 @@ class Controller extends BaseController
             return $type->getName();
         }
 
-        $separator = $type instanceof \ReflectionIntersectionType ? '&' : '|';
-        $parts = array_map(
-            function (\ReflectionType $t) use ($type): string {
-                $str = $this->stringifyReflectionType($t);
+        if ($type instanceof \ReflectionUnionType) {
+            $parts = array_map(
+                function (\ReflectionType $nestedType): string {
+                    $str = $this->stringifyReflectionType($nestedType);
 
-                if ($type instanceof \ReflectionUnionType && $t instanceof \ReflectionIntersectionType) {
-                    return '(' . $str . ')';
-                }
+                    if ($nestedType instanceof \ReflectionIntersectionType) {
+                        return '(' . $str . ')';
+                    }
 
-                return $str;
-            },
-            $type->getTypes(),
-        );
+                    return $str;
+                },
+                $type->getTypes(),
+            );
 
-        return implode($separator, $parts);
+            return implode('|', $parts);
+        }
+
+        if ($type instanceof \ReflectionIntersectionType) {
+            $parts = array_map(
+                fn(\ReflectionType $nestedType): string => $this->stringifyReflectionType($nestedType),
+                $type->getTypes(),
+            );
+
+            return implode('&', $parts);
+        }
+
+        return (string) $type;
     }
 
     private $_reflections = [];

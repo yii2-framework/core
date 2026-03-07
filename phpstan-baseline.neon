@@ -6405,13 +6405,13 @@ parameters:
 		-
 			message: '#^Dynamic call to static method PHPUnit\\Framework\\Assert\:\:assertEquals\(\)\.$#'
 			identifier: staticMethod.dynamicCall
-			count: 2
+			count: 1
 			path: tests/framework/base/ErrorExceptionTest.php
 
 		-
 			message: '#^Dynamic call to static method PHPUnit\\Framework\\Assert\:\:markTestSkipped\(\)\.$#'
 			identifier: staticMethod.dynamicCall
-			count: 2
+			count: 1
 			path: tests/framework/base/ErrorExceptionTest.php
 
 		-

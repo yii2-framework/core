@@ -8,3 +8,4 @@
 - refactor(tests): remove legacy test configurations and scripts; add new Docker Compose files for various databases.
 - refactor(db)!: remove CUBRID database driver, tests, fixture, configuration entries, and PHPStan baseline suppressions.
 - refactor(caching)!: rename `ApcCache` to `ApcuCache` and remove legacy APC extension support.
+- refactor(base): remove dead `E_STRICT` handling and `PHP_VERSION_ID < 80100` guards from `ErrorException` and `ErrorHandler`.

@@ -45,12 +45,4 @@ class ErrorExceptionTest extends TestCase
         }
     }
 
-    public function testStrictError(): void
-    {
-        if (!defined('E_STRICT')) {
-            $this->markTestSkipped('E_STRICT has been removed.');
-        }
-        $e = new ErrorException('', @E_STRICT);
-        $this->assertEquals(PHP_VERSION_ID < 80400 ? 'PHP Strict Warning' : 'Error', $e->getName());
-    }
 }

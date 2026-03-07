@@ -67,12 +67,6 @@ class ErrorException extends \ErrorException
 
             $ref = new \ReflectionProperty('Exception', 'trace');
 
-            // @link https://wiki.php.net/rfc/deprecations_php_8_5#deprecate_reflectionsetaccessible
-            // @link https://wiki.php.net/rfc/make-reflection-setaccessible-no-op
-            if (PHP_VERSION_ID < 80100) {
-                $ref->setAccessible(true);
-            }
-
             $ref->setValue($this, $trace);
         }
     }
@@ -135,7 +129,7 @@ class ErrorException extends \ErrorException
             E_USER_WARNING => 'PHP User Warning',
             E_WARNING => 'PHP Warning',
             self::E_HHVM_FATAL_ERROR => 'HHVM Fatal Error',
-        ] + (PHP_VERSION_ID < 80400 ? [E_STRICT => 'PHP Strict Warning'] : []);
+        ];
 
         return $names[$this->getCode()] ?? 'Error';
     }

@@ -101,15 +101,11 @@ class JsonTest extends TestCase
         $data = new JsonModel();
         $data->data = (object) null;
         $this->assertSame('{}', Json::encode($data));
-
-        $data = eval(<<<'PHP'
-            return function () {
-                foreach (['a' => 1, 'b' => 2] as $name => $value) {
-                    yield $name => $value;
-                }
-            };
-PHP
-        );
+        $data = static function () {
+            foreach (['a' => 1, 'b' => 2] as $name => $value) {
+                yield $name => $value;
+            }
+        };
         $this->assertSame('{"a":1,"b":2}', Json::encode($data()));
     }
 

@@ -219,11 +219,7 @@ class Controller extends BaseController
             return [$param, false];
         }
 
-        if (
-            method_exists($type, 'isBuiltin')
-            && $type->isBuiltin()
-            && ($param !== null || !$type->allowsNull())
-        ) {
+        if ($type->isBuiltin() && ($param !== null || !$type->allowsNull())) {
             $typeName = $type->getName();
             if ($param === '' && $type->allowsNull()) {
                 if ($typeName !== 'string') { // for old string behavior compatibility

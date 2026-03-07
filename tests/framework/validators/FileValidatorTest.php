@@ -696,11 +696,6 @@ class FileValidatorTest extends TestCase
 
     public function testValidateTypedAttributeNoErrors(): void
     {
-        // TODO: PHP 8.2+ minimum — review and remove version skip
-        if (version_compare(PHP_VERSION, '7.4', '<')) {
-            $this->markTestSkipped('Requires typed properties');
-        }
-
         $validator = new FileValidator(['minFiles' => 0, 'maxFiles' => 2]);
         $file = $this->createTestFiles(
             [
@@ -722,11 +717,6 @@ class FileValidatorTest extends TestCase
 
     public function testValidateTypedAttributeExactMinNoErrors(): void
     {
-        // TODO: PHP 8.2+ minimum — review and remove version skip
-        if (version_compare(PHP_VERSION, '7.4', '<')) {
-            $this->markTestSkipped('Requires typed properties');
-        }
-
         $validator = new FileValidator(['minFiles' => 1]);
         $file = $this->createTestFiles(
             [
@@ -748,11 +738,6 @@ class FileValidatorTest extends TestCase
 
     public function testValidateTypedAttributeExactMaxNoErrors(): void
     {
-        // TODO: PHP 8.2+ minimum — review and remove version skip
-        if (version_compare(PHP_VERSION, '7.4', '<')) {
-            $this->markTestSkipped('Requires typed properties');
-        }
-
         $validator = new FileValidator(['maxFiles' => 1]);
         $file = $this->createTestFiles(
             [
@@ -774,11 +759,6 @@ class FileValidatorTest extends TestCase
 
     public function testValidateTypedAttributeMinError(): void
     {
-        // TODO: PHP 8.2+ minimum — review and remove version skip
-        if (version_compare(PHP_VERSION, '7.4', '<')) {
-            $this->markTestSkipped('Requires typed properties');
-        }
-
         $validator = new FileValidator(['minFiles' => 2]);
         $file = $this->createTestFiles(
             [
@@ -800,11 +780,6 @@ class FileValidatorTest extends TestCase
 
     public function testValidateTypedAttributeMaxError(): void
     {
-        // TODO: PHP 8.2+ minimum — review and remove version skip
-        if (version_compare(PHP_VERSION, '7.4', '<')) {
-            $this->markTestSkipped('Requires typed properties');
-        }
-
         $validator = new FileValidator(['maxFiles' => 1]);
         $files = $this->createTestFiles(
             [

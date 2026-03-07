@@ -53,7 +53,6 @@ class BaseJson
         'JSON_ERROR_UTF8' => 'Malformed UTF-8 characters, possibly incorrectly encoded',
     ];
 
-
     /**
      * Encodes the given value into a JSON string.
      *
@@ -144,17 +143,7 @@ class BaseJson
             return;
         }
 
-        if (PHP_VERSION_ID >= 50500) {
-            throw new InvalidArgumentException(json_last_error_msg(), $lastError);
-        }
-
-        foreach (static::$jsonErrorMessages as $const => $message) {
-            if (defined($const) && constant($const) === $lastError) {
-                throw new InvalidArgumentException($message, $lastError);
-            }
-        }
-
-        throw new InvalidArgumentException('Unknown JSON encoding/decoding error.');
+        throw new InvalidArgumentException(json_last_error_msg(), $lastError);
     }
 
     /**

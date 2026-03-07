@@ -420,7 +420,7 @@ class ResponseTest extends TestCase
         $expireInt = time() + 3600;
         $expireString = date('D, d-M-Y H:i:s', $expireInt) . ' GMT';
 
-        $testCases = [
+        return [
             'same-site' => [
                 ['sameSite' => Cookie::SAME_SITE_STRICT],
                 ['samesite' => Cookie::SAME_SITE_STRICT],
@@ -433,22 +433,15 @@ class ResponseTest extends TestCase
                 ['expire' => $expireString],
                 ['expires' => $expireString],
             ],
+            'expire-as-date_time' => [
+                ['expire' => new DateTime('@' . $expireInt)],
+                ['expires' => $expireString],
+            ],
+            'expire-as-date_time_immutable' => [
+                ['expire' => new DateTimeImmutable('@' . $expireInt)],
+                ['expires' => $expireString],
+            ],
         ];
-
-        if (version_compare(PHP_VERSION, '5.5.0', '>=')) {
-            $testCases = array_merge($testCases, [
-                'expire-as-date_time' => [
-                    ['expire' => new DateTime('@' . $expireInt)],
-                    ['expires' => $expireString],
-                ],
-                'expire-as-date_time_immutable' => [
-                    ['expire' => new DateTimeImmutable('@' . $expireInt)],
-                    ['expires' => $expireString],
-                ],
-            ]);
-        }
-
-        return $testCases;
     }
 
     /**

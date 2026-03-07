@@ -77,14 +77,12 @@ class FormatterDateTest extends TestCase
         $this->assertSame(date('n/j/y', $value->getTimestamp()), $this->formatter->asDate($value, 'short'));
         $this->assertSame(date('F j, Y', $value->getTimestamp()), $this->formatter->asDate($value, 'long'));
 
-        if (PHP_VERSION_ID >= 50500) {
-            $value = new DateTimeImmutable();
-            $this->assertSame(date('M j, Y', $value->getTimestamp()), $this->formatter->asDate($value));
-            $this->assertSame(date('Y/m/d', $value->getTimestamp()), $this->formatter->asDate($value, 'php:Y/m/d'));
-            $this->assertSame(date('m/d/Y', $value->getTimestamp()), $this->formatter->asDate($value, 'MM/dd/yyyy'));
-            $this->assertSame(date('n/j/y', $value->getTimestamp()), $this->formatter->asDate($value, 'short'));
-            $this->assertSame(date('F j, Y', $value->getTimestamp()), $this->formatter->asDate($value, 'long'));
-        }
+        $value = new DateTimeImmutable();
+        $this->assertSame(date('M j, Y', $value->getTimestamp()), $this->formatter->asDate($value));
+        $this->assertSame(date('Y/m/d', $value->getTimestamp()), $this->formatter->asDate($value, 'php:Y/m/d'));
+        $this->assertSame(date('m/d/Y', $value->getTimestamp()), $this->formatter->asDate($value, 'MM/dd/yyyy'));
+        $this->assertSame(date('n/j/y', $value->getTimestamp()), $this->formatter->asDate($value, 'short'));
+        $this->assertSame(date('F j, Y', $value->getTimestamp()), $this->formatter->asDate($value, 'long'));
 
         // empty input
         $this->assertSame('Jan 1, 1970', $this->formatter->asDate(''));
@@ -109,6 +107,7 @@ class FormatterDateTest extends TestCase
         $value->setTimestamp(1451606400); // Fri, 01 Jan 2016 00:00:00 (UTC)
         $this->assertSame('۱۳۹۴', $this->formatter->asDate($value, 'php:Y'));
 
+        // TODO: PHP 8.2+ minimum — review and remove version skip
         if (version_compare(PHP_VERSION, '5.5.0', '>=')) {
             $value = new DateTimeImmutable('2016-01-01 00:00:00', new DateTimeZone('UTC'));
             $this->assertSame('۱۳۹۴', $this->formatter->asDate($value, 'php:Y'));
@@ -126,6 +125,7 @@ class FormatterDateTest extends TestCase
         $value->setTimestamp(1451606400); // Fri, 01 Jan 2016 00:00:00 (UTC)
         $this->assertSame('2559', $this->formatter->asDate($value, 'php:Y'));
 
+        // TODO: PHP 8.2+ minimum — review and remove version skip
         if (version_compare(PHP_VERSION, '5.5.0', '>=')) {
             $value = new DateTimeImmutable('2016-01-01 00:00:00', new DateTimeZone('UTC'));
             $this->assertSame('2559', $this->formatter->asDate($value, 'php:Y'));
@@ -153,6 +153,7 @@ class FormatterDateTest extends TestCase
         $this->assertSameAnyWhitespace(date('g:i:s A', $value->getTimestamp()), $this->formatter->asTime($value));
         $this->assertSame(date('h:i:s A', $value->getTimestamp()), $this->formatter->asTime($value, 'php:h:i:s A'));
 
+        // TODO: PHP 8.2+ minimum — review and remove version skip
         if (version_compare(PHP_VERSION, '5.5.0', '>=')) {
             $value = new DateTimeImmutable();
             $this->assertSameAnyWhitespace(date('g:i:s A', $value->getTimestamp()), $this->formatter->asTime($value));
@@ -204,6 +205,7 @@ class FormatterDateTest extends TestCase
         );
         $this->assertSame(date('Y/m/d h:i:s A', $value->getTimestamp()), $this->formatter->asDatetime($date, 'php:Y/m/d h:i:s A'));
 
+        // TODO: PHP 8.2+ minimum — review and remove version skip
         if (PHP_VERSION_ID >= 50500) {
             $value = new DateTimeImmutable();
             $this->assertMatchesRegularExpression(
@@ -213,6 +215,7 @@ class FormatterDateTest extends TestCase
             $this->assertSame(date('Y/m/d h:i:s A', $value->getTimestamp()), $this->formatter->asDatetime($value, 'php:Y/m/d h:i:s A'));
         }
 
+        // TODO: PHP 8.2+ minimum — review and remove version skip
         if (PHP_VERSION_ID >= 50600) {
             // DATE_ATOM
             $value = time();
@@ -617,6 +620,7 @@ class FormatterDateTest extends TestCase
             $result[] = [$tz[0], '2014-08-10T14:41:00+02:00',         '2014-01-01T13:41:00+01:00']; // ISO 8601
             $result[] = [$tz[0], new DateTime('2014-08-10 12:41:00', $utc), new DateTime('2014-01-01 12:41:00', $utc)];
             $result[] = [$tz[0], new DateTime('2014-08-10 14:41:00', $berlin), new DateTime('2014-01-01 13:41:00', $berlin)];
+            // TODO: PHP 8.2+ minimum — review and remove version skip
             if (version_compare(PHP_VERSION, '5.5.0', '>=')) {
                 $result[] = [$tz[0], new DateTimeImmutable('2014-08-10 12:41:00', $utc), new DateTimeImmutable('2014-01-01 12:41:00', $utc)];
                 $result[] = [$tz[0], new DateTimeImmutable('2014-08-10 14:41:00', $berlin), new DateTimeImmutable('2014-01-01 13:41:00', $berlin)];

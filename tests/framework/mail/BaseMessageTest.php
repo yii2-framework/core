@@ -65,10 +65,6 @@ class BaseMessageTest extends TestCase
 
     public function testExceptionToString(): void
     {
-        if (PHP_VERSION_ID < 70400) {
-            $this->markTestSkipped('This test is for PHP 7.4+ only');
-        }
-
         $message = new TestMessageWithException();
 
         $this->expectException(Exception::class);
@@ -79,6 +75,7 @@ class BaseMessageTest extends TestCase
 
     public function testExceptionToStringLegacy(): void
     {
+        // TODO: PHP 8.2+ minimum — review and remove version skip
         if (PHP_VERSION_ID >= 70400) {
             $this->markTestSkipped('This test is for PHP < 7.4 only');
         }

@@ -163,8 +163,7 @@ class Controller extends BaseController
                 $args[] = $actionParams[$name] = $params[$name];
                 unset($params[$name]);
             } elseif (
-                PHP_VERSION_ID >= 70100
-                && ($type = $param->getType()) !== null
+                ($type = $param->getType()) !== null
                 && $type instanceof \ReflectionNamedType
                 && !$type->isBuiltin()
             ) {
@@ -221,12 +220,11 @@ class Controller extends BaseController
         }
 
         if (
-            PHP_VERSION_ID >= 70000
-            && method_exists($type, 'isBuiltin')
+            method_exists($type, 'isBuiltin')
             && $type->isBuiltin()
             && ($param !== null || !$type->allowsNull())
         ) {
-            $typeName = PHP_VERSION_ID >= 70100 ? $type->getName() : (string)$type;
+            $typeName = $type->getName();
             if ($param === '' && $type->allowsNull()) {
                 if ($typeName !== 'string') { // for old string behavior compatibility
                     return [null, true];
@@ -263,7 +261,7 @@ class Controller extends BaseController
                 ) {
                     continue;
                 }
-                $typeName = PHP_VERSION_ID >= 70100 ? $partialType->getName() : (string)$partialType;
+                $typeName = $partialType->getName();
                 if ($typeName === 'string') {
                     return ['', true];
                 }
@@ -284,7 +282,7 @@ class Controller extends BaseController
                 continue;
             }
             $foundBuiltinType = true;
-            $typeName = PHP_VERSION_ID >= 70100 ? $partialType->getName() : (string)$partialType;
+            $typeName = $partialType->getName();
             $canBeArray |= $typeName === 'array';
             $canBeString |= $typeName === 'string';
             if (is_array($param)) {

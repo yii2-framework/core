@@ -29,14 +29,6 @@ class MemCachedTest extends BaseCache
             $this->markTestSkipped('memcached not installed. Skipping.');
         }
 
-        if (
-            PHP_VERSION_ID >= 80100 && version_compare(phpversion('memcached'), '3.1.5', '<=')
-        ) {
-            $php_version = phpversion();
-            $memcached_version = phpversion('memcached');
-            $this->markTestSkipped("memcached version $memcached_version is not ready for PHP $php_version. Skipping.");
-        }
-
         $memcachedHost = getenv('IS_LOCAL_TESTS') ? 'memcached' : '127.0.0.1';
 
         // check whether memcached is running and skip tests if not.

@@ -566,7 +566,7 @@ class FileValidatorTest extends TestCase
         ]);
 
         # fix for bundled libmagic bug, see also https://github.com/yiisoft/yii2/issues/19925
-        if ((PHP_VERSION_ID >= 80100 && PHP_VERSION_ID < 80122) || (PHP_VERSION_ID >= 80200 && PHP_VERSION_ID < 80209)) {
+        if (PHP_VERSION_ID < 80209) {
             $v81_zx = ['test.tar.xz', 'application/octet-stream', 'tar.xz'];
             array_pop($validMimeTypes);
             $validMimeTypes[] = $v81_zx;
@@ -696,6 +696,7 @@ class FileValidatorTest extends TestCase
 
     public function testValidateTypedAttributeNoErrors(): void
     {
+        // TODO: PHP 8.2+ minimum — review and remove version skip
         if (version_compare(PHP_VERSION, '7.4', '<')) {
             $this->markTestSkipped('Requires typed properties');
         }
@@ -721,6 +722,7 @@ class FileValidatorTest extends TestCase
 
     public function testValidateTypedAttributeExactMinNoErrors(): void
     {
+        // TODO: PHP 8.2+ minimum — review and remove version skip
         if (version_compare(PHP_VERSION, '7.4', '<')) {
             $this->markTestSkipped('Requires typed properties');
         }
@@ -746,6 +748,7 @@ class FileValidatorTest extends TestCase
 
     public function testValidateTypedAttributeExactMaxNoErrors(): void
     {
+        // TODO: PHP 8.2+ minimum — review and remove version skip
         if (version_compare(PHP_VERSION, '7.4', '<')) {
             $this->markTestSkipped('Requires typed properties');
         }
@@ -771,6 +774,7 @@ class FileValidatorTest extends TestCase
 
     public function testValidateTypedAttributeMinError(): void
     {
+        // TODO: PHP 8.2+ minimum — review and remove version skip
         if (version_compare(PHP_VERSION, '7.4', '<')) {
             $this->markTestSkipped('Requires typed properties');
         }
@@ -796,6 +800,7 @@ class FileValidatorTest extends TestCase
 
     public function testValidateTypedAttributeMaxError(): void
     {
+        // TODO: PHP 8.2+ minimum — review and remove version skip
         if (version_compare(PHP_VERSION, '7.4', '<')) {
             $this->markTestSkipped('Requires typed properties');
         }

@@ -329,6 +329,18 @@ class ControllerTest extends TestCase
         $this->assertFalse($help['param']['required']);
     }
 
+    public function testStringifyReflectionTypeWithUnknownSubclass(): void
+    {
+        $controller = new FakeController('fake', Yii::$app);
+
+        $mockType = $this->createMock(\ReflectionType::class);
+        $mockType->method('__toString')->willReturn('unknown');
+
+        $method = new \ReflectionMethod($controller, 'stringifyReflectionType');
+
+        $this->assertSame('unknown', $method->invoke($controller, $mockType));
+    }
+
     public function testGetActionHelpSummaryOnNull(): void
     {
         $controller = new FakeController('fake', Yii::$app);

@@ -1985,7 +1985,6 @@ abstract class BaseActiveRecord extends BaseDatabase
             case 'sqlite':
                 $selectExpression = "(customer.name || ' in ' || p.description) AS name";
                 break;
-            case 'cubird':
             case 'mysql':
                 $selectExpression = "concat(customer.name,' in ', p.description) name";
                 break;

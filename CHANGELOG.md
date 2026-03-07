@@ -9,3 +9,4 @@
 - refactor(db)!: remove CUBRID database driver, tests, fixture, configuration entries, and PHPStan baseline suppressions.
 - refactor(caching)!: rename `ApcCache` to `ApcuCache` and remove legacy APC extension support.
 - refactor(base): remove dead `E_STRICT` handling and `PHP_VERSION_ID < 80100` guards from `ErrorException` and `ErrorHandler`.
+- refactor(base)!: remove all HHVM support drop `E_HHVM_FATAL_ERROR` constant, `handleHhvmError()` method, `$_hhvmException` property, and all HHVM-specific conditionals and test skips.

@@ -35,10 +35,6 @@ Yii::$classMap['app\\helpers\\MyHelper'] = '@app/helpers/MyHelper.php';
   development/test-only classes.
 - If you change autoload configuration, regenerate autoload files with `composer dump-autoload`.
 
-### CUBRID database driver removal
-
-The CUBRID database driver has been removed from the framework.
-
 ### ApcCache renamed to ApcuCache
 
 The `yii\caching\ApcCache` class has been renamed to `yii\caching\ApcuCache`. The legacy APC extension (`ext-apc`) is
@@ -60,3 +56,19 @@ not available in PHP >= 8.0, so the dual-mode `$useApcu` property has been remov
     'class' => 'yii\caching\ApcuCache',
 ],
 ```
+### CUBRID database driver removal
+
+The CUBRID database driver has been removed from the framework.
+
+### HHVM support removed
+
+All HHVM-specific code has been removed from the framework. The framework targets PHP 8.1+ on the Zend engine only.
+
+- `yii\base\ErrorException::E_HHVM_FATAL_ERROR` constant has been removed.
+- `yii\base\ErrorHandler::handleHhvmError()` method has been removed.
+- `yii\base\ErrorHandler` no longer registers `handleHhvmError` as the error handler when `HHVM_VERSION` is defined.
+- The `PhpManager` HHVM incompatibility note has been removed from its docblock.
+- All test skips guarded by `defined('HHVM_VERSION')` have been removed.
+
+If you referenced `ErrorException::E_HHVM_FATAL_ERROR` or `ErrorHandler::handleHhvmError()` in your application code,
+remove those references.

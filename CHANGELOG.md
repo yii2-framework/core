@@ -12,3 +12,4 @@
 - refactor(base)!: remove all HHVM support — drop `E_HHVM_FATAL_ERROR` constant, `handleHhvmError()` method, `$_hhvmException` property, and all HHVM-specific conditionals and test skips.
 - refactor!: remove `PHP < 8.2` version guards and dead fallbacks across `src/` and `tests`.
 - fix(console): `getActionArgsHelp()` crashes on PHP `8.2+` DNF/intersection types.
+- feat(widgets): enhance `ActiveField::label()` with `tag` option and fix `labelOptions` for `checkbox`/`radio`.

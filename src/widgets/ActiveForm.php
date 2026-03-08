@@ -8,6 +8,7 @@
 
 namespace yii\widgets;
 
+use Closure;
 use Yii;
 use yii\base\InvalidCallException;
 use yii\base\Model;
@@ -16,6 +17,9 @@ use yii\helpers\ArrayHelper;
 use yii\helpers\Html;
 use yii\helpers\Json;
 use yii\helpers\Url;
+use yii\jquery\widgets\ActiveFormJqueryClientScript;
+use yii\web\client\ClientScriptInterface;
+use function call_user_func;
 
 /**
  * ActiveForm is a widget that builds an interactive HTML form for one or multiple data models.
@@ -188,12 +192,18 @@ class ActiveForm extends Widget
      * @internal
      */
     public $attributes = [];
+    /**
+     * @var array|ClientScriptInterface|null the client-side script implementation.
+     * When [[Application::$useJquery]] is `true` and [[enableClientScript]] is `true`,
+     * defaults to [[ActiveFormJqueryClientScript]].
+     * Set to `null` to disable client-side script registration for this form.
+     */
+    public $clientScript = null;
 
     /**
      * @var ActiveField[] the ActiveField objects that are currently active
      */
     private $_fields = [];
-
 
     /**
      * Initializes the widget.
@@ -202,9 +212,18 @@ class ActiveForm extends Widget
     public function init()
     {
         parent::init();
-        if (!isset($this->options['id'])) {
-            $this->options['id'] = $this->getId();
+
+        $this->options['id'] ??= $this->getId();
+
+        if (
+            $this->enableClientScript
+            && (Yii::$app->useJquery ?? false)
+            && !$this->clientScript instanceof ClientScriptInterface
+        ) {
+            $this->clientScript ??= ['class' => ActiveFormJqueryClientScript::class];
+            $this->clientScript = Yii::createObject($this->clientScript);
         }
+
         ob_start();
         ob_implicit_flush(false);
     }
@@ -222,6 +241,7 @@ class ActiveForm extends Widget
 
         $content = ob_get_clean();
         $html = Html::beginForm($this->action, $this->method, $this->options);
+
         $html .= $content;
 
         if ($this->enableClientScript) {
@@ -229,6 +249,7 @@ class ActiveForm extends Widget
         }
 
         $html .= Html::endForm();
+
         return $html;
     }
 
@@ -238,12 +259,9 @@ class ActiveForm extends Widget
      */
     public function registerClientScript()
     {
-        $id = $this->options['id'];
-        $options = Json::htmlEncode($this->getClientOptions());
-        $attributes = Json::htmlEncode($this->attributes);
-        $view = $this->getView();
-        ActiveFormAsset::register($view);
-        $view->registerJs("jQuery('#$id').yiiActiveForm($attributes, $options);");
+        if ($this->clientScript instanceof ClientScriptInterface) {
+            $this->clientScript->register($this, $this->getView());
+        }
     }
 
     /**
@@ -252,37 +270,11 @@ class ActiveForm extends Widget
      */
     protected function getClientOptions()
     {
-        $options = [
-            'encodeErrorSummary' => $this->encodeErrorSummary,
-            'errorSummary' => '.' . implode('.', preg_split('/\s+/', $this->errorSummaryCssClass, -1, PREG_SPLIT_NO_EMPTY)),
-            'validateOnSubmit' => $this->validateOnSubmit,
-            'errorCssClass' => $this->errorCssClass,
-            'successCssClass' => $this->successCssClass,
-            'validatingCssClass' => $this->validatingCssClass,
-            'ajaxParam' => $this->ajaxParam,
-            'ajaxDataType' => $this->ajaxDataType,
-            'scrollToError' => $this->scrollToError,
-            'scrollToErrorOffset' => $this->scrollToErrorOffset,
-            'validationStateOn' => $this->validationStateOn,
-        ];
-        if ($this->validationUrl !== null) {
-            $options['validationUrl'] = Url::to($this->validationUrl);
+        if ($this->clientScript instanceof ClientScriptInterface) {
+            return $this->clientScript->getClientOptions($this);
         }
 
-        // only get the options that are different from the default ones (set in yii.activeForm.js)
-        return array_diff_assoc($options, [
-            'encodeErrorSummary' => true,
-            'errorSummary' => '.error-summary',
-            'validateOnSubmit' => true,
-            'errorCssClass' => 'has-error',
-            'successCssClass' => 'has-success',
-            'validatingCssClass' => 'validating',
-            'ajaxParam' => 'ajax',
-            'ajaxDataType' => 'json',
-            'scrollToError' => true,
-            'scrollToErrorOffset' => 0,
-            'validationStateOn' => self::VALIDATION_STATE_ON_CONTAINER,
-        ]);
+        return [];
     }
 
     /**
@@ -295,14 +287,17 @@ class ActiveForm extends Widget
      * - `footer`: string, the footer HTML for the error summary.
      *
      * The rest of the options will be rendered as the attributes of the container tag. The values will
-     * be HTML-encoded using [[\yii\helpers\Html::encode()]]. If a value is `null`, the corresponding attribute will not be rendered.
+     * be HTML-encoded using [[\yii\helpers\Html::encode()]]. If a value is `null`, the corresponding attribute will not
+     * be rendered.
      * @return string the generated error summary.
      * @see errorSummaryCssClass
      */
     public function errorSummary($models, $options = [])
     {
         Html::addCssClass($options, $this->errorSummaryCssClass);
+
         $options['encode'] = $this->encodeErrorSummary;
+
         return Html::errorSummary($models, $options);
     }
 
@@ -321,18 +316,24 @@ class ActiveForm extends Widget
     public function field($model, $attribute, $options = [])
     {
         $config = $this->fieldConfig;
-        if ($config instanceof \Closure) {
+
+        if ($config instanceof Closure) {
             $config = call_user_func($config, $model, $attribute);
         }
-        if (!isset($config['class'])) {
-            $config['class'] = $this->fieldClass;
-        }
 
-        return Yii::createObject(ArrayHelper::merge($config, $options, [
-            'model' => $model,
-            'attribute' => $attribute,
-            'form' => $this,
-        ]));
+        $config['class'] ??= $this->fieldClass;
+
+        return Yii::createObject(
+            ArrayHelper::merge(
+                $config,
+                $options,
+                [
+                    'model' => $model,
+                    'attribute' => $attribute,
+                    'form' => $this,
+                ],
+            ),
+        );
     }
 
     /**
@@ -350,7 +351,9 @@ class ActiveForm extends Widget
     public function beginField($model, $attribute, $options = [])
     {
         $field = $this->field($model, $attribute, $options);
+
         $this->_fields[] = $field;
+
         return $field->begin();
     }
 
@@ -363,6 +366,7 @@ class ActiveForm extends Widget
     public function endField()
     {
         $field = array_pop($this->_fields);
+
         if ($field instanceof ActiveField) {
             return $field->end();
         }
@@ -414,9 +418,11 @@ class ActiveForm extends Widget
         } else {
             $models = [$model];
         }
+
         /** @var Model $model */
         foreach ($models as $model) {
             $model->validate($attributes);
+
             foreach ($model->getErrors() as $attribute => $errors) {
                 $result[Html::getInputId($model, $attribute)] = $errors;
             }
@@ -450,9 +456,11 @@ class ActiveForm extends Widget
     public static function validateMultiple($models, $attributes = null)
     {
         $result = [];
+
         /** @var Model $model */
         foreach ($models as $i => $model) {
             $model->validate($attributes);
+
             foreach ($model->getErrors() as $attribute => $errors) {
                 $result[Html::getInputId($model, "[$i]" . $attribute)] = $errors;
             }

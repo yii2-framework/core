@@ -313,6 +313,7 @@ class CompareValidatorTest extends TestCase
 
     public function testGetClientOptionsWithCompareValue(): void
     {
+        $this->mockApplication();
         $model = new FakedValidationModel();
         $model->attr_test = 'test';
         $val = new CompareValidator(['compareValue' => 'expected']);
@@ -327,6 +328,7 @@ class CompareValidatorTest extends TestCase
 
     public function testGetClientOptionsWithCompareAttribute(): void
     {
+        $this->mockApplication();
         $model = new FakedValidationModel();
         $model->attr_test = 'test';
         $model->attr_test_val = 'test';
@@ -340,6 +342,7 @@ class CompareValidatorTest extends TestCase
 
     public function testGetClientOptionsDefaultCompareAttribute(): void
     {
+        $this->mockApplication();
         $model = new FakedValidationModel();
         $model->attr_test = 'test';
         $model->attr_test_repeat = 'test';
@@ -352,6 +355,7 @@ class CompareValidatorTest extends TestCase
 
     public function testGetClientOptionsWithSkipOnEmpty(): void
     {
+        $this->mockApplication();
         $model = new FakedValidationModel();
         $model->attr_test = 'test';
         $val = new CompareValidator(['compareValue' => 'test', 'skipOnEmpty' => true]);
@@ -372,6 +376,7 @@ class CompareValidatorTest extends TestCase
 
     public function testClientValidateAttribute(): void
     {
+        $this->mockApplication();
         $model = new FakedValidationModel();
         $model->attr_test = 'test';
         $val = new CompareValidator(['compareValue' => 'expected']);
@@ -406,6 +411,7 @@ class CompareValidatorTest extends TestCase
 
     public function testClientValidateAttributeWithClosure(): void
     {
+        $this->mockApplication();
         $model = new FakedValidationModel();
         $model->attr_test = 'test';
         $val = new CompareValidator(['compareValue' => function () {
@@ -418,6 +424,7 @@ class CompareValidatorTest extends TestCase
 
     public function testClientValidateAttributeContainsEncodedOptions(): void
     {
+        $this->mockApplication();
         $model = new FakedValidationModel();
         $model->attr_test = 'test';
         $val = new CompareValidator(['compareValue' => 'check']);
@@ -447,6 +454,7 @@ class CompareValidatorTest extends TestCase
 
     public function testGetClientOptionsMessageContainsCompareValue(): void
     {
+        $this->mockApplication();
         $model = new FakedValidationModel();
         $model->attr_test = 'test';
         $val = new CompareValidator(['compareValue' => 'target']);
@@ -481,6 +489,7 @@ class CompareValidatorTest extends TestCase
 
     public function testGetClientOptionsMessageContainsAttributeLabel(): void
     {
+        $this->mockApplication();
         $model = new FakedValidationModel();
         $model->attr_test = 'test';
         $val = new CompareValidator(['compareValue' => 'x']);

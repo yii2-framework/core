@@ -84,6 +84,14 @@ abstract class Application extends Module
      */
     public const STATE_END = 6;
     /**
+     * @var bool whether to use jQuery for client-side validation and widget scripts.
+     * When set to `true` (default), validators and widgets use jQuery-based client scripts.
+     * When set to `false`, no jQuery assets are registered and `clientValidateAttribute()` returns `null`.
+     * This allows replacing jQuery with an alternative JS framework or disabling client scripts entirely.
+     * @since 2.0
+     */
+    public $useJquery = true;
+    /**
      * @var string the namespace that controller classes are located in.
      * This namespace will be used to load controller classes by prepending it to the controller class name.
      * The default namespace is `app\controllers`.
@@ -182,7 +190,6 @@ abstract class Application extends Module
      * @var array list of loaded modules indexed by their class names.
      */
     public $loadedModules = [];
-
 
     /**
      * Constructor.

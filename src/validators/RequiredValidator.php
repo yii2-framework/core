@@ -10,6 +10,10 @@ namespace yii\validators;
 
 use Yii;
 use yii\helpers\Json;
+use yii\jquery\validators\RequiredValidatorJqueryClientScript;
+use yii\validators\client\ClientValidatorScriptInterface;
+
+use function is_string;
 
 /**
  * RequiredValidator validates that the specified attribute does not have null or empty value.
@@ -52,7 +56,10 @@ class RequiredValidator extends Validator
      * - `{requiredValue}`: the value of [[requiredValue]]
      */
     public $message;
-
+    /**
+     * @var array|ClientValidatorScriptInterface|null the client-side validation script implementation.
+     */
+    public $clientScript = null;
 
     /**
      * {@inheritdoc}
@@ -60,9 +67,14 @@ class RequiredValidator extends Validator
     public function init()
     {
         parent::init();
-        if ($this->message === null) {
-            $this->message = $this->requiredValue === null ? Yii::t('yii', '{attribute} cannot be blank.')
-                : Yii::t('yii', '{attribute} must be "{requiredValue}".');
+
+        $this->message ??= $this->requiredValue === null
+            ? Yii::t('yii', '{attribute} cannot be blank.')
+            : Yii::t('yii', '{attribute} must be "{requiredValue}".');
+
+        if ((Yii::$app->useJquery ?? false) && !$this->clientScript instanceof ClientValidatorScriptInterface) {
+            $this->clientScript ??= ['class' => RequiredValidatorJqueryClientScript::class];
+            $this->clientScript = Yii::createObject($this->clientScript);
         }
     }
 
@@ -72,19 +84,24 @@ class RequiredValidator extends Validator
     protected function validateValue($value)
     {
         if ($this->requiredValue === null) {
-            if ($this->strict && $value !== null || !$this->strict && !$this->isEmpty(is_string($value) ? trim($value) : $value)) {
+            if (
+                $this->strict && $value !== null
+                || !$this->strict && !$this->isEmpty(is_string($value) ? trim($value) : $value)
+            ) {
                 return null;
             }
         } elseif (!$this->strict && $value == $this->requiredValue || $this->strict && $value === $this->requiredValue) {
             return null;
         }
+
         if ($this->requiredValue === null) {
             return [$this->message, []];
         }
 
-        return [$this->message, [
-            'requiredValue' => $this->requiredValue,
-        ]];
+        return [
+            $this->message,
+            ['requiredValue' => $this->requiredValue],
+        ];
     }
 
     /**
@@ -92,10 +109,11 @@ class RequiredValidator extends Validator
      */
     public function clientValidateAttribute($model, $attribute, $view)
     {
-        ValidationAsset::register($view);
-        $options = $this->getClientOptions($model, $attribute);
+        if ($this->clientScript instanceof ClientValidatorScriptInterface) {
+            return $this->clientScript->register($this, $model, $attribute, $view);
+        }
 
-        return 'yii.validation.required(value, messages, ' . Json::htmlEncode($options) . ');';
+        return null;
     }
 
     /**
@@ -103,23 +121,10 @@ class RequiredValidator extends Validator
      */
     public function getClientOptions($model, $attribute)
     {
-        $options = [];
-        if ($this->requiredValue !== null) {
-            $options['message'] = $this->formatMessage($this->message, [
-                'requiredValue' => $this->requiredValue,
-            ]);
-            $options['requiredValue'] = $this->requiredValue;
-        } else {
-            $options['message'] = $this->message;
-        }
-        if ($this->strict) {
-            $options['strict'] = 1;
+        if ($this->clientScript instanceof ClientValidatorScriptInterface) {
+            return $this->clientScript->getClientOptions($this, $model, $attribute);
         }
 
-        $options['message'] = $this->formatMessage($options['message'], [
-            'attribute' => $model->getAttributeLabel($attribute),
-        ]);
-
-        return $options;
+        return [];
     }
 }

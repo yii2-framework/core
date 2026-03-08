@@ -11,7 +11,12 @@ namespace yii\validators;
 use Yii;
 use yii\base\InvalidConfigException;
 use yii\helpers\Json;
+use yii\jquery\validators\UrlValidatorJqueryClientScript;
+use yii\validators\client\ClientValidatorScriptInterface;
 use yii\web\JsExpression;
+
+use function is_string;
+use function strlen;
 
 /**
  * UrlValidator validates that the attribute value is a valid http or https URL.
@@ -48,7 +53,10 @@ class UrlValidator extends Validator
      * extension, otherwise an exception would be thrown.
      */
     public $enableIDN = false;
-
+    /**
+     * @var array|ClientValidatorScriptInterface|null the client-side validation script implementation.
+     */
+    public $clientScript = null;
 
     /**
      * {@inheritdoc}
@@ -56,11 +64,19 @@ class UrlValidator extends Validator
     public function init()
     {
         parent::init();
+
         if ($this->enableIDN && !function_exists('idn_to_ascii')) {
             throw new InvalidConfigException('In order to use IDN validation intl extension must be installed and enabled.');
         }
-        if ($this->message === null) {
-            $this->message = Yii::t('yii', '{attribute} is not a valid URL.');
+
+        $this->message ??= Yii::t(
+            'yii',
+            '{attribute} is not a valid URL.',
+        );
+
+        if ((Yii::$app->useJquery ?? false) && !$this->clientScript instanceof ClientValidatorScriptInterface) {
+            $this->clientScript ??= ['class' => UrlValidatorJqueryClientScript::class];
+            $this->clientScript = Yii::createObject($this->clientScript);
         }
     }
 
@@ -70,11 +86,18 @@ class UrlValidator extends Validator
     public function validateAttribute($model, $attribute)
     {
         $value = $model->$attribute;
+
         $result = $this->validateValue($value);
+
         if (!empty($result)) {
-            $this->addError($model, $attribute, $result[0], $result[1]);
+            $this->addError(
+                $model,
+                $attribute,
+                $result[0],
+                $result[1],
+            );
         } elseif ($this->defaultScheme !== null && strpos($value, '://') === false) {
-            $model->$attribute = $this->defaultScheme . '://' . $value;
+            $model->$attribute = "{$this->defaultScheme}://$value";
         }
     }
 
@@ -90,7 +113,12 @@ class UrlValidator extends Validator
             }
 
             if (strpos($this->pattern, '{schemes}') !== false) {
-                $pattern = str_replace('{schemes}', '(' . implode('|', $this->validSchemes) . ')', $this->pattern);
+                $pattern = str_replace(
+                    '{schemes}',
+                    '(' . implode('|',
+                    $this->validSchemes) . ')',
+                    $this->pattern,
+                );
             } else {
                 $pattern = $this->pattern;
             }
@@ -119,13 +147,11 @@ class UrlValidator extends Validator
      */
     public function clientValidateAttribute($model, $attribute, $view)
     {
-        ValidationAsset::register($view);
-        if ($this->enableIDN) {
-            PunycodeAsset::register($view);
+        if ($this->clientScript instanceof ClientValidatorScriptInterface) {
+            return $this->clientScript->register($this, $model, $attribute, $view);
         }
-        $options = $this->getClientOptions($model, $attribute);
 
-        return 'yii.validation.url(value, messages, ' . Json::htmlEncode($options) . ');';
+        return null;
     }
 
     /**
@@ -133,26 +159,10 @@ class UrlValidator extends Validator
      */
     public function getClientOptions($model, $attribute)
     {
-        if (strpos($this->pattern, '{schemes}') !== false) {
-            $pattern = str_replace('{schemes}', '(' . implode('|', $this->validSchemes) . ')', $this->pattern);
-        } else {
-            $pattern = $this->pattern;
+        if ($this->clientScript instanceof ClientValidatorScriptInterface) {
+            return $this->clientScript->getClientOptions($this, $model, $attribute);
         }
 
-        $options = [
-            'pattern' => new JsExpression($pattern),
-            'message' => $this->formatMessage($this->message, [
-                'attribute' => $model->getAttributeLabel($attribute),
-            ]),
-            'enableIDN' => (bool) $this->enableIDN,
-        ];
-        if ($this->skipOnEmpty) {
-            $options['skipOnEmpty'] = 1;
-        }
-        if ($this->defaultScheme !== null) {
-            $options['defaultScheme'] = $this->defaultScheme;
-        }
-
-        return $options;
+        return [];
     }
 }

@@ -8,9 +8,16 @@
 
 namespace yii\validators;
 
+use Closure;
 use Yii;
 use yii\base\Component;
 use yii\base\NotSupportedException;
+
+use function call_user_func;
+use function in_array;
+use function is_array;
+use function is_object;
+use function is_scalar;
 
 /**
  * Validator is the base class for all validators.
@@ -191,7 +198,6 @@ class Validator extends Component
      */
     public $whenClient;
 
-
     /**
      * Creates a validator object.
      * @param string|\Closure $type the validator type. This can be either:
@@ -209,7 +215,7 @@ class Validator extends Component
     {
         $params['attributes'] = $attributes;
 
-        if ($type instanceof \Closure) {
+        if ($type instanceof Closure) {
             $params['class'] = __NAMESPACE__ . '\InlineValidator';
             $params['method'] = $type;
         } elseif (!isset(static::$builtInValidators[$type]) && $model->hasMethod($type)) {
@@ -218,9 +224,11 @@ class Validator extends Component
             $params['method'] = [$model, $type];
         } else {
             unset($params['current']);
+
             if (isset(static::$builtInValidators[$type])) {
                 $type = static::$builtInValidators[$type];
             }
+
             if (is_array($type)) {
                 $params = array_merge($type, $params);
             } else {
@@ -237,6 +245,7 @@ class Validator extends Component
     public function init()
     {
         parent::init();
+
         $this->attributes = (array) $this->attributes;
         $this->on = (array) $this->on;
         $this->except = (array) $this->except;
@@ -305,6 +314,7 @@ class Validator extends Component
     public function validateAttribute($model, $attribute)
     {
         $result = $this->validateValue($model->$attribute);
+
         if (!empty($result)) {
             $this->addError($model, $attribute, $result[0], $result[1]);
         }
@@ -324,8 +334,12 @@ class Validator extends Component
             return true;
         }
 
-        list($message, $params) = $result;
-        $params['attribute'] = Yii::t('yii', 'the input value');
+        [$message, $params] = $result;
+        $params['attribute'] = Yii::t(
+            'yii',
+            'the input value',
+        );
+
         if (is_array($value)) {
             $params['value'] = 'array()';
         } elseif (is_object($value)) {
@@ -333,6 +347,7 @@ class Validator extends Component
         } else {
             $params['value'] = $value;
         }
+
         $error = $this->formatMessage($message, $params);
 
         return false;
@@ -430,7 +445,8 @@ class Validator extends Component
      */
     public function isActive($scenario)
     {
-        return !in_array($scenario, $this->except, true) && (empty($this->on) || in_array($scenario, $this->on, true));
+        return !in_array($scenario, $this->except, true)
+            && (empty($this->on) || in_array($scenario, $this->on, true));
     }
 
     /**
@@ -444,8 +460,10 @@ class Validator extends Component
     public function addError($model, $attribute, $message, $params = [])
     {
         $params['attribute'] = $model->getAttributeLabel($attribute);
+
         if (!isset($params['value'])) {
             $value = $model->$attribute;
+
             if (is_array($value)) {
                 $params['value'] = 'array()';
             } elseif (is_object($value) && !method_exists($value, '__toString')) {
@@ -454,7 +472,11 @@ class Validator extends Component
                 $params['value'] = $value;
             }
         }
-        $model->addError($attribute, $this->formatMessage($message, $params));
+
+        $model->addError(
+            $attribute,
+            $this->formatMessage($message, $params),
+        );
     }
 
     /**
@@ -474,6 +496,23 @@ class Validator extends Component
     }
 
     /**
+     * Returns a formatted validation message using the I18N component.
+     *
+     * This is a public wrapper around the protected [[formatMessage()]] method, provided so that
+     * extracted client script classes (implementing [[ClientValidatorScriptInterface]]) can format
+     * validation messages without duplicating I18N logic.
+     *
+     * @param string $message the message to be formatted.
+     * @param array $params the parameters to be inserted into the message.
+     * @return string the formatted message.
+     * @since 2.0
+     */
+    public function getFormattedClientMessage($message, $params)
+    {
+        return $this->formatMessage($message, $params);
+    }
+
+    /**
      * Formats a mesage using the I18N, or simple strtr if `\Yii::$app` is not available.
      * @param string $message
      * @param array $params
@@ -483,12 +522,12 @@ class Validator extends Component
     protected function formatMessage($message, $params)
     {
         if (Yii::$app !== null) {
-            return \Yii::$app->getI18n()->format($message, $params, Yii::$app->language);
+            return Yii::$app->getI18n()->format($message, $params, Yii::$app->language);
         }
 
         $placeholders = [];
         foreach ((array) $params as $name => $value) {
-            $placeholders['{' . $name . '}'] = $value;
+            $placeholders["{{$name}}"] = $value;
         }
 
         return ($placeholders === []) ? $message : strtr($message, $placeholders);
@@ -501,8 +540,6 @@ class Validator extends Component
      */
     public function getAttributeNames()
     {
-        return array_map(function ($attribute) {
-            return ltrim($attribute, '!');
-        }, $this->attributes);
+        return array_map(static fn($attribute): string => ltrim($attribute, '!'), $this->attributes);
     }
 }

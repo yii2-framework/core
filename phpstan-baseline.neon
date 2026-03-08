@@ -3201,7 +3201,7 @@ parameters:
 		-
 			message: '#^Loose comparison via "\!\=" is not allowed\.$#'
 			identifier: notEqual.notAllowed
-			count: 2
+			count: 1
 			path: src/validators/CompareValidator.php
 
 		-
@@ -3263,12 +3263,6 @@ parameters:
 			identifier: property.dynamicName
 			count: 2
 			path: src/validators/EachValidator.php
-
-		-
-			message: '#^Casting to bool something that''s already bool\.$#'
-			identifier: cast.useless
-			count: 1
-			path: src/validators/EmailValidator.php
 
 		-
 			message: '#^Construct empty\(\) is not allowed\. Use more strict comparison\.$#'
@@ -3367,12 +3361,6 @@ parameters:
 			path: src/validators/InlineValidator.php
 
 		-
-			message: '#^Casting to bool something that''s already bool\.$#'
-			identifier: cast.useless
-			count: 2
-			path: src/validators/IpValidator.php
-
-		-
 			message: '#^Construct empty\(\) is not allowed\. Use more strict comparison\.$#'
 			identifier: empty.notAllowed
 			count: 1
@@ -3389,12 +3377,6 @@ parameters:
 			identifier: property.dynamicName
 			count: 2
 			path: src/validators/IpValidator.php
-
-		-
-			message: '#^Casting to \*NEVER\* something that''s already \*NEVER\*\.$#'
-			identifier: cast.useless
-			count: 2
-			path: src/validators/NumberValidator.php
 
 		-
 			message: '#^Foreach overwrites \$value with its value variable\.$#'
@@ -3439,21 +3421,15 @@ parameters:
 			path: src/validators/StringValidator.php
 
 		-
-			message: '#^Casting to bool something that''s already bool\.$#'
-			identifier: cast.useless
-			count: 2
-			path: src/validators/TrimValidator.php
-
-		-
 			message: '#^Short ternary operator is not allowed\. Use null coalesce operator if applicable or consider using long ternary\.$#'
 			identifier: ternary.shortNotAllowed
-			count: 2
+			count: 1
 			path: src/validators/TrimValidator.php
 
 		-
 			message: '#^Variable property access on yii\\base\\Model\.$#'
 			identifier: property.dynamicName
-			count: 3
+			count: 2
 			path: src/validators/TrimValidator.php
 
 		-
@@ -3491,12 +3467,6 @@ parameters:
 			identifier: property.dynamicName
 			count: 5
 			path: src/validators/UniqueValidator.php
-
-		-
-			message: '#^Casting to bool something that''s already bool\.$#'
-			identifier: cast.useless
-			count: 1
-			path: src/validators/UrlValidator.php
 
 		-
 			message: '#^Construct empty\(\) is not allowed\. Use more strict comparison\.$#'

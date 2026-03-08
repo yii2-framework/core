@@ -10,6 +10,8 @@ namespace yii\validators;
 
 use Yii;
 use yii\helpers\Json;
+use yii\jquery\validators\ImageValidatorJqueryClientScript;
+use yii\validators\client\ClientValidatorScriptInterface;
 use yii\web\UploadedFile;
 
 /**
@@ -89,7 +91,6 @@ class ImageValidator extends FileValidator
      */
     public $overHeight;
 
-
     /**
      * {@inheritdoc}
      */
@@ -97,20 +98,30 @@ class ImageValidator extends FileValidator
     {
         parent::init();
 
-        if ($this->notImage === null) {
-            $this->notImage = Yii::t('yii', 'The file "{file}" is not an image.');
-        }
-        if ($this->underWidth === null) {
-            $this->underWidth = Yii::t('yii', 'The image "{file}" is too small. The width cannot be smaller than {limit, number} {limit, plural, one{pixel} other{pixels}}.');
-        }
-        if ($this->underHeight === null) {
-            $this->underHeight = Yii::t('yii', 'The image "{file}" is too small. The height cannot be smaller than {limit, number} {limit, plural, one{pixel} other{pixels}}.');
-        }
-        if ($this->overWidth === null) {
-            $this->overWidth = Yii::t('yii', 'The image "{file}" is too large. The width cannot be larger than {limit, number} {limit, plural, one{pixel} other{pixels}}.');
-        }
-        if ($this->overHeight === null) {
-            $this->overHeight = Yii::t('yii', 'The image "{file}" is too large. The height cannot be larger than {limit, number} {limit, plural, one{pixel} other{pixels}}.');
+        $this->notImage ??= Yii::t(
+            'yii',
+            'The file "{file}" is not an image.',
+        );
+        $this->underWidth ??= Yii::t(
+            'yii',
+            'The image "{file}" is too small. The width cannot be smaller than {limit, number} {limit, plural, one{pixel} other{pixels}}.',
+        );
+        $this->underHeight ??= Yii::t(
+            'yii',
+            'The image "{file}" is too small. The height cannot be smaller than {limit, number} {limit, plural, one{pixel} other{pixels}}.',
+        );
+        $this->overWidth ??= Yii::t(
+            'yii',
+            'The image "{file}" is too large. The width cannot be larger than {limit, number} {limit, plural, one{pixel} other{pixels}}.',
+        );
+        $this->overHeight ??= Yii::t(
+            'yii',
+            'The image "{file}" is too large. The height cannot be larger than {limit, number} {limit, plural, one{pixel} other{pixels}}.',
+        );
+
+        if ((Yii::$app->useJquery ?? false) && !$this->clientScript instanceof ClientValidatorScriptInterface) {
+            $this->clientScript ??= ['class' => ImageValidatorJqueryClientScript::class];
+            $this->clientScript = Yii::createObject($this->clientScript);
         }
     }
 
@@ -133,29 +144,59 @@ class ImageValidator extends FileValidator
     protected function validateImage($image)
     {
         if (false === ($imageInfo = getimagesize($image->tempName))) {
-            return [$this->notImage, ['file' => $image->name]];
+            return [
+                $this->notImage,
+                ['file' => $image->name],
+            ];
         }
 
-        list($width, $height) = $imageInfo;
+        [$width, $height] = $imageInfo;
 
         if ($width == 0 || $height == 0) {
-            return [$this->notImage, ['file' => $image->name]];
+            return [
+                $this->notImage,
+                ['file' => $image->name],
+            ];
         }
 
         if ($this->minWidth !== null && $width < $this->minWidth) {
-            return [$this->underWidth, ['file' => $image->name, 'limit' => $this->minWidth]];
+            return [
+                $this->underWidth,
+                [
+                    'file' => $image->name,
+                    'limit' => $this->minWidth,
+                ],
+            ];
         }
 
         if ($this->minHeight !== null && $height < $this->minHeight) {
-            return [$this->underHeight, ['file' => $image->name, 'limit' => $this->minHeight]];
+            return [
+                $this->underHeight,
+                [
+                    'file' => $image->name,
+                    'limit' => $this->minHeight,
+                ],
+            ];
         }
 
         if ($this->maxWidth !== null && $width > $this->maxWidth) {
-            return [$this->overWidth, ['file' => $image->name, 'limit' => $this->maxWidth]];
+            return [
+                $this->overWidth,
+                [
+                    'file' => $image->name,
+                    'limit' => $this->maxWidth,
+                ],
+            ];
         }
 
         if ($this->maxHeight !== null && $height > $this->maxHeight) {
-            return [$this->overHeight, ['file' => $image->name, 'limit' => $this->maxHeight]];
+            return [
+                $this->overHeight,
+                [
+                    'file' => $image->name,
+                    'limit' => $this->maxHeight,
+                ],
+            ];
         }
 
         return null;
@@ -166,9 +207,11 @@ class ImageValidator extends FileValidator
      */
     public function clientValidateAttribute($model, $attribute, $view)
     {
-        ValidationAsset::register($view);
-        $options = $this->getClientOptions($model, $attribute);
-        return 'yii.validation.image(attribute, messages, ' . Json::htmlEncode($options) . ', deferred);';
+        if ($this->clientScript instanceof ClientValidatorScriptInterface) {
+            return $this->clientScript->register($this, $model, $attribute, $view);
+        }
+
+        return null;
     }
 
     /**
@@ -176,48 +219,10 @@ class ImageValidator extends FileValidator
      */
     public function getClientOptions($model, $attribute)
     {
-        $options = parent::getClientOptions($model, $attribute);
-
-        $label = $model->getAttributeLabel($attribute);
-
-        if ($this->notImage !== null) {
-            $options['notImage'] = $this->formatMessage($this->notImage, [
-                'attribute' => $label,
-            ]);
+        if ($this->clientScript instanceof ClientValidatorScriptInterface) {
+            return $this->clientScript->getClientOptions($this, $model, $attribute);
         }
 
-        if ($this->minWidth !== null) {
-            $options['minWidth'] = $this->minWidth;
-            $options['underWidth'] = $this->formatMessage($this->underWidth, [
-                'attribute' => $label,
-                'limit' => $this->minWidth,
-            ]);
-        }
-
-        if ($this->maxWidth !== null) {
-            $options['maxWidth'] = $this->maxWidth;
-            $options['overWidth'] = $this->formatMessage($this->overWidth, [
-                'attribute' => $label,
-                'limit' => $this->maxWidth,
-            ]);
-        }
-
-        if ($this->minHeight !== null) {
-            $options['minHeight'] = $this->minHeight;
-            $options['underHeight'] = $this->formatMessage($this->underHeight, [
-                'attribute' => $label,
-                'limit' => $this->minHeight,
-            ]);
-        }
-
-        if ($this->maxHeight !== null) {
-            $options['maxHeight'] = $this->maxHeight;
-            $options['overHeight'] = $this->formatMessage($this->overHeight, [
-                'attribute' => $label,
-                'limit' => $this->maxHeight,
-            ]);
-        }
-
-        return $options;
+        return [];
     }
 }

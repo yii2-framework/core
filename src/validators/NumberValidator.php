@@ -11,7 +11,14 @@ namespace yii\validators;
 use Yii;
 use yii\helpers\Json;
 use yii\helpers\StringHelper;
+use yii\jquery\validators\NumberValidatorJqueryClientScript;
+use yii\validators\client\ClientValidatorScriptInterface;
 use yii\web\JsExpression;
+
+use function is_array;
+use function is_bool;
+use function is_object;
+use function is_scalar;
 
 /**
  * NumberValidator validates that the attribute value is a number.
@@ -61,7 +68,10 @@ class NumberValidator extends Validator
      * that matches floating numbers with optional exponential part (e.g. -1.23e-10).
      */
     public $numberPattern = '/^[-+]?[0-9]*\.?[0-9]+([eE][-+]?[0-9]+)?$/';
-
+    /**
+     * @var array|ClientValidatorScriptInterface|null the client-side validation script implementation.
+     */
+    public $clientScript = null;
 
     /**
      * {@inheritdoc}
@@ -69,15 +79,22 @@ class NumberValidator extends Validator
     public function init()
     {
         parent::init();
-        if ($this->message === null) {
-            $this->message = $this->integerOnly ? Yii::t('yii', '{attribute} must be an integer.')
-                : Yii::t('yii', '{attribute} must be a number.');
-        }
+
+        $this->message ??= $this->integerOnly
+            ? Yii::t('yii', '{attribute} must be an integer.')
+            : Yii::t('yii', '{attribute} must be a number.');
+
         if ($this->min !== null && $this->tooSmall === null) {
             $this->tooSmall = Yii::t('yii', '{attribute} must be no less than {min}.');
         }
+
         if ($this->max !== null && $this->tooBig === null) {
             $this->tooBig = Yii::t('yii', '{attribute} must be no greater than {max}.');
+        }
+
+        if ((Yii::$app->useJquery ?? false) && !$this->clientScript instanceof ClientValidatorScriptInterface) {
+            $this->clientScript ??= ['class' => NumberValidatorJqueryClientScript::class];
+            $this->clientScript = Yii::createObject($this->clientScript);
         }
     }
 
@@ -87,26 +104,56 @@ class NumberValidator extends Validator
     public function validateAttribute($model, $attribute)
     {
         $value = $model->$attribute;
+
         if (is_array($value) && !$this->allowArray) {
-            $this->addError($model, $attribute, $this->message);
+            $this->addError(
+                $model,
+                $attribute,
+                $this->message,
+            );
+
             return;
         }
+
         $values = !is_array($value) ? [$value] : $value;
+
         foreach ($values as $value) {
             if ($this->isNotNumber($value)) {
-                $this->addError($model, $attribute, $this->message);
+                $this->addError(
+                    $model,
+                    $attribute,
+                    $this->message,
+                );
+
                 return;
             }
+
             $pattern = $this->integerOnly ? $this->integerPattern : $this->numberPattern;
 
             if (!preg_match($pattern, StringHelper::normalizeNumber($value))) {
-                $this->addError($model, $attribute, $this->message);
+                $this->addError(
+                    $model,
+                    $attribute,
+                    $this->message,
+                );
             }
+
             if ($this->min !== null && $value < $this->min) {
-                $this->addError($model, $attribute, $this->tooSmall, ['min' => $this->min]);
+                $this->addError(
+                    $model,
+                    $attribute,
+                    $this->tooSmall,
+                    ['min' => $this->min],
+                );
             }
+
             if ($this->max !== null && $value > $this->max) {
-                $this->addError($model, $attribute, $this->tooBig, ['max' => $this->max]);
+                $this->addError(
+                    $model,
+                    $attribute,
+                    $this->tooBig,
+                    ['max' => $this->max],
+                );
             }
         }
     }
@@ -119,18 +166,31 @@ class NumberValidator extends Validator
         if (is_array($value) && !$this->allowArray) {
             return [$this->message, []];
         }
+
         $values = !is_array($value) ? [$value] : $value;
+
         foreach ($values as $sample) {
             if ($this->isNotNumber($sample)) {
                 return [$this->message, []];
             }
+
             $pattern = $this->integerOnly ? $this->integerPattern : $this->numberPattern;
+
             if (!preg_match($pattern, StringHelper::normalizeNumber($sample))) {
-                return [$this->message, []];
+                return [
+                    $this->message,
+                    [],
+                ];
             } elseif ($this->min !== null && $sample < $this->min) {
-                return [$this->tooSmall, ['min' => $this->min]];
+                return [
+                    $this->tooSmall,
+                    ['min' => $this->min],
+                ];
             } elseif ($this->max !== null && $sample > $this->max) {
-                return [$this->tooBig, ['max' => $this->max]];
+                return [
+                    $this->tooBig,
+                    ['max' => $this->max],
+                ];
             }
         }
 
@@ -153,10 +213,11 @@ class NumberValidator extends Validator
      */
     public function clientValidateAttribute($model, $attribute, $view)
     {
-        ValidationAsset::register($view);
-        $options = $this->getClientOptions($model, $attribute);
+        if ($this->clientScript instanceof ClientValidatorScriptInterface) {
+            return $this->clientScript->register($this, $model, $attribute, $view);
+        }
 
-        return 'yii.validation.number(value, messages, ' . Json::htmlEncode($options) . ');';
+        return null;
     }
 
     /**
@@ -164,37 +225,10 @@ class NumberValidator extends Validator
      */
     public function getClientOptions($model, $attribute)
     {
-        $label = $model->getAttributeLabel($attribute);
-
-        $options = [
-            'pattern' => new JsExpression($this->integerOnly ? $this->integerPattern : $this->numberPattern),
-            'message' => $this->formatMessage($this->message, [
-                'attribute' => $label,
-            ]),
-        ];
-
-        if ($this->min !== null) {
-            // ensure numeric value to make javascript comparison equal to PHP comparison
-            // https://github.com/yiisoft/yii2/issues/3118
-            $options['min'] = is_string($this->min) ? (float) $this->min : $this->min;
-            $options['tooSmall'] = $this->formatMessage($this->tooSmall, [
-                'attribute' => $label,
-                'min' => $this->min,
-            ]);
-        }
-        if ($this->max !== null) {
-            // ensure numeric value to make javascript comparison equal to PHP comparison
-            // https://github.com/yiisoft/yii2/issues/3118
-            $options['max'] = is_string($this->max) ? (float) $this->max : $this->max;
-            $options['tooBig'] = $this->formatMessage($this->tooBig, [
-                'attribute' => $label,
-                'max' => $this->max,
-            ]);
-        }
-        if ($this->skipOnEmpty) {
-            $options['skipOnEmpty'] = 1;
+        if ($this->clientScript instanceof ClientValidatorScriptInterface) {
+            return $this->clientScript->getClientOptions($this, $model, $attribute);
         }
 
-        return $options;
+        return [];
     }
 }

@@ -79,6 +79,7 @@ class RegularExpressionValidatorTest extends TestCase
 
     public function testClientValidateAttribute(): void
     {
+        $this->mockApplication();
         $val = new RegularExpressionValidator(['pattern' => '/^[a-z]+$/i']);
         $m = FakedValidationModel::createWithAttributes(['attr_reg1' => 'abc']);
         $js = $val->clientValidateAttribute($m, 'attr_reg1', new RegexViewStub());
@@ -87,6 +88,7 @@ class RegularExpressionValidatorTest extends TestCase
 
     public function testGetClientOptions(): void
     {
+        $this->mockApplication();
         $val = new RegularExpressionValidator(['pattern' => '/^[a-z]+$/i']);
         $m = FakedValidationModel::createWithAttributes(['attr_reg1' => 'abc']);
         $options = $val->getClientOptions($m, 'attr_reg1');
@@ -99,6 +101,7 @@ class RegularExpressionValidatorTest extends TestCase
 
     public function testGetClientOptionsWithNot(): void
     {
+        $this->mockApplication();
         $val = new RegularExpressionValidator(['pattern' => '/^[a-z]+$/i', 'not' => true]);
         $m = FakedValidationModel::createWithAttributes(['attr_reg1' => 'abc']);
         $options = $val->getClientOptions($m, 'attr_reg1');
@@ -107,6 +110,7 @@ class RegularExpressionValidatorTest extends TestCase
 
     public function testGetClientOptionsWithSkipOnEmpty(): void
     {
+        $this->mockApplication();
         $val = new RegularExpressionValidator(['pattern' => '/^[a-z]+$/i', 'skipOnEmpty' => true]);
         $m = FakedValidationModel::createWithAttributes(['attr_reg1' => 'abc']);
         $options = $val->getClientOptions($m, 'attr_reg1');

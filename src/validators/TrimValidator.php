@@ -8,7 +8,12 @@
 
 namespace yii\validators;
 
+use Yii;
 use yii\helpers\Json;
+use yii\jquery\validators\TrimValidatorJqueryClientScript;
+use yii\validators\client\ClientValidatorScriptInterface;
+
+use function is_array;
 
 /**
  * This class converts the attribute value(s) to string(s) and strip characters.
@@ -31,7 +36,23 @@ class TrimValidator extends Validator
      * @inheritDoc
      */
     public $skipOnEmpty = false;
+    /**
+     * @var array|ClientValidatorScriptInterface|null the client-side validation script implementation.
+     */
+    public $clientScript = null;
 
+    /**
+     * {@inheritdoc}
+     */
+    public function init()
+    {
+        parent::init();
+
+        if ((Yii::$app->useJquery ?? false) && !$this->clientScript instanceof ClientValidatorScriptInterface) {
+            $this->clientScript ??= ['class' => TrimValidatorJqueryClientScript::class];
+            $this->clientScript = Yii::createObject($this->clientScript);
+        }
+    }
 
     /**
      * @inheritDoc
@@ -39,6 +60,7 @@ class TrimValidator extends Validator
     public function validateAttribute($model, $attribute)
     {
         $value = $model->$attribute;
+
         if (!$this->skipOnArray || !is_array($value)) {
             $model->$attribute = is_array($value)
                 ? array_map([$this, 'trimValue'], $value)
@@ -62,14 +84,11 @@ class TrimValidator extends Validator
      */
     public function clientValidateAttribute($model, $attribute, $view)
     {
-        if ($this->skipOnArray && is_array($model->$attribute)) {
-            return null;
+        if ($this->clientScript instanceof ClientValidatorScriptInterface) {
+            return $this->clientScript->register($this, $model, $attribute, $view);
         }
 
-        ValidationAsset::register($view);
-        $options = $this->getClientOptions($model, $attribute);
-
-        return 'value = yii.validation.trim($form, attribute, ' . Json::htmlEncode($options) . ', value);';
+        return null;
     }
 
     /**
@@ -77,10 +96,10 @@ class TrimValidator extends Validator
      */
     public function getClientOptions($model, $attribute)
     {
-        return [
-            'skipOnArray' => (bool) $this->skipOnArray,
-            'skipOnEmpty' => (bool) $this->skipOnEmpty,
-            'chars' => $this->chars ?: false,
-        ];
+        if ($this->clientScript instanceof ClientValidatorScriptInterface) {
+            return $this->clientScript->getClientOptions($this, $model, $attribute);
+        }
+
+        return [];
     }
 }

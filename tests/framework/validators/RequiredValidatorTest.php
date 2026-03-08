@@ -72,6 +72,7 @@ class RequiredValidatorTest extends TestCase
 
     public function testErrorClientMessage(): void
     {
+        $this->mockApplication();
         $validator = new RequiredValidator(['message' => '<strong>error</strong> for {attribute}']);
 
         $obj = new ModelForReqValidator();
@@ -129,6 +130,7 @@ class RequiredValidatorTest extends TestCase
 
     public function testGetClientOptionsWithoutRequiredValue(): void
     {
+        $this->mockApplication();
         $model = new ModelForReqValidator();
         $val = new RequiredValidator();
         $options = $val->getClientOptions($model, 'attr');
@@ -140,6 +142,7 @@ class RequiredValidatorTest extends TestCase
 
     public function testGetClientOptionsWithRequiredValue(): void
     {
+        $this->mockApplication();
         $model = new ModelForReqValidator();
         $val = new RequiredValidator(['requiredValue' => 'yes']);
         $options = $val->getClientOptions($model, 'attr');
@@ -151,6 +154,7 @@ class RequiredValidatorTest extends TestCase
 
     public function testGetClientOptionsWithStrict(): void
     {
+        $this->mockApplication();
         $model = new ModelForReqValidator();
         $val = new RequiredValidator(['strict' => true]);
         $options = $val->getClientOptions($model, 'attr');
@@ -190,6 +194,7 @@ class RequiredValidatorTest extends TestCase
 
     public function testGetClientOptionsMessageContainsRequiredValue(): void
     {
+        $this->mockApplication();
         $model = new ModelForReqValidator();
         $val = new RequiredValidator(['requiredValue' => 'confirm']);
         $options = $val->getClientOptions($model, 'attr');

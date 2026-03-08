@@ -8,10 +8,16 @@
 
 namespace yii\validators;
 
+use Closure;
 use Yii;
 use yii\base\InvalidConfigException;
 use yii\helpers\Html;
 use yii\helpers\Json;
+use yii\jquery\validators\CompareValidatorJqueryClientScript;
+use yii\validators\client\ClientValidatorScriptInterface;
+
+use function call_user_func;
+use function is_array;
 
 /**
  * CompareValidator compares the specified attribute value with another value.
@@ -104,7 +110,10 @@ class CompareValidator extends Validator
      * - `{compareValueOrAttribute}`: the value or the attribute label to be compared with
      */
     public $message;
-
+    /**
+     * @var array|ClientValidatorScriptInterface|null the client-side validation script implementation.
+     */
+    public $clientScript = null;
 
     /**
      * {@inheritdoc}
@@ -112,31 +121,55 @@ class CompareValidator extends Validator
     public function init()
     {
         parent::init();
-        if ($this->message === null) {
-            switch ($this->operator) {
-                case '==':
-                case '===':
-                    $this->message = Yii::t('yii', '{attribute} must be equal to "{compareValueOrAttribute}".');
-                    break;
-                case '!=':
-                case '!==':
-                    $this->message = Yii::t('yii', '{attribute} must not be equal to "{compareValueOrAttribute}".');
-                    break;
-                case '>':
-                    $this->message = Yii::t('yii', '{attribute} must be greater than "{compareValueOrAttribute}".');
-                    break;
-                case '>=':
-                    $this->message = Yii::t('yii', '{attribute} must be greater than or equal to "{compareValueOrAttribute}".');
-                    break;
-                case '<':
-                    $this->message = Yii::t('yii', '{attribute} must be less than "{compareValueOrAttribute}".');
-                    break;
-                case '<=':
-                    $this->message = Yii::t('yii', '{attribute} must be less than or equal to "{compareValueOrAttribute}".');
-                    break;
-                default:
-                    throw new InvalidConfigException("Unknown operator: {$this->operator}");
-            }
+
+        switch ($this->operator) {
+            case '==':
+            case '===':
+                $this->message ??= Yii::t(
+                    'yii',
+                    '{attribute} must be equal to "{compareValueOrAttribute}".',
+                );
+                break;
+            case '!=':
+            case '!==':
+                $this->message ??= Yii::t(
+                    'yii',
+                    '{attribute} must not be equal to "{compareValueOrAttribute}".',
+                );
+                break;
+            case '>':
+                $this->message ??= Yii::t(
+                    'yii',
+                    '{attribute} must be greater than "{compareValueOrAttribute}".',
+                );
+                break;
+            case '>=':
+                $this->message ??= Yii::t(
+                    'yii',
+                    '{attribute} must be greater than or equal to "{compareValueOrAttribute}".',
+                );
+                break;
+            case '<':
+                $this->message ??= Yii::t(
+                    'yii',
+                    '{attribute} must be less than "{compareValueOrAttribute}".',
+                );
+                break;
+            case '<=':
+                $this->message ??= Yii::t(
+                    'yii',
+                    '{attribute} must be less than or equal to "{compareValueOrAttribute}".',
+                );
+                break;
+            default:
+                throw new InvalidConfigException(
+                    "Unknown operator: {$this->operator}",
+                );
+        }
+
+        if ((Yii::$app->useJquery ?? false) && !$this->clientScript instanceof ClientValidatorScriptInterface) {
+            $this->clientScript ??= ['class' => CompareValidatorJqueryClientScript::class];
+            $this->clientScript = Yii::createObject($this->clientScript);
         }
     }
 
@@ -146,19 +179,26 @@ class CompareValidator extends Validator
     public function validateAttribute($model, $attribute)
     {
         $value = $model->$attribute;
+
         if (is_array($value)) {
-            $this->addError($model, $attribute, Yii::t('yii', '{attribute} is invalid.'));
+            $this->addError(
+                $model,
+                $attribute, Yii::t('yii', '{attribute} is invalid.'),
+            );
 
             return;
         }
+
         if ($this->compareValue !== null) {
-            if ($this->compareValue instanceof \Closure) {
+            if ($this->compareValue instanceof Closure) {
                 $this->compareValue = call_user_func($this->compareValue, $model, $attribute);
             }
+
             $compareLabel = $compareValue = $compareValueOrAttribute = $this->compareValue;
         } else {
             $compareAttribute = $this->compareAttribute === null ? $attribute . '_repeat' : $this->compareAttribute;
             $compareValue = $model->$compareAttribute;
+
             $compareLabel = $compareValueOrAttribute = $model->getAttributeLabel($compareAttribute);
 
             if (!$this->skipOnError && $model->hasErrors($compareAttribute)) {
@@ -166,7 +206,7 @@ class CompareValidator extends Validator
                     $model,
                     $attribute,
                     Yii::t('yii', '{compareAttribute} is invalid.'),
-                    ['compareAttribute' => $compareLabel]
+                    ['compareAttribute' => $compareLabel],
                 );
 
                 return;
@@ -174,11 +214,16 @@ class CompareValidator extends Validator
         }
 
         if (!$this->compareValues($this->operator, $this->type, $value, $compareValue)) {
-            $this->addError($model, $attribute, $this->message, [
-                'compareAttribute' => $compareLabel,
-                'compareValue' => $compareValue,
-                'compareValueOrAttribute' => $compareValueOrAttribute,
-            ]);
+            $this->addError(
+                $model,
+                $attribute,
+                $this->message,
+                [
+                    'compareAttribute' => $compareLabel,
+                    'compareValue' => $compareValue,
+                    'compareValueOrAttribute' => $compareValueOrAttribute,
+                ]
+            );
         }
     }
 
@@ -190,15 +235,20 @@ class CompareValidator extends Validator
         if ($this->compareValue === null) {
             throw new InvalidConfigException('CompareValidator::compareValue must be set.');
         }
-        if ($this->compareValue instanceof \Closure) {
+
+        if ($this->compareValue instanceof Closure) {
             $this->compareValue = call_user_func($this->compareValue);
         }
+
         if (!$this->compareValues($this->operator, $this->type, $value, $this->compareValue)) {
-            return [$this->message, [
-                'compareAttribute' => $this->compareValue,
-                'compareValue' => $this->compareValue,
-                'compareValueOrAttribute' => $this->compareValue,
-            ]];
+            return [
+                $this->message,
+                [
+                    'compareAttribute' => $this->compareValue,
+                    'compareValue' => $this->compareValue,
+                    'compareValueOrAttribute' => $this->compareValue,
+                ],
+            ];
         }
 
         return null;
@@ -214,33 +264,25 @@ class CompareValidator extends Validator
      */
     protected function compareValues($operator, $type, $value, $compareValue)
     {
+        $value = (string) $value;
+        $compareValue = (string) $compareValue;
+
         if ($type === self::TYPE_NUMBER) {
             $value = (float) $value;
             $compareValue = (float) $compareValue;
-        } else {
-            $value = (string) $value;
-            $compareValue = (string) $compareValue;
         }
-        switch ($operator) {
-            case '==':
-                return $value == $compareValue;
-            case '===':
-                return $value === $compareValue;
-            case '!=':
-                return $value != $compareValue;
-            case '!==':
-                return $value !== $compareValue;
-            case '>':
-                return $value > $compareValue;
-            case '>=':
-                return $value >= $compareValue;
-            case '<':
-                return $value < $compareValue;
-            case '<=':
-                return $value <= $compareValue;
-            default:
-                return false;
-        }
+
+        return match ($operator) {
+            '==' => $value == $compareValue,
+            '===' => $value === $compareValue,
+            '!=' => $value != $compareValue,
+            '!==' => $value !== $compareValue,
+            '>' => $value > $compareValue,
+            '>=' => $value >= $compareValue,
+            '<' => $value < $compareValue,
+            '<=' => $value <= $compareValue,
+            default => false,
+        };
     }
 
     /**
@@ -248,14 +290,11 @@ class CompareValidator extends Validator
      */
     public function clientValidateAttribute($model, $attribute, $view)
     {
-        if ($this->compareValue != null && $this->compareValue instanceof \Closure) {
-            $this->compareValue = call_user_func($this->compareValue);
+        if ($this->clientScript instanceof ClientValidatorScriptInterface) {
+            return $this->clientScript->register($this, $model, $attribute, $view);
         }
 
-        ValidationAsset::register($view);
-        $options = $this->getClientOptions($model, $attribute);
-
-        return 'yii.validation.compare(value, messages, ' . Json::htmlEncode($options) . ', $form);';
+        return null;
     }
 
     /**
@@ -263,33 +302,10 @@ class CompareValidator extends Validator
      */
     public function getClientOptions($model, $attribute)
     {
-        $options = [
-            'operator' => $this->operator,
-            'type' => $this->type,
-        ];
-
-        if ($this->compareValue !== null) {
-            $options['compareValue'] = $this->compareValue;
-            $compareLabel = $compareValue = $compareValueOrAttribute = $this->compareValue;
-        } else {
-            $compareAttribute = $this->compareAttribute === null ? $attribute . '_repeat' : $this->compareAttribute;
-            $compareValue = $model->getAttributeLabel($compareAttribute);
-            $options['compareAttribute'] = Html::getInputId($model, $compareAttribute);
-            $options['compareAttributeName'] = Html::getInputName($model, $compareAttribute);
-            $compareLabel = $compareValueOrAttribute = $model->getAttributeLabel($compareAttribute);
+        if ($this->clientScript instanceof ClientValidatorScriptInterface) {
+            return $this->clientScript->getClientOptions($this, $model, $attribute);
         }
 
-        if ($this->skipOnEmpty) {
-            $options['skipOnEmpty'] = 1;
-        }
-
-        $options['message'] = $this->formatMessage($this->message, [
-            'attribute' => $model->getAttributeLabel($attribute),
-            'compareAttribute' => $compareLabel,
-            'compareValue' => $compareValue,
-            'compareValueOrAttribute' => $compareValueOrAttribute,
-        ]);
-
-        return $options;
+        return [];
     }
 }

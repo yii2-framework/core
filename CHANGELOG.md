@@ -13,3 +13,4 @@
 - refactor!: remove `PHP < 8.2` version guards and dead fallbacks across `src/` and `tests`.
 - fix(console): `getActionArgsHelp()` crashes on PHP `8.2+` DNF/intersection types.
 - feat(widgets): enhance `ActiveField::label()` with `tag` option and fix `labelOptions` for `checkbox`/`radio`.
+- feat: make jQuery optional via strategy pattern introduce `Application::$useJquery`, `ClientValidatorScriptInterface`, `ClientScriptInterface`, and extracted jQuery client script classes for all validators and widgets.

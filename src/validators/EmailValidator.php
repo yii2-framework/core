@@ -12,7 +12,12 @@ use Yii;
 use yii\base\ErrorException;
 use yii\base\InvalidConfigException;
 use yii\helpers\Json;
+use yii\jquery\validators\EmailValidatorJqueryClientScript;
+use yii\validators\client\ClientValidatorScriptInterface;
 use yii\web\JsExpression;
+
+use function is_string;
+use function strlen;
 
 /**
  * EmailValidator validates that the attribute value is a valid email address.
@@ -70,7 +75,10 @@ class EmailValidator extends Validator
      * @since 2.0.43
      */
     public $enableLocalIDN = true;
-
+    /**
+     * @var array|ClientValidatorScriptInterface|null the client-side validation script implementation.
+     */
+    public $clientScript = null;
 
     /**
      * {@inheritdoc}
@@ -78,11 +86,21 @@ class EmailValidator extends Validator
     public function init()
     {
         parent::init();
+
         if ($this->enableIDN && !function_exists('idn_to_ascii')) {
-            throw new InvalidConfigException('In order to use IDN validation intl extension must be installed and enabled.');
+            throw new InvalidConfigException(
+                'In order to use IDN validation intl extension must be installed and enabled.',
+            );
         }
-        if ($this->message === null) {
-            $this->message = Yii::t('yii', '{attribute} is not a valid email address.');
+
+        $this->message ??= Yii::t(
+            'yii',
+            '{attribute} is not a valid email address.',
+        );
+
+        if ((Yii::$app->useJquery ?? false) && !$this->clientScript instanceof ClientValidatorScriptInterface) {
+            $this->clientScript ??= ['class' => EmailValidatorJqueryClientScript::class];
+            $this->clientScript = Yii::createObject($this->clientScript);
         }
     }
 
@@ -93,13 +111,18 @@ class EmailValidator extends Validator
     {
         if (!is_string($value)) {
             $valid = false;
-        } elseif (!preg_match('/^(?P<name>(?:"?([^"]*)"?\s)?)(?:\s+)?(?:(?P<open><?)((?P<local>.+)@(?P<domain>[^>]+))(?P<close>>?))$/i', $value, $matches)) {
+        } elseif (!preg_match(
+            '/^(?P<name>(?:"?([^"]*)"?\s)?)(?:\s+)?(?:(?P<open><?)((?P<local>.+)@(?P<domain>[^>]+))(?P<close>>?))$/i',
+            $value,
+            $matches,
+        )) {
             $valid = false;
         } else {
             if ($this->enableIDN) {
                 if ($this->enableLocalIDN) {
                     $matches['local'] = $this->idnToAsciiWithFallback($matches['local']);
                 }
+
                 $matches['domain'] = $this->idnToAscii($matches['domain']);
                 $value = $matches['name'] . $matches['open'] . $matches['local'] . '@' . $matches['domain'] . $matches['close'];
             }
@@ -117,7 +140,9 @@ class EmailValidator extends Validator
                 // https://www.rfc-editor.org/errata_search.php?eid=1690
                 $valid = false;
             } else {
-                $valid = preg_match($this->pattern, $value) || ($this->allowName && preg_match($this->fullPattern, $value));
+                $valid = preg_match($this->pattern, $value)
+                    || ($this->allowName && preg_match($this->fullPattern, $value));
+
                 if ($valid && $this->checkDNS) {
                     $valid = $this->isDNSValid($matches['domain']);
                 }
@@ -140,6 +165,7 @@ class EmailValidator extends Validator
     private function hasDNSRecord($domain, $isMX)
     {
         $normalizedDomain = $domain . '.';
+
         if (!checkdnsrr($normalizedDomain, ($isMX ? 'MX' : 'A'))) {
             return false;
         }
@@ -164,13 +190,11 @@ class EmailValidator extends Validator
      */
     public function clientValidateAttribute($model, $attribute, $view)
     {
-        ValidationAsset::register($view);
-        if ($this->enableIDN) {
-            PunycodeAsset::register($view);
+        if ($this->clientScript instanceof ClientValidatorScriptInterface) {
+            return $this->clientScript->register($this, $model, $attribute, $view);
         }
-        $options = $this->getClientOptions($model, $attribute);
 
-        return 'yii.validation.email(value, messages, ' . Json::htmlEncode($options) . ');';
+        return null;
     }
 
     /**
@@ -178,20 +202,11 @@ class EmailValidator extends Validator
      */
     public function getClientOptions($model, $attribute)
     {
-        $options = [
-            'pattern' => new JsExpression($this->pattern),
-            'fullPattern' => new JsExpression($this->fullPattern),
-            'allowName' => $this->allowName,
-            'message' => $this->formatMessage($this->message, [
-                'attribute' => $model->getAttributeLabel($attribute),
-            ]),
-            'enableIDN' => (bool) $this->enableIDN,
-        ];
-        if ($this->skipOnEmpty) {
-            $options['skipOnEmpty'] = 1;
+        if ($this->clientScript instanceof ClientValidatorScriptInterface) {
+            return $this->clientScript->getClientOptions($this, $model, $attribute);
         }
 
-        return $options;
+        return [];
     }
 
     /**
@@ -203,7 +218,10 @@ class EmailValidator extends Validator
     {
         $ascii = $this->idnToAscii($value);
         if ($ascii === false) {
-            if (preg_match($this->patternASCII, $value) || ($this->allowName && preg_match($this->fullPatternASCII, $value))) {
+            if (
+                preg_match($this->patternASCII, $value)
+                || ($this->allowName && preg_match($this->fullPatternASCII, $value))
+            ) {
                 return $value;
             }
         }

@@ -16,7 +16,16 @@ use yii\helpers\Html;
 use yii\helpers\Json;
 use yii\helpers\Url;
 use yii\i18n\Formatter;
+use yii\jquery\grid\GridViewJqueryClientScript;
+use yii\web\client\ClientScriptInterface;
 use yii\widgets\BaseListView;
+
+use function call_user_func;
+use function count;
+use function is_array;
+use function is_object;
+use function is_scalar;
+use function is_string;
 
 /**
  * The GridView widget is used to display data in a grid.
@@ -262,6 +271,12 @@ class GridView extends BaseListView
      */
     public $filterOnFocusOut = true;
     /**
+     * @var array|ClientScriptInterface|null the client-side script implementation.
+     * When [[Application::$useJquery]] is `true`, defaults to [[GridViewJqueryClientScript]].
+     * Set to `null` to disable client-side script registration for this grid.
+     */
+    public $clientScript = null;
+    /**
      * @var string the layout that determines how different sections of the grid view should be organized.
      * The following tokens will be replaced with the corresponding section contents:
      *
@@ -273,7 +288,6 @@ class GridView extends BaseListView
      */
     public $layout = "{summary}\n{items}\n{pager}";
 
-
     /**
      * Initializes the grid view.
      * This method will initialize required property values and instantiate [[columns]] objects.
@@ -281,19 +295,29 @@ class GridView extends BaseListView
     public function init()
     {
         parent::init();
+
         if ($this->formatter === null) {
             $this->formatter = Yii::$app->getFormatter();
         } elseif (is_array($this->formatter)) {
             $this->formatter = Yii::createObject($this->formatter);
         }
+
         if (!$this->formatter instanceof Formatter) {
-            throw new InvalidConfigException('The "formatter" property must be either a Format object or a configuration array.');
+            throw new InvalidConfigException(
+                'The "formatter" property must be either a Format object or a configuration array.',
+            );
         }
+
         if (!isset($this->filterRowOptions['id'])) {
             $this->filterRowOptions['id'] = $this->options['id'] . '-filters';
         }
 
         $this->initColumns();
+
+        if ((Yii::$app->useJquery ?? false) && !$this->clientScript instanceof ClientScriptInterface) {
+            $this->clientScript ??= ['class' => GridViewJqueryClientScript::class];
+            $this->clientScript = Yii::createObject($this->clientScript);
+        }
     }
 
     /**
@@ -301,11 +325,10 @@ class GridView extends BaseListView
      */
     public function run()
     {
-        $view = $this->getView();
-        GridViewAsset::register($view);
-        $id = $this->options['id'];
-        $options = Json::htmlEncode(array_merge($this->getClientOptions(), ['filterOnFocusOut' => $this->filterOnFocusOut]));
-        $view->registerJs("jQuery('#$id').yiiGridView($options);");
+        if ($this->clientScript instanceof ClientScriptInterface) {
+            $this->clientScript->register($this, $this->getView());
+        }
+
         parent::run();
     }
 
@@ -327,12 +350,10 @@ class GridView extends BaseListView
      */
     public function renderSection($name)
     {
-        switch ($name) {
-            case '{errors}':
-                return $this->renderErrors();
-            default:
-                return parent::renderSection($name);
-        }
+        return match ($name) {
+            '{errors}' => $this->renderErrors(),
+            default => parent::renderSection($name),
+        };
     }
 
     /**
@@ -341,25 +362,11 @@ class GridView extends BaseListView
      */
     protected function getClientOptions()
     {
-        $filterUrl = isset($this->filterUrl) ? $this->filterUrl : Yii::$app->request->url;
-        $id = $this->filterRowOptions['id'];
-        $filterSelector = "#$id input, #$id select";
-        if (isset($this->filterSelector)) {
-            $additionalFilterSelector = $this->filterSelector;
-            if ($this->filterSelector instanceof \Closure) {
-                $additionalFilterSelector = ($this->filterSelector)($this->getId(), $id);
-            }
-            if ($this->overrideFilterSelector) {
-                $filterSelector = $additionalFilterSelector;
-            } else {
-                $filterSelector .= ', ' . $additionalFilterSelector;
-            }
+        if ($this->clientScript instanceof ClientScriptInterface) {
+            return $this->clientScript->getClientOptions($this);
         }
 
-        return [
-            'filterUrl' => Url::to($filterUrl),
-            'filterSelector' => $filterSelector,
-        ];
+        return [];
     }
 
     /**
@@ -448,7 +455,7 @@ class GridView extends BaseListView
             $content .= $this->renderFilters();
         }
 
-        return "<thead>\n" . $content . "\n</thead>";
+        return "<thead>\n{$content}\n</thead>";
     }
 
     /**
@@ -467,7 +474,7 @@ class GridView extends BaseListView
             $content .= $this->renderFilters();
         }
 
-        return "<tfoot>\n" . $content . "\n</tfoot>";
+        return "<tfoot>\n{$content}\n</tfoot>";
     }
 
     /**
@@ -536,15 +543,18 @@ class GridView extends BaseListView
     public function renderTableRow($model, $key, $index)
     {
         $cells = [];
+
         /** @var Column $column */
         foreach ($this->columns as $column) {
             $cells[] = $column->renderDataCell($model, $key, $index);
         }
+
         if ($this->rowOptions instanceof Closure) {
             $options = call_user_func($this->rowOptions, $model, $key, $index, $this);
         } else {
             $options = $this->rowOptions;
         }
+
         $options['data-key'] = is_array($key) ? json_encode($key) : (string) $key;
 
         return Html::tag('tr', implode('', $cells), $options);
@@ -563,14 +573,16 @@ class GridView extends BaseListView
                 $column = $this->createDataColumn($column);
             } else {
                 $column = Yii::createObject(array_merge([
-                    'class' => $this->dataColumnClass ?: DataColumn::className(),
+                    'class' => $this->dataColumnClass ?: DataColumn::class,
                     'grid' => $this,
                 ], $column));
             }
+
             if (!$column->visible) {
                 unset($this->columns[$i]);
                 continue;
             }
+
             $this->columns[$i] = $column;
         }
     }
@@ -584,15 +596,17 @@ class GridView extends BaseListView
     protected function createDataColumn($text)
     {
         if (!preg_match('/^([^:]+)(:(\w*))?(:(.*))?$/', $text, $matches)) {
-            throw new InvalidConfigException('The column must be specified in the format of "attribute", "attribute:format" or "attribute:format:label"');
+            throw new InvalidConfigException(
+                'The column must be specified in the format of "attribute", "attribute:format" or "attribute:format:label"',
+            );
         }
 
         return Yii::createObject([
-            'class' => $this->dataColumnClass ?: DataColumn::className(),
+            'class' => $this->dataColumnClass ?: DataColumn::class,
             'grid' => $this,
             'attribute' => $matches[1],
-            'format' => isset($matches[3]) ? $matches[3] : 'text',
-            'label' => isset($matches[5]) ? $matches[5] : null,
+            'format' => $matches[3] ?? 'text',
+            'label' => $matches[5] ?? null,
         ]);
     }
 
@@ -604,6 +618,7 @@ class GridView extends BaseListView
     {
         $models = $this->dataProvider->getModels();
         $model = reset($models);
+
         if (is_array($model) || is_object($model)) {
             foreach ($model as $name => $value) {
                 if ($value === null || is_scalar($value) || is_callable([$value, '__toString'])) {

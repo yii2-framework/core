@@ -128,6 +128,7 @@ class TrimValidatorTest extends TestCase
 
     public function testClientOptions(): void
     {
+        $this->mockApplication();
         $model = new DynamicModel(['name' => 'test']);
         $model->addRule('name', 'trim');
         $validator = new TrimValidator();
@@ -144,6 +145,7 @@ class TrimValidatorTest extends TestCase
 
     public function testClientOptionsWithCustomChars(): void
     {
+        $this->mockApplication();
         $model = new DynamicModel(['name' => 'test']);
         $validator = new TrimValidator();
         $validator->chars = '/\\';
@@ -155,6 +157,7 @@ class TrimValidatorTest extends TestCase
 
     public function testClientValidateAttribute(): void
     {
+        $this->mockApplication();
         $model = new DynamicModel(['name' => '  hello  ']);
         $validator = new TrimValidator();
         $view = new View(['assetBundles' => ['yii\validators\ValidationAsset' => true]]);
@@ -168,6 +171,7 @@ class TrimValidatorTest extends TestCase
 
     public function testClientValidateAttributeDoesNotSkipScalarWithSkipOnArray(): void
     {
+        $this->mockApplication();
         $model = new DynamicModel(['name' => '  hello  ']);
         $validator = new TrimValidator();
         $validator->skipOnArray = true;

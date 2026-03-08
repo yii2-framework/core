@@ -1,0 +1,105 @@
+<?php
+
+declare(strict_types=1);
+
+/**
+ * @link https://www.yiiframework.com/
+ * @copyright Copyright (c) 2008 Yii Software LLC
+ * @license https://www.yiiframework.com/license/
+ */
+
+namespace yii\jquery\validators;
+
+use yii\base\Model;
+use yii\helpers\Json;
+use yii\validators\ImageValidator;
+use yii\validators\ValidationAsset;
+use yii\validators\Validator;
+use yii\web\View;
+
+/**
+ * jQuery client-side script for [[ImageValidator]].
+ *
+ * Extends [[FileValidatorJqueryClientScript]] to add image-specific dimension validation options.
+ *
+ * @author Wilmer Arambula <terabytesoftw@gmail.com>
+ * @since 2.2
+ */
+class ImageValidatorJqueryClientScript extends FileValidatorJqueryClientScript
+{
+    /**
+     * {@inheritdoc}
+     */
+    public function getClientOptions(Validator $validator, Model $model, string $attribute): array
+    {
+        /** @var ImageValidator $validator */
+        $options = parent::getClientOptions($validator, $model, $attribute);
+
+        $label = $model->getAttributeLabel($attribute);
+
+        if ($validator->notImage !== null) {
+            $options['notImage'] = $validator->getFormattedClientMessage(
+                $validator->notImage,
+                ['attribute' => $label],
+            );
+        }
+
+        if ($validator->minWidth !== null) {
+            $options['minWidth'] = $validator->minWidth;
+            $options['underWidth'] = $validator->getFormattedClientMessage(
+                $validator->underWidth,
+                [
+                    'attribute' => $label,
+                    'limit' => $validator->minWidth,
+                ],
+            );
+        }
+
+        if ($validator->maxWidth !== null) {
+            $options['maxWidth'] = $validator->maxWidth;
+            $options['overWidth'] = $validator->getFormattedClientMessage(
+                $validator->overWidth,
+                [
+                    'attribute' => $label,
+                    'limit' => $validator->maxWidth,
+                ],
+            );
+        }
+
+        if ($validator->minHeight !== null) {
+            $options['minHeight'] = $validator->minHeight;
+            $options['underHeight'] = $validator->getFormattedClientMessage(
+                $validator->underHeight,
+                [
+                    'attribute' => $label,
+                    'limit' => $validator->minHeight,
+                ],
+            );
+        }
+
+        if ($validator->maxHeight !== null) {
+            $options['maxHeight'] = $validator->maxHeight;
+            $options['overHeight'] = $validator->getFormattedClientMessage(
+                $validator->overHeight,
+                [
+                    'attribute' => $label,
+                    'limit' => $validator->maxHeight,
+                ],
+            );
+        }
+
+        return $options;
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function register(Validator $validator, Model $model, string $attribute, View $view): string|null
+    {
+        ValidationAsset::register($view);
+
+        $options = $this->getClientOptions($validator, $model, $attribute);
+
+        return 'yii.validation.image(attribute, messages, ' . Json::htmlEncode($options) . ', deferred);';
+    }
+}

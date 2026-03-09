@@ -660,20 +660,23 @@ final class CompareValidatorTest extends TestCase
     public function testClientValidateAttributeWithClosureCompareValue(): void
     {
         $model = new FakedValidationModel();
-        $validator = new CompareValidator(
-            [
-                'compareValue' => static fn(): string => 'closure_value',
-                'operator' => '==',
-                'type' => CompareValidator::TYPE_STRING,
-            ],
-        );
+        $closureConfig = [
+            'compareValue' => static fn(): string => 'closure_value',
+            'operator' => '==',
+            'type' => CompareValidator::TYPE_STRING,
+        ];
+
+        $validator1 = new CompareValidator($closureConfig);
 
         self::assertSame(
             'yii.validation.compare(value, messages, {"operator":"==","type":"string","compareValue":' .
             '"closure_value","skipOnEmpty":1,"message":"attrA must be equal to \u0022closure_value\u0022."}, $form);',
-            $validator->clientValidateAttribute($model, 'attrA', Yii::$app->getView()),
+            $validator1->clientValidateAttribute($model, 'attrA', Yii::$app->getView()),
             "'clientValidateAttribute()' should return correct validation script.",
         );
+
+        $validator2 = new CompareValidator($closureConfig);
+
         self::assertSame(
             [
                 'operator' => '==',
@@ -682,11 +685,14 @@ final class CompareValidatorTest extends TestCase
                 'skipOnEmpty' => 1,
                 'message' => 'attrA must be equal to "closure_value".',
             ],
-            $validator->getClientOptions($model, 'attrA'),
+            $validator2->getClientOptions($model, 'attrA'),
             "'getClientOptions()' should return correct options array.",
         );
 
-        $validator->validate('someIncorrectValue', $errorMessage);
+        $validator3 = new CompareValidator($closureConfig);
+        $errorMessage = null;
+
+        $validator3->validate('someIncorrectValue', $errorMessage);
 
         self::assertSame(
             'the input value must be equal to "closure_value".',
@@ -700,7 +706,6 @@ final class CompareValidatorTest extends TestCase
         $model = new FakedValidationModel();
         $validator = new CompareValidator(
             [
-                'compareAttribute' => 'attrA_repeat',
                 'operator' => '==',
                 'type' => CompareValidator::TYPE_STRING,
             ],

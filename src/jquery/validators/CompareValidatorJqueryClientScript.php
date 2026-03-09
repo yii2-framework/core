@@ -37,6 +37,10 @@ class CompareValidatorJqueryClientScript extends BaseObject implements ClientVal
     public function getClientOptions(Validator $validator, Model $model, string $attribute): array
     {
         /** @var CompareValidator $validator */
+        if ($validator->compareValue !== null && $validator->compareValue instanceof Closure) {
+            $validator->compareValue = call_user_func($validator->compareValue);
+        }
+
         $options = [
             'operator' => $validator->operator,
             'type' => $validator->type,
@@ -78,10 +82,6 @@ class CompareValidatorJqueryClientScript extends BaseObject implements ClientVal
     public function register(Validator $validator, Model $model, string $attribute, View $view): string|null
     {
         /** @var CompareValidator $validator */
-        if ($validator->compareValue !== null && $validator->compareValue instanceof Closure) {
-            $validator->compareValue = call_user_func($validator->compareValue);
-        }
-
         ValidationAsset::register($view);
 
         $options = $this->getClientOptions($validator, $model, $attribute);

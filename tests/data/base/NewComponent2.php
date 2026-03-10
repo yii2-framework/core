@@ -22,9 +22,11 @@ final class NewComponent2 extends Component
     public $b;
     public $c;
 
-    public function __construct($b, $c)
+    public function __construct($b, $c, $config = [])
     {
         $this->b = $b;
         $this->c = $c;
+
+        parent::__construct($config);
     }
 }

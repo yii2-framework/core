@@ -25,38 +25,7 @@ final class ComponentProvider
      */
     public static function hasProperty(): array
     {
-        return [
-            'behavior property (PascalCase, case-sensitive)' => [
-                'Content',
-                true,
-                false,
-            ],
-            'behavior property with behaviors' => [
-                'content',
-                true,
-                true,
-            ],
-            'behavior property without behaviors' => [
-                'content',
-                false,
-                false,
-            ],
-            'non-existent property' => [
-                'Caption',
-                true,
-                false,
-            ],
-            'public property (camelCase)' => [
-                'text',
-                true,
-                true,
-            ],
-            'public property (PascalCase)' => [
-                'Text',
-                true,
-                true,
-            ],
-        ];
+        return self::basePropertyMatrix();
     }
 
     /**
@@ -64,38 +33,7 @@ final class ComponentProvider
      */
     public static function canGetProperty(): array
     {
-        return [
-            'behavior property (PascalCase, case-sensitive)' => [
-                'Content',
-                true,
-                false,
-            ],
-            'behavior property with behaviors' => [
-                'content',
-                true,
-                true,
-            ],
-            'behavior property without behaviors' => [
-                'content',
-                false,
-                false,
-            ],
-            'non-existent property' => [
-                'Caption',
-                true,
-                false,
-            ],
-            'public property (camelCase)' => [
-                'text',
-                true,
-                true,
-            ],
-            'public property (PascalCase)' => [
-                'Text',
-                true,
-                true,
-            ],
-        ];
+        return self::basePropertyMatrix();
     }
 
     /**
@@ -104,6 +42,21 @@ final class ComponentProvider
     public static function canSetProperty(): array
     {
         return [
+            ...self::basePropertyMatrix(),
+            'read-only property' => [
+                'Object',
+                true,
+                false,
+            ],
+        ];
+    }
+
+    /**
+     * @phpstan-return array<string, array{string, bool, bool}>
+     */
+    private static function basePropertyMatrix(): array
+    {
+        return [
             'behavior property (PascalCase, case-sensitive)' => [
                 'Content',
                 true,
@@ -133,11 +86,6 @@ final class ComponentProvider
                 'Text',
                 true,
                 true,
-            ],
-            'read-only property' => [
-                'Object',
-                true,
-                false,
             ],
         ];
     }

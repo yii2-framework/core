@@ -256,7 +256,7 @@ final class ModelTest extends TestCase
         );
     }
 
-    public function testLoadMultiple(): void
+    public function testLoadMultipleWithEmptyFormName(): void
     {
         $data = [
             [
@@ -299,6 +299,20 @@ final class ModelTest extends TestCase
             $smith->lastName,
             "Should be 'Smith' with formName.",
         );
+    }
+
+    public function testLoadMultipleWithMatchingFormName(): void
+    {
+        $data = [
+            [
+                'firstName' => 'Thomas',
+                'lastName' => 'Anderson',
+            ],
+            [
+                'firstName' => 'Agent',
+                'lastName' => 'Smith',
+            ],
+        ];
 
         Speaker::$formName = 'Speaker';
 
@@ -331,6 +345,20 @@ final class ModelTest extends TestCase
             $smith->lastName,
             "Should be 'Smith' with formName.",
         );
+    }
+
+    public function testLoadMultipleWithMismatchedFormName(): void
+    {
+        $data = [
+            [
+                'firstName' => 'Thomas',
+                'lastName' => 'Anderson',
+            ],
+            [
+                'firstName' => 'Agent',
+                'lastName' => 'Smith',
+            ],
+        ];
 
         Speaker::$formName = 'Speaker';
 
@@ -451,12 +479,11 @@ final class ModelTest extends TestCase
         );
     }
 
-    public function testSafeScenarios(): void
+    public function testSafeScenariosWithRequiredRule(): void
     {
         $model = new RulesModel();
 
         $model->rules = [
-            // validated and safe on every scenario
             [
                 [
                     'account_id',
@@ -495,11 +522,13 @@ final class ModelTest extends TestCase
             $model->activeAttributes(),
             'Should be empty for non-existing scenario.',
         );
+    }
 
+    public function testSafeScenariosWithMultipleRules(): void
+    {
         $model = new RulesModel();
 
         $model->rules = [
-            // validated and safe on every scenario
             [
                 [
                     'account_id',
@@ -507,7 +536,6 @@ final class ModelTest extends TestCase
                 ],
                 'required',
             ],
-            // only in create and update scenario
             [
                 ['user_id'],
                 'number',
@@ -586,11 +614,13 @@ final class ModelTest extends TestCase
             $model->activeAttributes(),
             "Should include 'email' and 'name' as active.",
         );
+    }
 
+    public function testSafeScenariosWithExplicitOnRule(): void
+    {
         $model = new RulesModel();
 
         $model->rules = [
-            // validated and safe on every scenario
             [
                 [
                     'account_id',
@@ -598,7 +628,6 @@ final class ModelTest extends TestCase
                 ],
                 'required',
             ],
-            // only in create and update scenario
             [
                 ['user_id'],
                 'number',
@@ -1668,7 +1697,7 @@ final class ModelTest extends TestCase
         );
         self::assertFalse(
             $singer->isAttributeRequired('test'),
-            "'Should not be required when a 'when' condition is present.",
+            "Should not be required when a 'when' condition is present.",
         );
     }
 }

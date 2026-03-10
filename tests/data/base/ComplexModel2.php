@@ -18,12 +18,12 @@ use yii\base\Model;
  */
 final class ComplexModel2 extends Model
 {
-    public function rules()
+    public function rules(): array
     {
         return [
-            [['id'], 'required', 'except' => 'suddenlyUnexpectedScenario'],
+            [['id'], 'required', 'except' => ['suddenlyUnexpectedScenario']],
             [['name', 'description'], 'filter', 'filter' => 'trim'],
-            [['is_disabled'], 'boolean', 'on' => 'administration'],
+            [['is_disabled'], 'boolean', 'on' => ['administration']],
         ];
     }
 }

@@ -28,34 +28,14 @@ use yii\base\Event;
  */
 final class NewComponent extends Component
 {
-    private $_object = null;
-    private $_text = 'default';
-    private $_items = [];
+    public $behaviorCalled = false;
     public $content;
+    public $event;
 
     public $eventHandled = false;
-    public $event;
-    public $behaviorCalled = false;
-
-    public function getText()
-    {
-        return $this->_text;
-    }
-
-    public function setText($value): void
-    {
-        $this->_text = $value;
-    }
-
-    public function getObject()
-    {
-        if (!$this->_object) {
-            $this->_object = new self();
-            $this->_object->_text = 'object text';
-        }
-
-        return $this->_object;
-    }
+    private $_items = [];
+    private $_object = null;
+    private $_text = 'default';
 
     public function getExecute()
     {
@@ -69,6 +49,21 @@ final class NewComponent extends Component
         return $this->_items;
     }
 
+    public function getObject()
+    {
+        if (!$this->_object) {
+            $this->_object = new self();
+            $this->_object->_text = 'object text';
+        }
+
+        return $this->_object;
+    }
+
+    public function getText()
+    {
+        return $this->_text;
+    }
+
     public function myEventHandler($event): void
     {
         $this->eventHandled = true;
@@ -80,7 +75,10 @@ final class NewComponent extends Component
         $this->trigger('click', new Event());
     }
 
-    public function setWriteOnly()
+    public function setText($value): void
     {
+        $this->_text = $value;
     }
+
+    public function setWriteOnly() {}
 }

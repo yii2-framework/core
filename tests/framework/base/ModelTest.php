@@ -44,6 +44,7 @@ final class ModelTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
+
         $this->mockApplication();
     }
 
@@ -885,7 +886,7 @@ final class ModelTest extends TestCase
         );
     }
 
-    public function testErrors(): void
+    public function testErrorsInitialState(): void
     {
         $speaker = new Speaker();
 
@@ -901,7 +902,6 @@ final class ModelTest extends TestCase
             $speaker->getFirstErrors(),
             'Should have no first errors.',
         );
-
         self::assertFalse(
             $speaker->hasErrors(),
             'Should report no errors.',
@@ -910,6 +910,11 @@ final class ModelTest extends TestCase
             $speaker->hasErrors('firstName'),
             "Should report no errors for 'firstName'.",
         );
+    }
+
+    public function testAddError(): void
+    {
+        $speaker = new Speaker();
 
         $speaker->addError('firstName', 'Something is wrong!');
 
@@ -923,7 +928,13 @@ final class ModelTest extends TestCase
             $speaker->getErrors('firstName'),
             "Should return the error 'array'.",
         );
+    }
 
+    public function testMultipleErrors(): void
+    {
+        $speaker = new Speaker();
+
+        $speaker->addError('firstName', 'Something is wrong!');
         $speaker->addError('firstName', 'Totally wrong!');
 
         self::assertSame(
@@ -943,7 +954,7 @@ final class ModelTest extends TestCase
         );
         self::assertTrue(
             $speaker->hasErrors(),
-             "Should return 'true' after 'addError()'.",
+            "Should return 'true' after 'addError()'.",
         );
         self::assertTrue(
             $speaker->hasErrors('firstName'),
@@ -967,7 +978,14 @@ final class ModelTest extends TestCase
             $speaker->getFirstError('lastName'),
             "Should return 'null' when no errors.",
         );
+    }
 
+    public function testErrorSummary(): void
+    {
+        $speaker = new Speaker();
+
+        $speaker->addError('firstName', 'Something is wrong!');
+        $speaker->addError('firstName', 'Totally wrong!');
         $speaker->addError('lastName', 'Another one!');
 
         self::assertSame(
@@ -981,17 +999,25 @@ final class ModelTest extends TestCase
             $speaker->getErrors(),
             'Should include errors for both attributes.',
         );
-
         self::assertSame(
             ['Something is wrong!', 'Totally wrong!', 'Another one!'],
             $speaker->getErrorSummary(true),
-            "Should return all errors.",
+            'Should return all errors.',
         );
         self::assertSame(
             ['Something is wrong!', 'Another one!'],
             $speaker->getErrorSummary(false),
             'Should return first error per attribute.',
         );
+    }
+
+    public function testClearErrors(): void
+    {
+        $speaker = new Speaker();
+
+        $speaker->addError('firstName', 'Something is wrong!');
+        $speaker->addError('firstName', 'Totally wrong!');
+        $speaker->addError('lastName', 'Another one!');
 
         $speaker->clearErrors('firstName');
 

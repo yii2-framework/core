@@ -252,8 +252,10 @@ class SchemaTest extends BaseSchema
 
         $indexes = $db->getSchema()->getTableIndexes('lob_test', true);
 
+        $this->assertCount(1, $indexes);
+
         $primaryIndexes = array_values(
-            array_filter($indexes, static fn ($index) => $index->isPrimary),
+            array_filter($indexes, static fn ($index): mixed => $index->isPrimary),
         );
 
         $this->assertCount(1, $primaryIndexes);
@@ -261,8 +263,14 @@ class SchemaTest extends BaseSchema
 
         foreach ($indexes as $index) {
             foreach ($index->columnNames as $columnName) {
-                $this->assertNotNull($columnName, 'LOB index with NULL column name should be excluded');
-                $this->assertIsString($columnName, 'Index column name must be a string');
+                $this->assertNotNull(
+                    $columnName,
+                    'LOB index with "NULL" column name should be excluded',
+                );
+                $this->assertIsString(
+                    $columnName,
+                    'Index column name must be a string',
+                );
             }
         }
 

@@ -22,3 +22,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - test(validators): add comprehensive test coverage for `CompareValidator` data-provider-driven tests, closure validation, client-side validation, and numeric type conversion scenarios.
 - tests(base): raise code coverage to `100%` for `Component`, `Event` and `Model` classes, and update related tests.
 - refactor(tests): simplify BaseDatabase, migrate Oracle to `gvenzl/oracle-free` and optimize test performance.
+- fix(oracle): `loadTableIndexes()` includes LOB indexes with `NULL` column names, causing `strpos()` deprecation on PHP `8.1+`.

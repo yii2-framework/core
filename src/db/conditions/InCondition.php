@@ -45,17 +45,29 @@ class InCondition implements ConditionInterface
 
     /**
      * Returns the column name. If it is an array, a composite `IN` condition will be generated.
+     *
+     * Non-rewindable Traversables (for example, Generators) are converted to arrays on first access.
      */
-    public function getColumn(): array|string|ExpressionInterface|Traversable
+    public function getColumn(): array|string|ExpressionInterface
     {
+        if ($this->column instanceof Traversable) {
+            $this->column = iterator_to_array($this->column);
+        }
+
         return $this->column;
     }
 
     /**
      * Returns the values that {@see $column} value should be among.
+     *
+     * Non-rewindable Traversables (for example, Generators) are converted to arrays on first access.
      */
-    public function getValues(): array|int|string|ExpressionInterface|Traversable
+    public function getValues(): array|int|string|ExpressionInterface
     {
+        if ($this->values instanceof Traversable) {
+            $this->values = iterator_to_array($this->values);
+        }
+
         return $this->values;
     }
 

@@ -29,14 +29,7 @@ final class InConditionBuilderProvider extends \yiiunit\base\db\conditions\provi
         return [
             ...parent::buildCondition(),
             'composite in with subquery' => [
-                [
-                    'in',
-                    [
-                        'id',
-                        'name',
-                    ],
-                    (new Query())->select(['id', 'name'])->from('users')->where(['active' => 1]),
-                ],
+                ['in', ['id', 'name'], (new Query())->select(['id', 'name'])->from('users')->where(['active' => 1])],
                 <<<SQL
                 ([[id]], [[name]]) IN (SELECT [[id]], [[name]] FROM [[users]] WHERE [[active]]=:qp0)
                 SQL,

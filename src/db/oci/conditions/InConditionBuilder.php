@@ -10,7 +10,6 @@ declare(strict_types=1);
 
 namespace yii\db\oci\conditions;
 
-use Traversable;
 use yii\db\conditions\InCondition;
 use yii\db\ExpressionInterface;
 
@@ -52,10 +51,6 @@ class InConditionBuilder extends \yii\db\conditions\InConditionBuilder
         $operator = $condition->getOperator();
         $values = $condition->getValues();
         $column = $condition->getColumn();
-
-        if ($values instanceof Traversable) {
-            $values = iterator_to_array($values);
-        }
 
         if (!is_array($values)) {
             return null;

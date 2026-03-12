@@ -30,14 +30,7 @@ final class InConditionBuilderProvider extends \yiiunit\base\db\conditions\provi
         return [
             ...parent::buildCondition(),
             'composite in with subquery' => [
-                [
-                    'in',
-                    [
-                        'id',
-                        'name',
-                    ],
-                    (new Query())->select(['id', 'name'])->from('users')->where(['active' => 1]),
-                ],
+                ['in', ['id', 'name'], (new Query())->select(['id', 'name'])->from('users')->where(['active' => 1])],
                 <<<SQL
                 ([[id]], [[name]]) IN (SELECT [[id]], [[name]] FROM [[users]] WHERE [[active]]=:qp0)
                 SQL,
@@ -57,10 +50,7 @@ final class InConditionBuilderProvider extends \yiiunit\base\db\conditions\provi
             'composite not in with subquery' => [
                 [
                     'not in',
-                    [
-                        'id',
-                        'name',
-                    ],
+                    ['id', 'name'],
                     (new Query())->select(['id', 'name'])->from('users')->where(['active' => 1]),
                 ],
                 <<<SQL
@@ -70,11 +60,7 @@ final class InConditionBuilderProvider extends \yiiunit\base\db\conditions\provi
             ],
             // Oracle split condition (>1000 values)
             'in with more than 1000 values' => [
-                [
-                    'in',
-                    'id',
-                    range(0, 2500),
-                ],
+                ['in', 'id', range(0, 2500)],
                 '([[id]] IN (' . implode(', ', array_map(static fn ($i) => ":qp$i", range(0, 999))) . '))'
                 . ' OR ([[id]] IN (' . implode(', ', array_map(static fn ($i) => ":qp$i", range(1000, 1999))) . '))'
                 . ' OR ([[id]] IN (' . implode(', ', array_map(static fn ($i) => ":qp$i", range(2000, 2500))) . '))',
@@ -84,11 +70,7 @@ final class InConditionBuilderProvider extends \yiiunit\base\db\conditions\provi
                 ),
             ],
             'not in with more than 1000 values' => [
-                [
-                    'not in',
-                    'id',
-                    range(0, 2500),
-                ],
+                ['not in', 'id', range(0, 2500)],
                 '([[id]] NOT IN (' . implode(', ', array_map(static fn ($i) => ":qp$i", range(0, 999))) . '))'
                 . ' AND ([[id]] NOT IN (' . implode(', ', array_map(static fn ($i) => ":qp$i", range(1000, 1999))) . '))'
                 . ' AND ([[id]] NOT IN (' . implode(', ', array_map(static fn ($i) => ":qp$i", range(2000, 2500))) . '))',
@@ -98,11 +80,7 @@ final class InConditionBuilderProvider extends \yiiunit\base\db\conditions\provi
                 ),
             ],
             'not in with more than 1000 values traversable' => [
-                [
-                    'not in',
-                    'id',
-                    new TraversableObject(range(0, 2500)),
-                ],
+                ['not in', 'id', new TraversableObject(range(0, 2500))],
                 '([[id]] NOT IN (' . implode(', ', array_map(static fn ($i) => ":qp$i", range(0, 999))) . '))'
                 . ' AND ([[id]] NOT IN (' . implode(', ', array_map(static fn ($i) => ":qp$i", range(1000, 1999))) . '))'
                 . ' AND ([[id]] NOT IN (' . implode(', ', array_map(static fn ($i) => ":qp$i", range(2000, 2500))) . '))',

@@ -109,6 +109,7 @@ controls whether jQuery-based client scripts are registered. When set to `false`
 ```
 
 When `useJquery` is `false` and no custom `clientScript` strategy is configured:
+
 - `clientValidateAttribute()` returns `null` on built-in jQuery-backed validators.
 - `getClientOptions()` returns `[]` on built-in jQuery-backed validators.
 - `ActiveForm`, `GridView`, and `CheckboxColumn` do not register the built-in jQuery plugins.
@@ -126,15 +127,15 @@ public function rules()
 {
     return [
         [
-            'username', 
-            'required', 
+            'username',
+            'required',
             'clientScript' => ['class' => '\app\validators\MyRequiredClientScript'],
         ],
     ];
 }
 
 // Custom form client script
-ActiveForm::begin(['clientScript' => ['class' => '\app\widgets\MyFormClientScript']]); 
+ActiveForm::begin(['clientScript' => ['class' => '\app\widgets\MyFormClientScript']]);
 ```
 
 ### `InCondition` — typed constructor and return types (#27)
@@ -143,28 +144,42 @@ ActiveForm::begin(['clientScript' => ['class' => '\app\widgets\MyFormClientScrip
 
 If you instantiate `InCondition` directly, ensure the arguments match the new parameter types:
 
-- `$column`: `array|string|ExpressionInterface|Traversable`
+- `$column`: `array|string|ExpressionInterface|Traversable` (Traversable is normalized to array on `getColumn()`)
 - `$operator`: `string`
-- `$values`: `array|int|string|ExpressionInterface|Traversable`
+- `$values`: `array|int|string|ExpressionInterface|Traversable` (Traversable is normalized to array on `getValues()`)
 
-Return types added: `getOperator(): string`, `getColumn()`, `getValues()`, `fromArrayDefinition(): static`.
+Return types added: `getOperator(): string`, `getColumn(): array|string|ExpressionInterface`,
+`getValues(): array|int|string|ExpressionInterface`, `fromArrayDefinition(): static`.
+
+> **Note:** `getColumn()` and `getValues()` now convert any `Traversable` (including Generators) to `array` on first
+> access. Subsequent calls return the cached array. This means the return types no longer include `Traversable`.
 
 ### `InConditionBuilder` — typed protected methods (#27)
 
 All `protected` methods in `InConditionBuilder` now declare parameter types and return types. If you extend
 `InConditionBuilder` and override any of the following methods, update your signatures to match:
 
-| Method                                | New signature                                                                                                            |
-|---------------------------------------|--------------------------------------------------------------------------------------------------------------------------|
-| `build()`                             | `build(ExpressionInterface $expression, array &$params = []): string`                                                    |
-| `buildValues()`                       | `buildValues(ConditionInterface $condition, array\|Traversable $values, array &$params): array`                          |
-| `buildSubqueryInCondition()`          | `buildSubqueryInCondition(string $operator, array\|string\|ExpressionInterface\|Traversable $columns, Query $values, array &$params): string` |
-| `buildCompositeInCondition()`         | `buildCompositeInCondition(string $operator, array\|Traversable $columns, array\|Traversable $values, array &$params): string` |
-| `getNullCondition()`                  | `getNullCondition(string $operator, string $column): string`                                                             |
-| `getRawValuesFromTraversableObject()` | `getRawValuesFromTraversableObject(Traversable $traversableObject): array`                                               |
-| `getNotEqualOperator()`               | `getNotEqualOperator(): string`                                                                                          |
+| Method                        | New signature                                                                                                                    |
+| ----------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
+| `build()`                     | `build(ExpressionInterface $expression, array &$params = []): string`                                                            |
+| `buildValues()`               | `buildValues(ConditionInterface $condition, array $values, array &$params): array`                                               |
+| `buildSubqueryInCondition()`  | `buildSubqueryInCondition(string $operator, array\|string\|ExpressionInterface $columns, Query $values, array &$params): string` |
+| `buildCompositeInCondition()` | `buildCompositeInCondition(string $operator, array $columns, array $values, array &$params): string`                             |
+| `getNullCondition()`          | `getNullCondition(string $operator, string $column): string`                                                                     |
+| `getNotEqualOperator()`       | `getNotEqualOperator(): string`                                                                                                  |
 
-### `oci\InConditionBuilder` — typed `build()` and `splitCondition()` (#27)
+> **Note:** `getRawValuesFromTraversableObject()` has been removed. Traversable normalization now happens in
+> `InCondition::getValues()`, so all values are arrays by the time they reach the builder.
+
+### `oci\InConditionBuilder` — typed `build()` and `splitCondition()` (`#27`)
 
 `build()` now returns `string` explicitly. `splitCondition()` now returns `string|null` explicitly. If you extend the Oracle
 builder, update your overrides accordingly.
+
+### Composite `IN`/`NOT IN` conditions — `IS NULL`/`IS NOT NULL` generation (`#27`)
+
+Composite `IN`/`NOT IN` conditions now generate `IS NULL`/`IS NOT NULL` expressions for `NULL` values in the value list,
+instead of literal `NULL` comparisons. This aligns with SQL semantics where `column = NULL` always evaluates to `UNKNOWN`.
+
+**Before:** `(col1 = :p0 AND col2 = NULL)` — always fails due to SQL NULL semantics  
+**After:** `(col1 = :p0 AND col2 IS NULL)` — correctly matches NULL values

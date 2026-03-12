@@ -10,7 +10,6 @@ declare(strict_types=1);
 
 namespace yii\db\mssql\conditions;
 
-use Traversable;
 use yii\base\NotSupportedException;
 use yii\db\ExpressionInterface;
 use yii\db\Query;
@@ -32,7 +31,7 @@ class InConditionBuilder extends \yii\db\conditions\InConditionBuilder
      */
     protected function buildSubqueryInCondition(
         string $operator,
-        array|string|ExpressionInterface|Traversable $columns,
+        array|string|ExpressionInterface $columns,
         Query $values,
         array &$params,
     ): string {

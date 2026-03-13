@@ -87,7 +87,7 @@ class BaseFormatConverter
     /**
      * @var string characters with special meaning in PHP date() format.
      */
-    private const string SUPPORTED_ESCAPED_FORMAT_CHARS = 'dDjlNSwzWFmMntLoYyaABgGhHisueIOPTZcrU\\';
+    private const SUPPORTED_ESCAPED_FORMAT_CHARS = 'dDjlNSwzWFmMntLoYyaABgGhHisueIOPTZcrU\\';
 
 
     /**

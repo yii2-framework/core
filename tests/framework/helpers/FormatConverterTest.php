@@ -415,6 +415,10 @@ class FormatConverterTest extends TestCase
         $actual = FormatConverter::convertDatePhpToIcu('\d\D\j\l\N\S\w\Z\W\F\m\M\n\t\L\o\Y\y\a\B\g\h\H\i\s\u\e\I\O\P\T\Z\c\r\u');
         $this->assertEquals($expected, $actual);
 
+        $expected = "'vpXx'";
+        $actual = FormatConverter::convertDatePhpToIcu('\v\p\X\x');
+        $this->assertEquals($expected, $actual);
+
         $expected = "yyyy-MM-dd'T'HH:mm:ssxxx";
         $actual = FormatConverter::convertDatePhpToIcu('c');
         $this->assertEquals($expected, $actual);
@@ -482,6 +486,8 @@ class FormatConverterTest extends TestCase
             'Seconds, with leading zeros 00 through 59' => ['s', 'ss'],
             '\u' => ['\u', "'u'"],
             'Microseconds. Example: 654321' => ['u', ''],
+            '\v' => ['\v', "'v'"],
+            'Milliseconds. Example: 123' => ['v', 'v'],
             '\e' => ['\e', "'e'"],
             'Timezone identifier. Examples: UTC, GMT, Atlantic/Azores' => ['e', 'VV'],
             '\I' => ['\I', "'I'"],
@@ -490,6 +496,8 @@ class FormatConverterTest extends TestCase
             'Difference to Greenwich time (GMT) in hours, Example: +0200' => ['O', 'xx'],
             '\P' => ['\P', "'P'"],
             'Difference to Greenwich time (GMT) with colon between hours and minutes, Example: +02:00' => ['P', 'xxx'],
+            '\p' => ['\p', "'p'"],
+            'Difference to Greenwich time (GMT) with colon between hours and minutes or Z for UTC' => ['p', 'p'],
             '\T' => ['\T', "'T'"],
             'Timezone abbreviation, Examples: EST, MDT ...' => ['T', 'zzz'],
             '\Z' => ['\Z', "'Z'"],
@@ -500,6 +508,10 @@ class FormatConverterTest extends TestCase
             'RFC 2822 formatted date, Example: Thu, 21 Dec 2000 16:01:07 +0200' => ['r', 'eee, dd MMM yyyy HH:mm:ss xx'],
             '\U' => ['\U', "'U'"],
             'Seconds since the Unix Epoch (January 1 1970 00:00:00 GMT)' => ['U', ''],
+            '\X' => ['\X', "'X'"],
+            'Expanded full numeric representation of a year, at least 4 digits' => ['X', 'X'],
+            '\x' => ['\x', "'x'"],
+            'Expanded full numeric representation if required, otherwise as Y' => ['x', 'x'],
             '\\' => ['\\\\', '\\'],
         ];
     }

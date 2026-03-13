@@ -87,7 +87,7 @@ class BaseFormatConverter
     /**
      * @var string characters with special meaning in PHP date() format.
      */
-    private const SUPPORTED_ESCAPED_FORMAT_CHARS = 'dDjlNSwzWFmMntLoYyaABgGhHisueIOPTZcrU\\';
+    private const SUPPORTED_ESCAPED_FORMAT_CHARS = 'dDjlNSwzWFmMntLoYyaABgGhHisueIOPTZcrUvpXx\\';
 
 
     /**
@@ -243,24 +243,9 @@ class BaseFormatConverter
      */
     public static function convertDatePhpToIcu($pattern)
     {
-        // Escaped non-format chars (for example, `\:`) should be kept as ICU literals.
-        // Protect them before conversion and restore after `strtr()`.
         $escapedLiterals = [];
         if (strpos($pattern, '\\') !== false) {
-            $pattern = preg_replace_callback(
-                '/\\\\(.)/us',
-                static function ($matches) use (&$escapedLiterals) {
-                    if (strpos(self::SUPPORTED_ESCAPED_FORMAT_CHARS, $matches[1]) !== false) {
-                        return $matches[0];
-                    }
-
-                    $placeholder = "\x01" . count($escapedLiterals) . "\x02";
-                    $escapedLiterals[$placeholder] = $matches[1] === "'" ? "''''" : "'{$matches[1]}'";
-
-                    return $placeholder;
-                },
-                $pattern
-            );
+            [$pattern, $escapedLiterals] = self::protectEscapedPhpLiterals($pattern);
         }
 
         // https://www.php.net/manual/en/function.date
@@ -327,6 +312,8 @@ class BaseFormatConverter
             's' => 'ss',    // Seconds, with leading zeros — 00 through 59
             '\u' => "'u'",
             'u' => '',      // Microseconds. Example: 654321
+            '\v' => "'v'",
+            // `v` (milliseconds) is kept as-is for compatibility.
             // Timezone
             '\e' => "'e'",
             'e' => 'VV',    // Timezone identifier. Examples: UTC, GMT, Atlantic/Azores
@@ -336,6 +323,8 @@ class BaseFormatConverter
             'O' => 'xx',    // Difference to Greenwich time (GMT) in hours, Example: +0200
             '\P' => "'P'",
             'P' => 'xxx',   // Difference to Greenwich time (GMT) with colon between hours and minutes, Example: +02:00
+            '\p' => "'p'",
+            // `p` (offset with `Z` for UTC) is kept as-is for compatibility.
             '\T' => "'T'",
             'T' => 'zzz',   // Timezone abbreviation, Examples: EST, MDT ...
             '\Z' => "'Z'",
@@ -347,6 +336,10 @@ class BaseFormatConverter
             'r' => 'eee, dd MMM yyyy HH:mm:ss xx', // RFC 2822 formatted date, Example: Thu, 21 Dec 2000 16:01:07 +0200
             '\U' => "'U'",
             'U' => '',      // Seconds since the Unix Epoch (January 1 1970 00:00:00 GMT)
+            '\X' => "'X'",
+            // `X` (expanded year) is kept as-is for compatibility.
+            '\x' => "'x'",
+            // `x` (expanded year if needed) is kept as-is for compatibility.
             '\\\\' => '\\',
         ]);
 
@@ -360,6 +353,34 @@ class BaseFormatConverter
             "''''" => "''",
             "''" => '',
         ]);
+    }
+
+    /**
+     * Protects escaped non-format chars (for example, `\:`) so they can be restored as ICU literals after conversion.
+     *
+     * @param string $pattern date format pattern in PHP `date()` function format.
+     * @return array an array where index 0 contains transformed pattern and index 1 contains placeholders map.
+     */
+    private static function protectEscapedPhpLiterals($pattern)
+    {
+        $escapedLiterals = [];
+
+        $pattern = preg_replace_callback(
+            '/\\\\(.)/us',
+            static function ($matches) use (&$escapedLiterals) {
+                if (strpos(self::SUPPORTED_ESCAPED_FORMAT_CHARS, $matches[1]) !== false) {
+                    return $matches[0];
+                }
+
+                $placeholder = "\x01" . count($escapedLiterals) . "\x02";
+                $escapedLiterals[$placeholder] = $matches[1] === "'" ? "''''" : "'{$matches[1]}'";
+
+                return $placeholder;
+            },
+            $pattern
+        );
+
+        return [$pattern, $escapedLiterals];
     }
 
     /**

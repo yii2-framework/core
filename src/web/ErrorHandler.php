@@ -32,6 +32,11 @@ use yii\helpers\VarDumper;
 class ErrorHandler extends \yii\base\ErrorHandler
 {
     /**
+     * @event ErrorHandlerRenderEvent an event that is triggered after HTML error content is rendered.
+     * Event handlers may modify [[ErrorHandlerRenderEvent::$output]].
+     */
+    public const EVENT_AFTER_RENDER = 'afterRender';
+    /**
      * @var int maximum number of source code lines to be displayed. Defaults to 19.
      */
     public $maxSourceLines = 19;
@@ -136,6 +141,14 @@ class ErrorHandler extends \yii\base\ErrorHandler
             $response->data = $this->convertExceptionToArray($exception);
         }
 
+        if ($response->format === Response::FORMAT_HTML) {
+            if (is_string($response->data)) {
+                $response->data = $this->triggerAfterRender($exception, $response->data);
+            } elseif (is_string($response->content)) {
+                $response->content = $this->triggerAfterRender($exception, $response->content);
+            }
+        }
+
         $response->send();
     }
 
@@ -184,6 +197,28 @@ class ErrorHandler extends \yii\base\ErrorHandler
     public function htmlEncode($text)
     {
         return htmlspecialchars($text, ENT_QUOTES | ENT_SUBSTITUTE | ENT_HTML5, 'UTF-8');
+    }
+
+    /**
+     * Triggers [[EVENT_AFTER_RENDER]] and returns final HTML content.
+     * @param \Throwable $exception the exception being rendered.
+     * @param string $output the rendered HTML output.
+     * @return string the final HTML output.
+     */
+    protected function triggerAfterRender($exception, $output)
+    {
+        if ($this->hasEventHandlers(self::EVENT_AFTER_RENDER)) {
+            $event = new ErrorHandlerRenderEvent();
+
+            $event->exception = $exception;
+            $event->output = $output;
+
+            $this->trigger(self::EVENT_AFTER_RENDER, $event);
+
+            return $event->output;
+        }
+
+        return $output;
     }
 
     /**

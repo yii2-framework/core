@@ -1518,7 +1518,7 @@ class QueryBuilder extends \yii\base\BaseObject
         $recursive = false;
         $result = [];
 
-        foreach ($withs as $i => $with) {
+        foreach ($withs as $with) {
             $recursive = $with['recursive'] ?? $recursive;
 
             $query = $with['query'];

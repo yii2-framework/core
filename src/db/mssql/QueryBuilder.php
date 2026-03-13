@@ -702,7 +702,7 @@ END";
 
         $result = [];
 
-        foreach ($withs as $i => $with) {
+        foreach ($withs as $with) {
             $query = $with['query'];
             if ($query instanceof Query) {
                 [$with['query'], $params] = $this->build($query, $params);

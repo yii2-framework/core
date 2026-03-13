@@ -1218,12 +1218,7 @@ class QueryBuilder extends \yii\base\BaseObject
             return $this->typeMap[$type];
         } elseif (preg_match('/^(\w+)\((.+?)\)(.*)$/', $type, $matches)) {
             if (isset($this->typeMap[$matches[1]])) {
-                $mapped = $this->typeMap[$matches[1]];
-                if (strpos($mapped, '(') !== false) {
-                    return preg_replace('/\(.+\)/', '(' . $matches[2] . ')', $mapped) . $matches[3];
-                }
-
-                return preg_replace('/^\w+/', '$0(' . $matches[2] . ')', $mapped) . $matches[3];
+                return preg_replace('/\(.+\)/', '(' . $matches[2] . ')', $this->typeMap[$matches[1]]) . $matches[3];
             }
         } elseif (preg_match('/^(\w+)\s+/', $type, $matches)) {
             if (isset($this->typeMap[$matches[1]])) {

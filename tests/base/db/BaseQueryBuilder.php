@@ -93,7 +93,7 @@ abstract class BaseQueryBuilder extends BaseDatabase
                 Schema::TYPE_BIGINT . '(8)',
                 $this->bigInteger(8),
                 [
-                    'mysql' => 'bigint(8)',
+                    'mysql' => 'bigint',
                     'pgsql' => 'bigint',
                     'sqlite' => 'bigint',
                     'oci' => 'NUMBER(8)',
@@ -104,7 +104,7 @@ abstract class BaseQueryBuilder extends BaseDatabase
                 Schema::TYPE_BIGINT . '(8) CHECK (value > 5)',
                 $this->bigInteger(8)->check('value > 5'),
                 [
-                    'mysql' => 'bigint(8) CHECK (value > 5)',
+                    'mysql' => 'bigint CHECK (value > 5)',
                     'pgsql' => 'bigint CHECK (value > 5)',
                     'sqlite' => 'bigint CHECK (value > 5)',
                     'oci' => 'NUMBER(8) CHECK (value > 5)',
@@ -448,7 +448,7 @@ abstract class BaseQueryBuilder extends BaseDatabase
                 Schema::TYPE_INTEGER . '(8) CHECK (value > 5)',
                 $this->integer(8)->check('value > 5'),
                 [
-                    'mysql' => 'int(8) CHECK (value > 5)',
+                    'mysql' => 'int CHECK (value > 5)',
                     'pgsql' => 'integer CHECK (value > 5)',
                     'sqlite' => 'integer CHECK (value > 5)',
                     'oci' => 'NUMBER(8) CHECK (value > 5)',
@@ -459,7 +459,7 @@ abstract class BaseQueryBuilder extends BaseDatabase
                 Schema::TYPE_INTEGER . '(8)',
                 $this->integer(8),
                 [
-                    'mysql' => 'int(8)',
+                    'mysql' => 'int',
                     'pgsql' => 'integer',
                     'sqlite' => 'integer',
                     'oci' => 'NUMBER(8)',
@@ -547,7 +547,7 @@ abstract class BaseQueryBuilder extends BaseDatabase
                 Schema::TYPE_PK . '(8) CHECK (value > 5)',
                 $this->primaryKey(8)->check('value > 5'),
                 [
-                    'mysql' => 'int(8) NOT NULL AUTO_INCREMENT PRIMARY KEY CHECK (value > 5)',
+                    'mysql' => 'int NOT NULL AUTO_INCREMENT PRIMARY KEY CHECK (value > 5)',
                     'oci' => 'NUMBER(8) NOT NULL PRIMARY KEY CHECK (value > 5)',
                 ],
             ],
@@ -555,7 +555,7 @@ abstract class BaseQueryBuilder extends BaseDatabase
                 Schema::TYPE_PK . '(8)',
                 $this->primaryKey(8),
                 [
-                    'mysql' => 'int(8) NOT NULL AUTO_INCREMENT PRIMARY KEY',
+                    'mysql' => 'int NOT NULL AUTO_INCREMENT PRIMARY KEY',
                     'oci' => 'NUMBER(8) NOT NULL PRIMARY KEY',
                 ],
             ],
@@ -574,7 +574,7 @@ abstract class BaseQueryBuilder extends BaseDatabase
                 Schema::TYPE_TINYINT . '(2)',
                 $this->tinyInteger(2),
                 [
-                    'mysql' => 'tinyint(2)',
+                    'mysql' => 'tinyint',
                     'pgsql' => 'smallint',
                     'sqlite' => 'tinyint',
                     'oci' => 'NUMBER(2)',
@@ -604,7 +604,7 @@ abstract class BaseQueryBuilder extends BaseDatabase
                 Schema::TYPE_SMALLINT . '(8)',
                 $this->smallInteger(8),
                 [
-                    'mysql' => 'smallint(8)',
+                    'mysql' => 'smallint',
                     'pgsql' => 'smallint',
                     'sqlite' => 'smallint',
                     'oci' => 'NUMBER(8)',

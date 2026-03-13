@@ -199,7 +199,7 @@ map. MySQL 8.0.17+ deprecated display width for integer types and emits deprecat
 
 `tinyint(1)` for `TYPE_BOOLEAN` is preserved — MySQL uses it as the canonical boolean representation.
 
-Explicit sizes (for example, `$this->primaryKey(8)` → `int(8)`) continue to work as before.
+Explicit integer sizes (for example, `$this->primaryKey(8)`) are now ignored — display width is no longer emitted.
 
 If your application or migrations rely on the exact SQL output of `QueryBuilder::getColumnType()` for integer types
 (for example, in string assertions or snapshot tests), update the expected values.

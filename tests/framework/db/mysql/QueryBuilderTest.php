@@ -50,17 +50,17 @@ class QueryBuilderTest extends BaseQueryBuilder
             [
                 Schema::TYPE_PK . '(8) AFTER `col_before`',
                 $this->primaryKey(8)->after('col_before'),
-                'int(8) NOT NULL AUTO_INCREMENT PRIMARY KEY AFTER `col_before`',
+                'int NOT NULL AUTO_INCREMENT PRIMARY KEY AFTER `col_before`',
             ],
             [
                 Schema::TYPE_PK . '(8) FIRST',
                 $this->primaryKey(8)->first(),
-                'int(8) NOT NULL AUTO_INCREMENT PRIMARY KEY FIRST',
+                'int NOT NULL AUTO_INCREMENT PRIMARY KEY FIRST',
             ],
             [
                 Schema::TYPE_PK . '(8) FIRST',
                 $this->primaryKey(8)->first()->after('col_before'),
-                'int(8) NOT NULL AUTO_INCREMENT PRIMARY KEY FIRST',
+                'int NOT NULL AUTO_INCREMENT PRIMARY KEY FIRST',
             ],
             [
                 Schema::TYPE_PK . " COMMENT 'test' AFTER `col_before`",

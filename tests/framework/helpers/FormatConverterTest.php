@@ -9,7 +9,9 @@
 namespace yiiunit\framework\helpers;
 
 use PHPUnit\Framework\Attributes\Group;
+use ReflectionClass;
 use Yii;
+use yii\helpers\BaseFormatConverter;
 use yii\helpers\FormatConverter;
 use yii\i18n\Formatter;
 use yiiunit\framework\i18n\IntlTestHelper;
@@ -395,33 +397,75 @@ class FormatConverterTest extends TestCase
 
     public function testPhpToICUMixedPatterns(): void
     {
-        $expected = "yyyy-MM-dd'T'HH:mm:ssxxx";
-        $actual = FormatConverter::convertDatePhpToIcu('Y-m-d\TH:i:sP');
-        $this->assertEquals($expected, $actual);
+        self::assertSame(
+            "yyyy-MM-dd'T'HH:mm:ssxxx",
+            FormatConverter::convertDatePhpToIcu(
+                'Y-m-d\TH:i:sP',
+            ),
+            'Mixed PHP/escaped pattern should convert to expected ICU ISO-8601 shape.',
+        );
+        self::assertSame(
+            "yyyy-MM-dd'Yii'HH:mm:ssxxx",
+            FormatConverter::convertDatePhpToIcu(
+                'Y-m-d\Y\i\iH:i:sP',
+            ),
+            'Escaped Yii literal should be preserved in ICU output.',
+        );
+        self::assertSame(
+            "yyyy-MM-dd'Yii'HH:mm:ssxxx''''",
+            FormatConverter::convertDatePhpToIcu(
+                "Y-m-d\Y\i\iH:i:sP''",
+            ),
+            'Trailing single quotes should remain correctly escaped in ICU output.',
+        );
+        self::assertSame(
+            "yyyy-MM-dd'Yii'\HH:mm:ssxxx''''",
+            FormatConverter::convertDatePhpToIcu(
+                "Y-m-d\Y\i\i\\\\H:i:sP''",
+            ),
+            "Escaped backslash before 'H' should be preserved as literal in ICU output.",
+        );
+        self::assertSame(
+            "'dDjlNSwZWFmMntLoYyaBghHisueIOPTZcru'",
+            FormatConverter::convertDatePhpToIcu(
+                '\d\D\j\l\N\S\w\Z\W\F\m\M\n\t\L\o\Y\y\a\B\g\h\H\i\s\u\e\I\O\P\T\Z\c\r\u',
+            ),
+            "Escaped supported PHP 'date()' chars should collapse into a single ICU literal chunk.",
+        );
+        self::assertSame(
+            "'vpXx'",
+            FormatConverter::convertDatePhpToIcu(
+                '\v\p\X\x',
+            ),
+            "Escaped PHP date() chars 'v', 'p', 'X', and 'x' should be preserved as ICU literals.",
+        );
+        self::assertSame(
+            "yyyy-MM-dd'T'HH:mm:ssxxx",
+            FormatConverter::convertDatePhpToIcu('c'),
+            "PHP 'c' format should map to ICU ISO-8601 pattern.",
+        );
+    }
 
-        $expected = "yyyy-MM-dd'Yii'HH:mm:ssxxx";
-        $actual = FormatConverter::convertDatePhpToIcu('Y-m-d\Y\i\iH:i:sP');
-        $this->assertEquals($expected, $actual);
+    public function testPhpToIcuEscapeMapInSyncWithSupportedEscapedFormatChars(): void
+    {
+        $reflectionClass = new ReflectionClass(BaseFormatConverter::class);
 
-        $expected = "yyyy-MM-dd'Yii'HH:mm:ssxxx''''";
-        $actual = FormatConverter::convertDatePhpToIcu("Y-m-d\Y\i\iH:i:sP''");
-        $this->assertEquals($expected, $actual);
+        /** @var string $escapedChars */
+        $escapedChars = $reflectionClass->getConstant('SUPPORTED_ESCAPED_FORMAT_CHARS');
 
-        $expected = "yyyy-MM-dd'Yii'\HH:mm:ssxxx''''";
-        $actual = FormatConverter::convertDatePhpToIcu("Y-m-d\Y\i\i\\\\H:i:sP''");
-        $this->assertEquals($expected, $actual);
+        foreach (str_split($escapedChars) as $char) {
+            if ($char === '\\') {
+                // '\\\\' is handled separately in providerForPHP2ICUPatterns.
+                continue;
+            }
 
-        $expected = "'dDjlNSwZWFmMntLoYyaBghHisueIOPTZcru'";
-        $actual = FormatConverter::convertDatePhpToIcu('\d\D\j\l\N\S\w\Z\W\F\m\M\n\t\L\o\Y\y\a\B\g\h\H\i\s\u\e\I\O\P\T\Z\c\r\u');
-        $this->assertEquals($expected, $actual);
-
-        $expected = "'vpXx'";
-        $actual = FormatConverter::convertDatePhpToIcu('\v\p\X\x');
-        $this->assertEquals($expected, $actual);
-
-        $expected = "yyyy-MM-dd'T'HH:mm:ssxxx";
-        $actual = FormatConverter::convertDatePhpToIcu('c');
-        $this->assertEquals($expected, $actual);
+            self::assertSame(
+                "'{$char}'",
+                FormatConverter::convertDatePhpToIcu('\\' . $char),
+                "SUPPORTED_ESCAPED_FORMAT_CHARS includes '{$char}' but convertDatePhpToIcu() does not convert "
+                . "\\\\{$char} to \"'{$char}'\". Add the \\\\{$char} => \"'{$char}'\" entry to the strtr map.",
+            );
+        }
     }
 
     public static function providerForPHP2ICUPatterns(): array
@@ -521,7 +565,11 @@ class FormatConverterTest extends TestCase
      */
     public function testPhpToICUSinglePattern($pattern, $expected): void
     {
-        $this->assertEquals($expected, FormatConverter::convertDatePhpToIcu($pattern));
+        $this->assertEquals(
+            $expected,
+            FormatConverter::convertDatePhpToIcu($pattern),
+            "Unexpected ICU conversion output for PHP date() pattern: `{$pattern}`.",
+        );
     }
 
     public function testPhpFormatC(): void

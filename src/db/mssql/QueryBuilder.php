@@ -688,4 +688,29 @@ END";
         return $this->dropConstraintsForColumn($table, $column) . "\nALTER TABLE " . $this->db->quoteTableName($table)
             . ' DROP COLUMN ' . $this->db->quoteColumnName($column);
     }
+
+    /**
+     * {@inheritdoc}
+     *
+     * SQL Server does not support the `RECURSIVE` keyword for CTEs. Recursion is implicit when a CTE references itself.
+     */
+    public function buildWithQueries($withs, &$params)
+    {
+        if ($withs === []) {
+            return '';
+        }
+
+        $result = [];
+
+        foreach ($withs as $i => $with) {
+            $query = $with['query'];
+            if ($query instanceof Query) {
+                [$with['query'], $params] = $this->build($query, $params);
+            }
+
+            $result[] = $with['alias'] . ' AS (' . $with['query'] . ')';
+        }
+
+        return 'WITH ' . implode(', ', $result);
+    }
 }

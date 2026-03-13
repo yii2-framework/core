@@ -1511,7 +1511,7 @@ class QueryBuilder extends \yii\base\BaseObject
      */
     public function buildWithQueries($withs, &$params)
     {
-        if (empty($withs)) {
+        if ($withs === []) {
             return '';
         }
 
@@ -1519,13 +1519,11 @@ class QueryBuilder extends \yii\base\BaseObject
         $result = [];
 
         foreach ($withs as $i => $with) {
-            if ($with['recursive']) {
-                $recursive = true;
-            }
+            $recursive = $with['recursive'] ?? $recursive;
 
             $query = $with['query'];
             if ($query instanceof Query) {
-                list($with['query'], $params) = $this->build($query, $params);
+                [$with['query'], $params] = $this->build($query, $params);
             }
 
             $result[] = $with['alias'] . ' AS (' . $with['query'] . ')';

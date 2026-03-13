@@ -121,7 +121,7 @@ class Query extends Component implements QueryInterface, ExpressionInterface
      * @see withQuery()
      * @since 2.0.35
      */
-    public $withQueries;
+    public $withQueries = [];
     /**
      * @var array|null list of query parameter values indexed by parameter placeholders.
      * For example, `[':name' => 'Dan', ':age' => 31]`.

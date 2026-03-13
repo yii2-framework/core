@@ -194,6 +194,53 @@ abstract class BaseQueryBuilderUnion extends BaseDatabase
         );
     }
 
+    public function testBuildWithQueryEmpty(): void
+    {
+        $db = $this->getConnection(true, false);
+
+        $params = [];
+
+        self::assertEmpty(
+            $db->getQueryBuilder()->buildWithQueries([], $params),
+            'Should return empty string for empty array.',
+        );
+        self::assertEmpty(
+            $params,
+            'Params should remain empty.',
+        );
+    }
+
+    public function testBuildWithQueryRawSql(): void
+    {
+        $db = $this->getConnection(true, false);
+
+        $params = [];
+
+        $result = $db->getQueryBuilder()->buildWithQueries(
+            [
+                [
+                    'alias' => 'a1',
+                    'query' => <<<SQL
+                    SELECT id FROM t1 WHERE expr = 1
+                    SQL,
+                ],
+            ],
+            $params,
+        );
+
+        self::assertSame(
+            <<<SQL
+            WITH a1 AS (SELECT id FROM t1 WHERE expr = 1)
+            SQL,
+            $result,
+            'Raw SQL string should be wrapped in CTE syntax.',
+        );
+        self::assertEmpty(
+            $params,
+            'Raw SQL CTE should have no bound parameters.',
+        );
+    }
+
     public function testBuildWithQuery(): void
     {
         $db = $this->getConnection(true, false);

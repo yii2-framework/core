@@ -27,3 +27,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - test(db): add UNION/UNION ALL subquery tests for FROM, JOIN, and IN clauses across all database drivers.
 - feat(web): add `yii\web\ErrorHandler::EVENT_AFTER_RENDER` with mutable `ErrorHandlerRenderEvent::$output` to allow post-processing HTML error pages, including PHP `ErrorException` rendering path.
 - fix(db): MSSQL `buildWithQueries()` emits `WITH RECURSIVE` keyword unsupported by SQL Server; recursion is implicit.
+- fix(helpers): preserve escaped non-format literals in `FormatConverter::convertDatePhpToIcu()` and keep ICU/PHP round-trip output consistent.

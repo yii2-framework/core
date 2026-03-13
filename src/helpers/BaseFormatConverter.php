@@ -11,6 +11,8 @@ namespace yii\helpers;
 use IntlDateFormatter;
 use Yii;
 
+use function count;
+
 /**
  * BaseFormatConverter provides concrete implementation for [[FormatConverter]].
  *
@@ -81,6 +83,11 @@ class BaseFormatConverter
         'long' => 1, // IntlDateFormatter::LONG,
         'full' => 0, // IntlDateFormatter::FULL,
     ];
+
+    /**
+     * @var string characters with special meaning in PHP date() format.
+     */
+    private const SUPPORTED_ESCAPED_FORMAT_CHARS = 'dDjlNSwzWFmMntLoYyaABgGhHisueIOPTZcrU\\';
 
 
     /**
@@ -236,6 +243,26 @@ class BaseFormatConverter
      */
     public static function convertDatePhpToIcu($pattern)
     {
+        // Escaped non-format chars (for example, `\:`) should be kept as ICU literals.
+        // Protect them before conversion and restore after `strtr()`.
+        $escapedLiterals = [];
+        if (strpos($pattern, '\\') !== false) {
+            $pattern = preg_replace_callback(
+                '/\\\\(.)/us',
+                static function ($matches) use (&$escapedLiterals) {
+                    if (strpos(self::SUPPORTED_ESCAPED_FORMAT_CHARS, $matches[1]) !== false) {
+                        return $matches[0];
+                    }
+
+                    $placeholder = "\x01" . count($escapedLiterals) . "\x02";
+                    $escapedLiterals[$placeholder] = $matches[1] === "'" ? "''''" : "'{$matches[1]}'";
+
+                    return $placeholder;
+                },
+                $pattern
+            );
+        }
+
         // https://www.php.net/manual/en/function.date
         $result = strtr($pattern, [
             "'" => "''''",  // single `'` should be encoded as `''`, which internally should be encoded as `''''`
@@ -322,6 +349,10 @@ class BaseFormatConverter
             'U' => '',      // Seconds since the Unix Epoch (January 1 1970 00:00:00 GMT)
             '\\\\' => '\\',
         ]);
+
+        if ($escapedLiterals !== []) {
+            $result = strtr($result, $escapedLiterals);
+        }
 
         // remove `''` - they're result of consecutive escaped chars (`\A\B` will be `'A''B'`, but should be `'AB'`)
         // real `'` are encoded as `''''`

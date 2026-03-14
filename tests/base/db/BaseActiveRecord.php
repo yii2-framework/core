@@ -23,6 +23,7 @@ use yiiunit\data\ar\Cat;
 use yiiunit\data\ar\Category;
 use yiiunit\data\ar\CroppedType;
 use yiiunit\data\ar\Customer;
+use yiiunit\data\ar\CustomerWithInitParams;
 use yiiunit\data\ar\CustomerQuery;
 use yiiunit\data\ar\CustomerWithAlias;
 use yiiunit\data\ar\CustomerWithConstructor;
@@ -2012,6 +2013,30 @@ abstract class BaseActiveRecord extends BaseDatabase
         $model = Customer::findOne(1);
         $this->assertTrue($model->refresh());
         CustomerQuery::$joinWithProfile = false;
+    }
+
+    /**
+     * Ensure no parameter mismatch error occurs if custom ActiveQuery adds a condition with params.
+     *
+     * @see https://github.com/yiisoft/yii2/issues/16396
+     */
+    public function testRefreshWithCustomFindParams(): void
+    {
+        $model = CustomerWithInitParams::findOne(1);
+
+        self::assertNotNull(
+            $model,
+            'Should return an existing active customer for the refresh regression scenario.',
+        );
+        self::assertTrue(
+            $model->refresh(),
+            "Should succeed when the custom ActiveQuery defines bound parameters in 'init()'.",
+        );
+        self::assertSame(
+            1,
+            $model->id,
+            'Should keep the same primary key after reloading the record.',
+        );
     }
 
     public function testFindOneByColumnName(): void

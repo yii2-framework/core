@@ -405,22 +405,6 @@ class QueryBuilder extends \yii\db\QueryBuilder
      * @param array $columns the column data (name => value) to be saved into the table.
      * @return array normalized columns
      */
-    private function normalizeTableRowData($table, $columns, &$params)
-    {
-        if (($tableSchema = $this->db->getSchema()->getTableSchema($table)) !== null) {
-            $columnSchemas = $tableSchema->columns;
-            foreach ($columns as $name => $value) {
-                // @see https://github.com/yiisoft/yii2/issues/12599
-                if (isset($columnSchemas[$name]) && $columnSchemas[$name]->type === Schema::TYPE_BINARY && $columnSchemas[$name]->dbType === 'varbinary' && (is_string($value))) {
-                    // @see https://github.com/yiisoft/yii2/issues/12599
-                    $columns[$name] = new Expression('CONVERT(VARBINARY(MAX), ' . ('0x' . bin2hex($value)) . ')');
-                }
-            }
-        }
-
-        return $columns;
-    }
-
     /**
      * {@inheritdoc}
      *
@@ -428,7 +412,6 @@ class QueryBuilder extends \yii\db\QueryBuilder
      */
     public function insert($table, $columns, &$params)
     {
-        $columns = $this->normalizeTableRowData($table, $columns, $params);
 
         list($names, $placeholders, $values, $params) = $this->prepareInsertValues($table, $columns, $params);
         $cols = [];
@@ -478,8 +461,6 @@ class QueryBuilder extends \yii\db\QueryBuilder
      */
     public function upsert($table, $insertColumns, $updateColumns, &$params)
     {
-        $insertColumns = $this->normalizeTableRowData($table, $insertColumns, $params);
-
         list($uniqueNames, $insertNames, $updateNames) = $this->prepareUpsertColumns($table, $insertColumns, $updateColumns, $constraints);
         if (empty($uniqueNames)) {
             return $this->insert($table, $insertColumns, $params);
@@ -529,19 +510,9 @@ class QueryBuilder extends \yii\db\QueryBuilder
                 $updateColumns[$name] = new Expression($quotedName);
             }
         }
-        $updateColumns = $this->normalizeTableRowData($table, $updateColumns, $params);
-
         list($updates, $params) = $this->prepareUpdateSets($table, $updateColumns, $params);
         $updateSql = 'UPDATE SET ' . implode(', ', $updates);
         return "$mergeSql WHEN MATCHED THEN $updateSql WHEN NOT MATCHED THEN $insertSql;";
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function update($table, $columns, $condition, &$params)
-    {
-        return parent::update($table, $this->normalizeTableRowData($table, $columns, $params), $condition, $params);
     }
 
     /**

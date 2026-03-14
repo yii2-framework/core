@@ -10,16 +10,20 @@ declare(strict_types=1);
 
 namespace yiiunit\framework\rbac;
 
+use PHPUnit\Framework\Attributes\Group;
 use yii\caching\FileCache;
 use yii\rbac\DbManager;
 use yii\rbac\ManagerInterface;
 
 /**
- * MsSQLManagerCacheTest.
- * @group db
- * @group rbac
- * @group mssql
+ * Unit test for {@see \yii\rbac\DbManager} with MSSQL driver.
+ *
+ * @author Wilmer Arambula <terabytesoftw@gmail.com>
+ * @since 2.2
  */
+#[Group('db')]
+#[Group('rbac')]
+#[Group('mssql')]
 class MsSQLManagerCacheTest extends MsSQLManagerTest
 {
     /**

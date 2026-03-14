@@ -1,12 +1,12 @@
 <?php
 
+declare(strict_types=1);
+
 /**
  * @link https://www.yiiframework.com/
  * @copyright Copyright (c) 2008 Yii Software LLC
  * @license https://www.yiiframework.com/license/
  */
-
-declare(strict_types=1);
 
 namespace yiiunit\data\base;
 
@@ -19,14 +19,12 @@ class Speaker extends Model
 {
     public $firstName;
     public $lastName;
-
     public $customLabel;
     public $underscore_style;
+    public static $formName = 'Speaker';
 
     protected $protectedProperty;
     private $_privateProperty;
-
-    public static $formName = 'Speaker';
 
     public function formName()
     {

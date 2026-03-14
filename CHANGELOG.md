@@ -35,3 +35,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - fix(db): keep `inverseOf()` array hydration shape consistent and avoid indirect modification notices in mixed object/array inverse population (`asArray()`).
 - fix(db): MSSQL RBAC cascade gaps and `varbinary` type-casting move binary type-casting to `ColumnSchema::dbTypecast()`, remove `normalizeTableRowData()`, extend `auth_item` triggers to cascade to `auth_assignment`, add `auth_rule` INSTEAD OF triggers, and add `MsSQLManagerTest`/`MsSQLManagerCacheTest`.
 - fix(db): prevent `ActiveRecord::refresh()` parameter mismatch when custom `find()` adds bound parameters.
+- chore: adjust code style.

@@ -21,7 +21,8 @@ use yii\rbac\DbManager;
  *
  * @see https://github.com/yiisoft/yii2/pull/15098
  *
- * @since 2.0.55
+ * @author Wilmer Arambula <terabytesoftw@gmail.com>
+ * @since 2.2
  */
 class m260314_000000_rbac_fix_mssql_cascade extends Migration
 {

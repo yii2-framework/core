@@ -27,10 +27,12 @@ class MsSQLManagerCacheTest extends MsSQLManagerTest
      */
     protected function createManager()
     {
-        return new DbManager([
-            'db' => $this->getConnection(),
-            'cache' => new FileCache(['cachePath' => '@yiiunit/runtime/cache']),
-            'defaultRoles' => ['myDefaultRole'],
-        ]);
+        return new DbManager(
+            [
+                'db' => $this->getConnection(),
+                'cache' => new FileCache(['cachePath' => '@yiiunit/runtime/cache']),
+                'defaultRoles' => ['myDefaultRole'],
+            ],
+        );
     }
 }

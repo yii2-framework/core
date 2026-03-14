@@ -26,9 +26,10 @@
       <file>src/i18n/GettextFile.php</file>
       <file>src/web/ResponseFormatterInterface.php</file>
       <directory suffix=".php">src/bootstrap</directory>
-      <directory suffix="Exception.php">src/base</directory>
       <directory suffix=".php">src/messages</directory>
+      <directory suffix=".php">src/rbac/migrations</directory>
       <directory suffix=".php">src/requirements</directory>
+      <directory suffix="Exception.php">src/base</directory>
     </exclude>
   </source>
   <extensions>

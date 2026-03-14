@@ -51,9 +51,9 @@ class m260314_000000_rbac_fix_mssql_cascade extends Migration
             || $this->db->driverName === 'dblib';
     }
 
-    protected function findForeignKeyName($table, $column, $referenceTable, $referenceColumn): bool|int|string|null
+    protected function findForeignKeyName($table, $column, $referenceTable, $referenceColumn): string
     {
-        return (new Query())
+        $fkName = (new Query())
             ->select(['OBJECT_NAME(fkc.constraint_object_id)'])
             ->from(['fkc' => 'sys.foreign_key_columns'])
             ->innerJoin(
@@ -75,6 +75,14 @@ class m260314_000000_rbac_fix_mssql_cascade extends Migration
             ->andWhere(['c.name' => $column])
             ->andWhere(['r.name' => $referenceColumn])
             ->scalar($this->db);
+
+        if (!is_string($fkName) || $fkName === '') {
+            throw new InvalidConfigException(
+                "Unable to resolve foreign key for {$table}.{$column} -> {$referenceTable}.{$referenceColumn}.",
+            );
+        }
+
+        return $fkName;
     }
 
     /**
@@ -82,13 +90,13 @@ class m260314_000000_rbac_fix_mssql_cascade extends Migration
      */
     public function safeUp(): void
     {
-        if (!$this->isMSSQL()) {
-            return;
-        }
-
         $authManager = $this->getAuthManager();
 
         $this->db = $authManager->db;
+
+        if (!$this->isMSSQL()) {
+            return;
+        }
 
         $schema = $this->db->getSchema()->defaultSchema;
         $itemChildSuffix = $this->db->schema->getRawTableName($authManager->itemChildTable);
@@ -153,13 +161,13 @@ class m260314_000000_rbac_fix_mssql_cascade extends Migration
      */
     public function safeDown(): void
     {
-        if (!$this->isMSSQL()) {
-            return;
-        }
-
         $authManager = $this->getAuthManager();
 
         $this->db = $authManager->db;
+
+        if (!$this->isMSSQL()) {
+            return;
+        }
 
         $schema = $this->db->getSchema()->defaultSchema;
 

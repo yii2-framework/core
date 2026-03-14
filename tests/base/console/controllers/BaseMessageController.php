@@ -518,12 +518,12 @@ abstract class BaseMessageController extends TestCase
         $out = $this->runMessageControllerAction('extract', [$this->configFileName]);
         $messages = $this->loadMessages($category);
 
-        $this->assertArrayHasKey(
+        self::assertArrayHasKey(
             'reach this part, don\'t crash',
             $messages,
             "message is missing in translation file. Command output:\n\n{$out}",
         );
-        $this->assertArrayNotHasKey(
+        self::assertArrayNotHasKey(
             '{n} ',
             $messages,
             "dynamic concatenation should have been skipped. Command output:\n\n{$out}",
@@ -548,15 +548,36 @@ abstract class BaseMessageController extends TestCase
         $out = $this->runMessageControllerAction('extract', [$this->configFileName]);
         $messages = $this->loadMessages($category);
 
-        $this->assertArrayHasKey(
+        self::assertArrayHasKey(
             'static message after variable concat',
             $messages,
             "message is missing in translation file. Command output:\n\n{$out}",
         );
-        $this->assertArrayNotHasKey(
+        self::assertArrayNotHasKey(
             'prefix ',
             $messages,
             "dynamic concatenation should have been skipped. Command output:\n\n{$out}",
+        );
+    }
+
+    /**
+     * Ensure empty-string messages are still extracted with the null-sentinel guard.
+     */
+    public function testCreateTranslationWithEmptyStringMessage(): void
+    {
+        $category = 'test.empty.category';
+        $sourceFileContent = "Yii::t('{$category}', '');";
+
+        $this->createSourceFile($sourceFileContent);
+        $this->saveConfigFile($this->getConfig());
+
+        $out = $this->runMessageControllerAction('extract', [$this->configFileName]);
+        $messages = $this->loadMessages($category);
+
+        self::assertArrayHasKey(
+            '',
+            $messages,
+            "empty message key is missing in translation file. Command output:\n\n{$out}",
         );
     }
 

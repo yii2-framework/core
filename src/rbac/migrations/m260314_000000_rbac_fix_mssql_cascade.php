@@ -91,23 +91,17 @@ class m260314_000000_rbac_fix_mssql_cascade extends Migration
         $this->db = $authManager->db;
 
         $schema = $this->db->getSchema()->defaultSchema;
-
         $itemChildSuffix = $this->db->schema->getRawTableName($authManager->itemChildTable);
-        $ruleSuffix = $this->db->schema->getRawTableName($authManager->ruleTable);
 
-        // Drop existing auth_item triggers
-        $this->execute(
-            <<<SQL
-            IF (OBJECT_ID(N'{$schema}.trigger_delete_{$itemChildSuffix}') IS NOT NULL) DROP TRIGGER {$schema}.trigger_delete_{$itemChildSuffix};
-            SQL,
+        $this->dropTriggerIfExists(
+            $schema,
+            "trigger_delete_{$itemChildSuffix}",
         );
-        $this->execute(
-            <<<SQL
-            IF (OBJECT_ID(N'{$schema}.trigger_update_{$itemChildSuffix}') IS NOT NULL) DROP TRIGGER {$schema}.trigger_update_{$itemChildSuffix}
-            SQL,
+        $this->dropTriggerIfExists(
+            $schema,
+            "trigger_update_{$itemChildSuffix}",
         );
 
-        // Find FK constraint names
         $childFk = $this->findForeignKeyName(
             $authManager->itemChildTable,
             'child',
@@ -132,122 +126,25 @@ class m260314_000000_rbac_fix_mssql_cascade extends Migration
             $authManager->ruleTable,
             'name',
         );
-
-        // auth_item INSTEAD OF DELETE: cascade to item_child + assignment
-        $this->execute(
-            <<<SQL
-            CREATE TRIGGER {$schema}.trigger_delete_{$itemChildSuffix}
-            ON {$schema}.{$authManager->itemTable}
-            INSTEAD OF DELETE
-            AS
-            BEGIN
-                DELETE FROM {$schema}.{$authManager->assignmentTable} WHERE [item_name] IN (SELECT [name] FROM deleted);
-                DELETE FROM {$schema}.{$authManager->itemChildTable} WHERE [parent] IN (SELECT [name] FROM deleted) OR [child] IN (SELECT [name] FROM deleted);
-                DELETE FROM {$schema}.{$authManager->itemTable} WHERE [name] IN (SELECT [name] FROM deleted);
-            END
-            SQL,
+        $this->createAuthItemDeleteTrigger(
+            $schema,
+            $authManager,
         );
-
-        // auth_item INSTEAD OF UPDATE: two modes
-        //   1. Single-row name change  → NOCHECK FKs, cascade to child/parent/assignment
-        //   2. Multi-row column update  → JOIN-based update (used by auth_rule triggers)
-        $this->execute(
-            <<<SQL
-            CREATE TRIGGER {$schema}.trigger_update_{$itemChildSuffix}
-            ON {$schema}.{$authManager->itemTable}
-            INSTEAD OF UPDATE
-            AS
-            BEGIN
-                DECLARE @name_changed BIT = 0
-                DECLARE @old_name NVARCHAR(64)
-                DECLARE @new_name NVARCHAR(64)
-
-                IF (SELECT COUNT(*) FROM deleted) = 1
-                BEGIN
-                    SELECT @old_name = d.[name], @new_name = i.[name]
-                    FROM deleted d CROSS JOIN inserted i
-                    IF @old_name <> @new_name SET @name_changed = 1
-                END
-
-                IF @name_changed = 1
-                BEGIN
-                    ALTER TABLE {$authManager->itemChildTable} NOCHECK CONSTRAINT {$childFk};
-                    ALTER TABLE {$authManager->itemChildTable} NOCHECK CONSTRAINT {$parentFk};
-                    ALTER TABLE {$authManager->assignmentTable} NOCHECK CONSTRAINT {$assignmentFk};
-                    UPDATE {$authManager->itemChildTable} SET [child] = @new_name WHERE [child] = @old_name;
-                    UPDATE {$authManager->itemChildTable} SET [parent] = @new_name WHERE [parent] = @old_name;
-                    UPDATE {$authManager->assignmentTable} SET [item_name] = @new_name WHERE [item_name] = @old_name;
-                    UPDATE {$authManager->itemTable}
-                    SET [name] = @new_name,
-                        [type] = (SELECT [type] FROM inserted),
-                        [description] = (SELECT [description] FROM inserted),
-                        [rule_name] = (SELECT [rule_name] FROM inserted),
-                        [data] = (SELECT [data] FROM inserted),
-                        [created_at] = (SELECT [created_at] FROM inserted),
-                        [updated_at] = (SELECT [updated_at] FROM inserted)
-                    WHERE [name] = @old_name
-                    ALTER TABLE {$authManager->itemChildTable} CHECK CONSTRAINT {$childFk};
-                    ALTER TABLE {$authManager->itemChildTable} CHECK CONSTRAINT {$parentFk};
-                    ALTER TABLE {$authManager->assignmentTable} CHECK CONSTRAINT {$assignmentFk};
-                END
-                ELSE
-                BEGIN
-                    UPDATE t
-                    SET t.[type] = i.[type],
-                        t.[description] = i.[description],
-                        t.[rule_name] = i.[rule_name],
-                        t.[data] = i.[data],
-                        t.[created_at] = i.[created_at],
-                        t.[updated_at] = i.[updated_at]
-                    FROM {$authManager->itemTable} t
-                    INNER JOIN deleted d ON t.[name] = d.[name]
-                    INNER JOIN inserted i ON i.[name] = d.[name]
-                END
-            END
-            SQL,
+        $this->createAuthItemUpdateTrigger(
+            $schema,
+            $authManager,
+            $childFk,
+            $parentFk,
+            $assignmentFk,
         );
-
-        // auth_rule INSTEAD OF DELETE: SET NULL auth_item.rule_name, then delete rule
-        $this->execute(
-            <<<SQL
-            CREATE TRIGGER {$schema}.trigger_delete_{$ruleSuffix}
-            ON {$schema}.{$authManager->ruleTable}
-            INSTEAD OF DELETE
-            AS
-            BEGIN
-                UPDATE {$schema}.{$authManager->itemTable} SET [rule_name] = NULL WHERE [rule_name] IN (SELECT [name] FROM deleted);
-                DELETE FROM {$schema}.{$authManager->ruleTable} WHERE [name] IN (SELECT [name] FROM deleted);
-            END
-            SQL,
+        $this->createAuthRuleDeleteTrigger(
+            $schema,
+            $authManager,
         );
-
-        // auth_rule INSTEAD OF UPDATE: cascade name change to auth_item.rule_name
-        $this->execute(
-            <<<SQL
-            CREATE TRIGGER {$schema}.trigger_update_{$ruleSuffix}
-            ON {$schema}.{$authManager->ruleTable}
-            INSTEAD OF UPDATE
-            AS
-                DECLARE @old_name NVARCHAR(64) = (SELECT [name] FROM deleted)
-                DECLARE @new_name NVARCHAR(64) = (SELECT [name] FROM inserted)
-            BEGIN
-                IF @old_name <> @new_name
-                BEGIN
-                    ALTER TABLE {$authManager->itemTable} NOCHECK CONSTRAINT {$ruleFk};
-                    UPDATE {$authManager->itemTable} SET [rule_name] = @new_name WHERE [rule_name] = @old_name;
-                END
-                UPDATE {$authManager->ruleTable}
-                SET [name] = (SELECT [name] FROM inserted),
-                    [data] = (SELECT [data] FROM inserted),
-                    [created_at] = (SELECT [created_at] FROM inserted),
-                    [updated_at] = (SELECT [updated_at] FROM inserted)
-                WHERE [name] IN (SELECT [name] FROM deleted)
-                IF @old_name <> @new_name
-                BEGIN
-                    ALTER TABLE {$authManager->itemTable} CHECK CONSTRAINT {$ruleFk};
-                END
-            END
-            SQL,
+        $this->createAuthRuleUpdateTrigger(
+            $schema,
+            $authManager,
+            $ruleFk,
         );
     }
 
@@ -269,29 +166,23 @@ class m260314_000000_rbac_fix_mssql_cascade extends Migration
         $itemChildSuffix = $this->db->schema->getRawTableName($authManager->itemChildTable);
         $ruleSuffix = $this->db->schema->getRawTableName($authManager->ruleTable);
 
-        // Drop all triggers
-        $this->execute(
-            <<<SQL
-            IF (OBJECT_ID(N'{$schema}.trigger_delete_{$ruleSuffix}') IS NOT NULL) DROP TRIGGER {$schema}.trigger_delete_{$ruleSuffix}
-            SQL,
+        $this->dropTriggerIfExists(
+            $schema,
+            "trigger_delete_{$ruleSuffix}",
         );
-        $this->execute(
-            <<<SQL
-            IF (OBJECT_ID(N'{$schema}.trigger_update_{$ruleSuffix}') IS NOT NULL) DROP TRIGGER {$schema}.trigger_update_{$ruleSuffix}
-            SQL,
+        $this->dropTriggerIfExists(
+            $schema,
+            "trigger_update_{$ruleSuffix}",
         );
-        $this->execute(
-            <<<SQL
-            IF (OBJECT_ID(N'{$schema}.trigger_delete_{$itemChildSuffix}') IS NOT NULL) DROP TRIGGER {$schema}.trigger_delete_{$itemChildSuffix}
-            SQL,
+        $this->dropTriggerIfExists(
+            $schema,
+            "trigger_delete_{$itemChildSuffix}",
         );
-        $this->execute(
-            <<<SQL
-            IF (OBJECT_ID(N'{$schema}.trigger_update_{$itemChildSuffix}') IS NOT NULL) DROP TRIGGER {$schema}.trigger_update_{$itemChildSuffix}
-            SQL,
+        $this->dropTriggerIfExists(
+            $schema,
+            "trigger_update_{$itemChildSuffix}",
         );
 
-        // Restore previous auth_item triggers (from m200409_110543_rbac_update_mssql_trigger)
         $childFk = $this->findForeignKeyName(
             $authManager->itemChildTable,
             'child',
@@ -299,9 +190,191 @@ class m260314_000000_rbac_fix_mssql_cascade extends Migration
             'name',
         );
 
+        $this->restorePreviousAuthItemDeleteTrigger(
+            $schema,
+            $authManager,
+        );
+        $this->restorePreviousAuthItemUpdateTrigger(
+            $schema,
+            $authManager,
+            $childFk
+        );
+    }
+
+    /**
+     * Drops a trigger if it exists.
+     */
+    protected function dropTriggerIfExists(string $schema, string $triggerName): void
+    {
         $this->execute(
             <<<SQL
-            CREATE TRIGGER {$schema}.trigger_delete_{$itemChildSuffix}
+            IF (OBJECT_ID(N'{$schema}.{$triggerName}') IS NOT NULL) DROP TRIGGER {$schema}.{$triggerName}
+            SQL,
+        );
+    }
+
+    /**
+     * Creates auth_item INSTEAD OF DELETE trigger.
+     *
+     * Cascades to auth_assignment and auth_item_child before deleting items.
+     */
+    protected function createAuthItemDeleteTrigger(string $schema, DbManager $authManager): void
+    {
+        $this->execute(
+            <<<SQL
+            CREATE TRIGGER {$schema}.trigger_delete_{$this->db->schema->getRawTableName($authManager->itemChildTable)}
+            ON {$schema}.{$authManager->itemTable}
+            INSTEAD OF DELETE
+            AS
+            BEGIN
+                DELETE FROM {$schema}.{$authManager->assignmentTable} WHERE [item_name] IN (SELECT [name] FROM deleted);
+                DELETE FROM {$schema}.{$authManager->itemChildTable} WHERE [parent] IN (SELECT [name] FROM deleted) OR [child] IN (SELECT [name] FROM deleted);
+                DELETE FROM {$schema}.{$authManager->itemTable} WHERE [name] IN (SELECT [name] FROM deleted);
+            END
+            SQL,
+        );
+    }
+
+    /**
+     * Creates auth_item INSTEAD OF UPDATE trigger with two modes.
+     *
+     * 1. Single-row name change: NOCHECK FKs, cascade to child/parent/assignment.
+     * 2. Multi-row column update: JOIN-based update (used by auth_rule triggers).
+     */
+    protected function createAuthItemUpdateTrigger(
+        string $schema,
+        DbManager $authManager,
+        string $childFk,
+        string $parentFk,
+        string $assignmentFk,
+    ): void {
+        $this->execute(
+            <<<SQL
+            CREATE TRIGGER {$schema}.trigger_update_{$this->db->schema->getRawTableName($authManager->itemChildTable)}
+            ON {$schema}.{$authManager->itemTable}
+            INSTEAD OF UPDATE
+            AS
+            BEGIN
+                DECLARE @name_changed BIT = 0
+                DECLARE @old_name NVARCHAR(64)
+                DECLARE @new_name NVARCHAR(64)
+
+                IF (SELECT COUNT(*) FROM deleted) = 1
+                BEGIN
+                    SELECT @old_name = d.[name], @new_name = i.[name]
+                    FROM deleted d CROSS JOIN inserted i
+                    IF @old_name <> @new_name SET @name_changed = 1
+                END
+
+                IF @name_changed = 1
+                BEGIN
+                    ALTER TABLE {$schema}.{$authManager->itemChildTable} NOCHECK CONSTRAINT {$childFk};
+                    ALTER TABLE {$schema}.{$authManager->itemChildTable} NOCHECK CONSTRAINT {$parentFk};
+                    ALTER TABLE {$schema}.{$authManager->assignmentTable} NOCHECK CONSTRAINT {$assignmentFk};
+                    UPDATE {$schema}.{$authManager->itemChildTable} SET [child] = @new_name WHERE [child] = @old_name;
+                    UPDATE {$schema}.{$authManager->itemChildTable} SET [parent] = @new_name WHERE [parent] = @old_name;
+                    UPDATE {$schema}.{$authManager->assignmentTable} SET [item_name] = @new_name WHERE [item_name] = @old_name;
+                    UPDATE {$schema}.{$authManager->itemTable}
+                    SET [name] = @new_name,
+                        [type] = (SELECT [type] FROM inserted),
+                        [description] = (SELECT [description] FROM inserted),
+                        [rule_name] = (SELECT [rule_name] FROM inserted),
+                        [data] = (SELECT [data] FROM inserted),
+                        [created_at] = (SELECT [created_at] FROM inserted),
+                        [updated_at] = (SELECT [updated_at] FROM inserted)
+                    WHERE [name] = @old_name
+                    ALTER TABLE {$schema}.{$authManager->itemChildTable} CHECK CONSTRAINT {$childFk};
+                    ALTER TABLE {$schema}.{$authManager->itemChildTable} CHECK CONSTRAINT {$parentFk};
+                    ALTER TABLE {$schema}.{$authManager->assignmentTable} CHECK CONSTRAINT {$assignmentFk};
+                END
+                ELSE
+                BEGIN
+                    UPDATE t
+                    SET t.[type] = i.[type],
+                        t.[description] = i.[description],
+                        t.[rule_name] = i.[rule_name],
+                        t.[data] = i.[data],
+                        t.[created_at] = i.[created_at],
+                        t.[updated_at] = i.[updated_at]
+                    FROM {$schema}.{$authManager->itemTable} t
+                    INNER JOIN deleted d ON t.[name] = d.[name]
+                    INNER JOIN inserted i ON i.[name] = d.[name]
+                END
+            END
+            SQL,
+        );
+    }
+
+    /**
+     * Creates auth_rule INSTEAD OF DELETE trigger.
+     *
+     * Sets auth_item.rule_name to NULL before deleting rules.
+     */
+    protected function createAuthRuleDeleteTrigger(string $schema, DbManager $authManager): void
+    {
+        $this->execute(
+            <<<SQL
+            CREATE TRIGGER {$schema}.trigger_delete_{$this->db->schema->getRawTableName($authManager->ruleTable)}
+            ON {$schema}.{$authManager->ruleTable}
+            INSTEAD OF DELETE
+            AS
+            BEGIN
+                UPDATE {$schema}.{$authManager->itemTable} SET [rule_name] = NULL WHERE [rule_name] IN (SELECT [name] FROM deleted);
+                DELETE FROM {$schema}.{$authManager->ruleTable} WHERE [name] IN (SELECT [name] FROM deleted);
+            END
+            SQL,
+        );
+    }
+
+    /**
+     * Creates auth_rule INSTEAD OF UPDATE trigger.
+     *
+     * Cascades rule name changes to auth_item.rule_name.
+     */
+    protected function createAuthRuleUpdateTrigger(string $schema, DbManager $authManager, string $ruleFk): void
+    {
+        $this->execute(
+            <<<SQL
+            CREATE TRIGGER {$schema}.trigger_update_{$this->db->schema->getRawTableName($authManager->ruleTable)}
+            ON {$schema}.{$authManager->ruleTable}
+            INSTEAD OF UPDATE
+            AS
+                DECLARE @old_name NVARCHAR(64) = (SELECT [name] FROM deleted)
+                DECLARE @new_name NVARCHAR(64) = (SELECT [name] FROM inserted)
+            BEGIN
+                IF (SELECT COUNT(*) FROM deleted) > 1
+                BEGIN
+                    RAISERROR('Multi-row UPDATE on auth_rule is not supported by this trigger.', 16, 1);
+                    RETURN;
+                END
+                IF @old_name <> @new_name
+                BEGIN
+                    ALTER TABLE {$schema}.{$authManager->itemTable} NOCHECK CONSTRAINT {$ruleFk};
+                    UPDATE {$schema}.{$authManager->itemTable} SET [rule_name] = @new_name WHERE [rule_name] = @old_name;
+                END
+                UPDATE {$schema}.{$authManager->ruleTable}
+                SET [name] = (SELECT [name] FROM inserted),
+                    [data] = (SELECT [data] FROM inserted),
+                    [created_at] = (SELECT [created_at] FROM inserted),
+                    [updated_at] = (SELECT [updated_at] FROM inserted)
+                WHERE [name] IN (SELECT [name] FROM deleted)
+                IF @old_name <> @new_name
+                BEGIN
+                    ALTER TABLE {$schema}.{$authManager->itemTable} CHECK CONSTRAINT {$ruleFk};
+                END
+            END
+            SQL,
+        );
+    }
+
+    /**
+     * Restores the previous auth_item INSTEAD OF DELETE trigger from m200409_110543_rbac_update_mssql_trigger.
+     */
+    protected function restorePreviousAuthItemDeleteTrigger(string $schema, DbManager $authManager): void
+    {
+        $this->execute(
+            <<<SQL
+            CREATE TRIGGER {$schema}.trigger_delete_{$this->db->schema->getRawTableName($authManager->itemChildTable)}
             ON {$schema}.{$authManager->itemTable}
             INSTEAD OF DELETE
             AS
@@ -309,12 +382,18 @@ class m260314_000000_rbac_fix_mssql_cascade extends Migration
                 DELETE FROM {$schema}.{$authManager->itemChildTable} WHERE parent IN (SELECT name FROM deleted) OR child IN (SELECT name FROM deleted);
                 DELETE FROM {$schema}.{$authManager->itemTable} WHERE name IN (SELECT name FROM deleted);
             END;
-            SQL
+            SQL,
         );
+    }
 
+    /**
+     * Restores the previous auth_item INSTEAD OF UPDATE trigger from m200409_110543_rbac_update_mssql_trigger.
+     */
+    protected function restorePreviousAuthItemUpdateTrigger(string $schema, DbManager $authManager, string $childFk): void
+    {
         $this->execute(
             <<<SQL
-            CREATE TRIGGER {$schema}.trigger_update_{$itemChildSuffix}
+            CREATE TRIGGER {$schema}.trigger_update_{$this->db->schema->getRawTableName($authManager->itemChildTable)}
             ON {$schema}.{$authManager->itemTable}
             INSTEAD OF UPDATE
             AS
@@ -323,10 +402,10 @@ class m260314_000000_rbac_fix_mssql_cascade extends Migration
             BEGIN
                 IF @old_name <> @new_name
                 BEGIN
-                    ALTER TABLE {$authManager->itemChildTable} NOCHECK CONSTRAINT {$childFk};
-                    UPDATE {$authManager->itemChildTable} SET child = @new_name WHERE child = @old_name;
+                    ALTER TABLE {$schema}.{$authManager->itemChildTable} NOCHECK CONSTRAINT {$childFk};
+                    UPDATE {$schema}.{$authManager->itemChildTable} SET child = @new_name WHERE child = @old_name;
                 END
-                UPDATE {$authManager->itemTable}
+                UPDATE {$schema}.{$authManager->itemTable}
                 SET name = (SELECT name FROM inserted),
                     type = (SELECT type FROM inserted),
                     description = (SELECT description FROM inserted),
@@ -337,10 +416,10 @@ class m260314_000000_rbac_fix_mssql_cascade extends Migration
                 WHERE name IN (SELECT name FROM deleted)
                 IF @old_name <> @new_name
                 BEGIN
-                    ALTER TABLE {$authManager->itemChildTable} CHECK CONSTRAINT {$childFk};
+                    ALTER TABLE {$schema}.{$authManager->itemChildTable} CHECK CONSTRAINT {$childFk};
                 END
             END;
-            SQL
+            SQL,
         );
     }
 }

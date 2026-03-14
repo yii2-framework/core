@@ -89,7 +89,7 @@ class Schema extends BaseSchema implements ConstraintFinderInterface
 
     /**
      * {@inheritdoc}
-     * @see https://docs.oracle.com/cd/B28359_01/server.111/b28337/tdpsg_user_accounts.htm
+     * @see https://docs.oracle.com/en/database/oracle/oracle-database/19/dbseg/managing-security-for-oracle-database-users.html
      */
     protected function findSchemaNames()
     {

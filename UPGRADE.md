@@ -233,3 +233,37 @@ reads `$schema->typeMap['bit']` directly, update accordingly.
 If your application extends `\yii\db\mssql\QueryBuilder` and overrides `oldBuildOrderByAndLimit()`,
 `newBuildOrderByAndLimit()`, or `isOldMssql()`, remove those overrides. The pagination logic now lives directly in
 `buildOrderByAndLimit()` using the `OFFSET ... FETCH` syntax.
+
+### Oracle modernization — minimum Oracle 19c
+
+The minimum supported Oracle version is now **19c**. Oracle 19c is the only version with active Long-Term Support
+(until December 2032). Oracle 11g, 12c, and 18c are all in Sustaining Support (EOL, no patches).
+
+**Pagination:** The pre-12c `ROWNUM`/CTE pagination pattern has been replaced with standard `OFFSET x ROWS FETCH NEXT
+y ROWS ONLY` syntax (available since Oracle 12c). The old pattern:
+
+```sql
+WITH USER_SQL AS ($sql),
+    PAGINATION AS (SELECT USER_SQL.*, rownum as rowNumId FROM USER_SQL)
+SELECT * FROM PAGINATION
+WHERE rowNumId > $offset AND rownum <= $limit
+```
+
+is now:
+
+```sql
+$sql
+ORDER BY ...
+OFFSET $offset ROWS
+FETCH NEXT $limit ROWS ONLY
+```
+
+If your application extends `\yii\db\oci\QueryBuilder` and overrides `buildOrderByAndLimit()`, update your override
+to match the new `OFFSET ... FETCH` syntax.
+
+**WITH RECURSIVE:** `buildWithQueries()` no longer emits the `RECURSIVE` keyword. Oracle does not support
+`WITH RECURSIVE` — recursion is implicit when a CTE references itself. If your application relied on the generated SQL
+containing `WITH RECURSIVE`, update your expectations.
+
+**Documentation links:** All Oracle documentation references in `Schema`, `QueryBuilder`, and `OracleMutex` have been
+updated from Oracle 10g/11g URLs to Oracle 19c URLs.

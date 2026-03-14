@@ -17,7 +17,7 @@ use yii\helpers\StringHelper;
 use yii\db\ExpressionInterface;
 
 /**
- * QueryBuilder is the query builder for Oracle databases.
+ * QueryBuilder is the query builder for Oracle databases (version 19c and later).
  *
  * @author Qiang Xue <qiang.xue@gmail.com>
  * @since 2.0
@@ -68,30 +68,29 @@ class QueryBuilder extends \yii\db\QueryBuilder
      */
     public function buildOrderByAndLimit($sql, $orderBy, $limit, $offset)
     {
+        if (!$this->hasOffset($offset) && !$this->hasLimit($limit)) {
+            $orderBy = $this->buildOrderBy($orderBy);
+
+            return $orderBy === '' ? $sql : $sql . $this->separator . $orderBy;
+        }
+
         $orderBy = $this->buildOrderBy($orderBy);
-        if ($orderBy !== '') {
-            $sql .= $this->separator . $orderBy;
+        if ($orderBy === '') {
+            // ORDER BY clause is required when FETCH and OFFSET are in the SQL
+            $orderBy = 'ORDER BY (SELECT NULL)';
         }
 
-        $filters = [];
-        if ($this->hasOffset($offset)) {
-            $filters[] = 'rowNumId > ' . $offset;
-        }
+        $sql .= "{$this->separator}$orderBy";
+
+        $offset = $this->hasOffset($offset) ? $offset : '0';
+
+        $sql .= "{$this->separator}OFFSET $offset ROWS";
+
         if ($this->hasLimit($limit)) {
-            $filters[] = 'rownum <= ' . $limit;
-        }
-        if (empty($filters)) {
-            return $sql;
+            $sql .= "{$this->separator}FETCH NEXT $limit ROWS ONLY";
         }
 
-        $filter = implode(' AND ', $filters);
-        return <<<EOD
-WITH USER_SQL AS ($sql),
-    PAGINATION AS (SELECT USER_SQL.*, rownum as rowNumId FROM USER_SQL)
-SELECT *
-FROM PAGINATION
-WHERE $filter
-EOD;
+        return $sql;
     }
 
     /**
@@ -209,7 +208,32 @@ EOD;
 
     /**
      * {@inheritdoc}
-     * @see https://docs.oracle.com/cd/B28359_01/server.111/b28286/statements_9016.htm#SQLRF01606
+     *
+     * Oracle does not support the `RECURSIVE` keyword for CTEs. Recursion is implicit when a CTE references itself.
+     */
+    public function buildWithQueries($withs, &$params)
+    {
+        if ($withs === []) {
+            return '';
+        }
+
+        $result = [];
+
+        foreach ($withs as $with) {
+            $query = $with['query'];
+            if ($query instanceof Query) {
+                [$with['query'], $params] = $this->build($query, $params);
+            }
+
+            $result[] = $with['alias'] . ' AS (' . $with['query'] . ')';
+        }
+
+        return 'WITH ' . implode(', ', $result);
+    }
+
+    /**
+     * {@inheritdoc}
+     * @see https://docs.oracle.com/en/database/oracle/oracle-database/19/sqlrf/MERGE.html
      */
     public function upsert($table, $insertColumns, $updateColumns, &$params)
     {

@@ -34,7 +34,7 @@ use yii\base\InvalidConfigException;
  * ]
  * ```
  *
- * @see https://docs.oracle.com/cd/B19306_01/appdev.102/b14258/d_lock.htm#ARPLS021
+ * @see https://docs.oracle.com/en/database/oracle/oracle-database/19/arpls/DBMS_LOCK.html
  * @see Mutex
  *
  * @author Alexander Zlakomanov <zlakomanoff@gmail.com>
@@ -51,7 +51,7 @@ class OracleMutex extends DbMutex
     public const MODE_SSX = 'SSX_MODE';
     /**
      * @var string lock mode to be used.
-     * @see https://docs.oracle.com/cd/B19306_01/appdev.102/b14258/d_lock.htm#ARPLS021#CHDBCFDI
+     * @see https://docs.oracle.com/en/database/oracle/oracle-database/19/arpls/DBMS_LOCK.html#CHDBCFDI
      */
     public $lockMode = self::MODE_X;
     /**
@@ -74,7 +74,7 @@ class OracleMutex extends DbMutex
 
     /**
      * Acquires lock by given name.
-     * @see https://docs.oracle.com/cd/B19306_01/appdev.102/b14258/d_lock.htm#ARPLS021
+     * @see https://docs.oracle.com/en/database/oracle/oracle-database/19/arpls/DBMS_LOCK.html
      * @param string $name of the lock to be acquired.
      * @param int $timeout time (in seconds) to wait for lock to become released.
      * @return bool acquiring result.
@@ -110,7 +110,7 @@ END;',
      * Releases lock by given name.
      * @param string $name of the lock to be released.
      * @return bool release result.
-     * @see https://docs.oracle.com/cd/B19306_01/appdev.102/b14258/d_lock.htm#ARPLS021
+     * @see https://docs.oracle.com/en/database/oracle/oracle-database/19/arpls/DBMS_LOCK.html
      */
     protected function releaseLock($name)
     {

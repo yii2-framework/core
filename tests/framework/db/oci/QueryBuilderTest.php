@@ -13,6 +13,7 @@ use Exception;
 use yii\base\NotSupportedException;
 use yii\db\oci\QueryBuilder;
 use yii\db\oci\Schema;
+use yii\db\Query;
 use yiiunit\base\db\BaseQueryBuilder;
 use yiiunit\data\base\TraversableObject;
 
@@ -78,6 +79,132 @@ class QueryBuilderTest extends BaseQueryBuilder
         $result = parent::indexesProvider();
         $result['drop'][0] = 'DROP INDEX [[CN_constraints_2_single]]';
         return $result;
+    }
+
+    public function testBuildOrderByAndLimitWithOffsetAndLimit(): void
+    {
+        $query = new Query();
+
+        $query->select('id')->from('example')->limit(10)->offset(5);
+
+        [$actualQuerySql, $actualQueryParams] = $this->getQueryBuilder()->build($query);
+
+        self::assertSame(
+            <<<SQL
+            SELECT "id" FROM "example" ORDER BY (SELECT NULL) OFFSET 5 ROWS FETCH NEXT 10 ROWS ONLY
+            SQL,
+            $actualQuerySql,
+            'OFFSET and LIMIT should generate OFFSET x ROWS FETCH NEXT y ROWS ONLY.',
+        );
+        self::assertEmpty(
+            $actualQueryParams,
+            'OFFSET/LIMIT query should have no bound parameters.',
+        );
+    }
+
+    public function testBuildOrderByAndLimitWithLimitOnly(): void
+    {
+        $query = new Query();
+
+        $query->select('id')->from('example')->limit(10);
+
+        [$actualQuerySql, $actualQueryParams] = $this->getQueryBuilder()->build($query);
+
+        self::assertSame(
+            <<<SQL
+            SELECT "id" FROM "example" ORDER BY (SELECT NULL) OFFSET 0 ROWS FETCH NEXT 10 ROWS ONLY
+            SQL,
+            $actualQuerySql,
+            'LIMIT without OFFSET should generate OFFSET 0 ROWS FETCH NEXT y ROWS ONLY.',
+        );
+        self::assertEmpty(
+            $actualQueryParams,
+            'LIMIT-only query should have no bound parameters.',
+        );
+    }
+
+    public function testBuildOrderByAndLimitWithOffsetOnly(): void
+    {
+        $query = new Query();
+
+        $query->select('id')->from('example')->offset(10);
+
+        [$actualQuerySql, $actualQueryParams] = $this->getQueryBuilder()->build($query);
+
+        self::assertSame(
+            <<<SQL
+            SELECT "id" FROM "example" ORDER BY (SELECT NULL) OFFSET 10 ROWS
+            SQL,
+            $actualQuerySql,
+            'OFFSET without LIMIT should generate OFFSET x ROWS without FETCH clause.',
+        );
+        self::assertEmpty(
+            $actualQueryParams,
+            'OFFSET-only query should have no bound parameters.',
+        );
+    }
+
+    public function testBuildOrderByAndLimitWithoutOffsetAndLimit(): void
+    {
+        $query = new Query();
+
+        $query->select('id')->from('example');
+
+        [$actualQuerySql, $actualQueryParams] = $this->getQueryBuilder()->build($query);
+
+        self::assertSame(
+            <<<SQL
+            SELECT "id" FROM "example"
+            SQL,
+            $actualQuerySql,
+            'Query without OFFSET/LIMIT should not contain OFFSET or FETCH clauses.',
+        );
+        self::assertEmpty(
+            $actualQueryParams,
+            'Query without OFFSET/LIMIT should have no bound parameters.',
+        );
+    }
+
+    public function testBuildOrderByAndLimitWithExplicitOrderBy(): void
+    {
+        $query = new Query();
+
+        $query->select('id')->from('example')->orderBy('id')->limit(10)->offset(5);
+
+        [$actualQuerySql, $actualQueryParams] = $this->getQueryBuilder()->build($query);
+
+        self::assertSame(
+            <<<SQL
+            SELECT "id" FROM "example" ORDER BY "id" OFFSET 5 ROWS FETCH NEXT 10 ROWS ONLY
+            SQL,
+            $actualQuerySql,
+            'Explicit ORDER BY should be used instead of ORDER BY (SELECT NULL).',
+        );
+        self::assertEmpty(
+            $actualQueryParams,
+            'Query with explicit ORDER BY should have no bound parameters.',
+        );
+    }
+
+    public function testBuildOrderByAndLimitWithOrderByWithoutPagination(): void
+    {
+        $query = new Query();
+
+        $query->select('id')->from('example')->orderBy('id');
+
+        [$actualQuerySql, $actualQueryParams] = $this->getQueryBuilder()->build($query);
+
+        self::assertSame(
+            <<<SQL
+            SELECT "id" FROM "example" ORDER BY "id"
+            SQL,
+            $actualQuerySql,
+            'ORDER BY without OFFSET/LIMIT should not contain OFFSET or FETCH clauses.',
+        );
+        self::assertEmpty(
+            $actualQueryParams,
+            'ORDER BY without pagination should have no bound parameters.',
+        );
     }
 
     public function testCommentColumn(): void

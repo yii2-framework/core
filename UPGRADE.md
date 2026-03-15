@@ -80,7 +80,7 @@ jQuery is no longer hardcoded in validators and widgets. A new `Application::$us
 controls whether jQuery-based client scripts are registered. When set to `false`, no jQuery assets are loaded and
 `clientValidateAttribute()` returns `null` for all built-in validators.
 
-**No action required** for existing applications the default behavior is fully backward compatible.
+**No action required** for existing applications. The default behavior is fully backward-compatible.
 
 #### New interfaces
 

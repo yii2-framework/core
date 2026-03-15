@@ -309,8 +309,7 @@ class QueryBuilder extends \yii\db\QueryBuilder
 
     /**
      * {@inheritdoc}
-     * @see https://www.postgresql.org/docs/9.5/static/sql-insert.html#SQL-ON-CONFLICT
-     * @see https://stackoverflow.com/questions/1109061/insert-on-duplicate-update-in-postgresql/8702291#8702291
+     * @see https://www.postgresql.org/docs/current/sql-insert.html#SQL-ON-CONFLICT
      */
     public function upsert($table, $insertColumns, $updateColumns, &$params)
     {
@@ -318,23 +317,7 @@ class QueryBuilder extends \yii\db\QueryBuilder
         if (!is_bool($updateColumns)) {
             $updateColumns = $this->normalizeTableRowData($table, $updateColumns);
         }
-        if (version_compare($this->db->getServerVersion(), '9.5', '<')) {
-            return $this->oldUpsert($table, $insertColumns, $updateColumns, $params);
-        }
 
-        return $this->newUpsert($table, $insertColumns, $updateColumns, $params);
-    }
-
-    /**
-     * [[upsert()]] implementation for PostgreSQL 9.5 or higher.
-     * @param string $table
-     * @param array|Query $insertColumns
-     * @param array|bool $updateColumns
-     * @param array $params
-     * @return string
-     */
-    private function newUpsert($table, $insertColumns, $updateColumns, &$params)
-    {
         $insertSql = $this->insert($table, $insertColumns, $params);
         list($uniqueNames, , $updateNames) = $this->prepareUpsertColumns($table, $insertColumns, $updateColumns);
         if (empty($uniqueNames)) {
@@ -357,96 +340,6 @@ class QueryBuilder extends \yii\db\QueryBuilder
         }
         list($updates, $params) = $this->prepareUpdateSets($table, $updateColumns, $params);
         return $insertSql . ' ON CONFLICT (' . implode(', ', $uniqueNames) . ') DO UPDATE SET ' . implode(', ', $updates);
-    }
-
-    /**
-     * [[upsert()]] implementation for PostgreSQL older than 9.5.
-     * @param string $table
-     * @param array|Query $insertColumns
-     * @param array|bool $updateColumns
-     * @param array $params
-     * @return string
-     */
-    private function oldUpsert($table, $insertColumns, $updateColumns, &$params)
-    {
-        list($uniqueNames, $insertNames, $updateNames) = $this->prepareUpsertColumns($table, $insertColumns, $updateColumns, $constraints);
-        if (empty($uniqueNames)) {
-            return $this->insert($table, $insertColumns, $params);
-        }
-        if ($updateNames === []) {
-            // there are no columns to update
-            $updateColumns = false;
-        }
-
-        /** @var Schema $schema */
-        $schema = $this->db->getSchema();
-        if (!$insertColumns instanceof Query) {
-            $tableSchema = $schema->getTableSchema($table);
-            $columnSchemas = $tableSchema !== null ? $tableSchema->columns : [];
-            foreach ($insertColumns as $name => $value) {
-                // NULLs and numeric values must be type hinted in order to be used in SET assigments
-                // NVM, let's cast them all
-                if (isset($columnSchemas[$name])) {
-                    $phName = self::PARAM_PREFIX . count($params);
-                    $params[$phName] = $value;
-                    $insertColumns[$name] = new Expression("CAST($phName AS {$columnSchemas[$name]->dbType})");
-                }
-            }
-        }
-        list(, $placeholders, $values, $params) = $this->prepareInsertValues($table, $insertColumns, $params);
-        $updateCondition = ['or'];
-        $insertCondition = ['or'];
-        $quotedTableName = $schema->quoteTableName($table);
-        foreach ($constraints as $constraint) {
-            $constraintUpdateCondition = ['and'];
-            $constraintInsertCondition = ['and'];
-            foreach ($constraint->columnNames as $name) {
-                $quotedName = $schema->quoteColumnName($name);
-                $constraintUpdateCondition[] = "$quotedTableName.$quotedName=\"EXCLUDED\".$quotedName";
-                $constraintInsertCondition[] = "\"upsert\".$quotedName=\"EXCLUDED\".$quotedName";
-            }
-            $updateCondition[] = $constraintUpdateCondition;
-            $insertCondition[] = $constraintInsertCondition;
-        }
-        $withSql = 'WITH "EXCLUDED" (' . implode(', ', $insertNames)
-            . ') AS (' . (!empty($placeholders) ? 'VALUES (' . implode(', ', $placeholders) . ')' : ltrim($values, ' ')) . ')';
-        if ($updateColumns === false) {
-            $selectSubQuery = (new Query())
-                ->select(new Expression('1'))
-                ->from($table)
-                ->where($updateCondition);
-            $insertSelectSubQuery = (new Query())
-                ->select($insertNames)
-                ->from('EXCLUDED')
-                ->where(['not exists', $selectSubQuery]);
-            $insertSql = $this->insert($table, $insertSelectSubQuery, $params);
-            return "$withSql $insertSql";
-        }
-
-        if ($updateColumns === true) {
-            $updateColumns = [];
-            foreach ($updateNames as $name) {
-                $quotedName = $this->db->quoteColumnName($name);
-                if (strrpos($quotedName, '.') === false) {
-                    $quotedName = '"EXCLUDED".' . $quotedName;
-                }
-                $updateColumns[$name] = new Expression($quotedName);
-            }
-        }
-        list($updates, $params) = $this->prepareUpdateSets($table, $updateColumns, $params);
-        $updateSql = 'UPDATE ' . $this->db->quoteTableName($table) . ' SET ' . implode(', ', $updates)
-            . ' FROM "EXCLUDED" ' . $this->buildWhere($updateCondition, $params)
-            . ' RETURNING ' . $this->db->quoteTableName($table) . '.*';
-        $selectUpsertSubQuery = (new Query())
-            ->select(new Expression('1'))
-            ->from('upsert')
-            ->where($insertCondition);
-        $insertSelectSubQuery = (new Query())
-            ->select($insertNames)
-            ->from('EXCLUDED')
-            ->where(['not exists', $selectUpsertSubQuery]);
-        $insertSql = $this->insert($table, $insertSelectSubQuery, $params);
-        return "$withSql, \"upsert\" AS ($updateSql) $insertSql";
     }
 
     /**

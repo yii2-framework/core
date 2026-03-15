@@ -37,3 +37,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - fix(db): prevent `ActiveRecord::refresh()` parameter mismatch when custom `find()` adds bound parameters.
 - chore: adjust code style.
 - fix(console): `MessageController` crashes on dynamic concatenation in `Yii::t()` calls validate tokens as `T_CONSTANT_ENCAPSED_STRING` before extracting and use `null` sentinel to preserve empty-string messages.
+- refactor(db)!: remove PostgreSQL `< 12` dead code drop `oldUpsert()` CTE workaround for `< 9.5`, remove identity column version check for `< 12`, and remove test version guards; minimum supported version is now PostgreSQL 12.

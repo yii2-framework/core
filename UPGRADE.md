@@ -267,3 +267,23 @@ containing `WITH RECURSIVE`, update your expectations.
 
 **Documentation links:** All Oracle documentation references in `Schema`, `QueryBuilder`, and `OracleMutex` have been
 updated from Oracle 10g/11g URLs to Oracle 19c URLs.
+
+### PostgreSQL dead code removal — minimum PostgreSQL 12
+
+The minimum supported PostgreSQL version is now **12**. PHP 8.2's `pdo_pgsql` requires libpq 10.0+ as the minimum
+client library, and PostgreSQL 12 is already EOL (November 2024). PostgreSQL versions 9.x through 11 are all completely
+unsupported. The following dead code has been removed:
+
+- `QueryBuilder::oldUpsert()` method — CTE-based upsert workaround for PostgreSQL < 9.5. The `ON CONFLICT` syntax
+  (available since 9.5) is now used unconditionally.
+- `QueryBuilder::newUpsert()` method — inlined directly into `upsert()` since the version branch is gone.
+- The `version_compare(..., '9.5')` check in `QueryBuilder::upsert()`.
+- The `version_compare(..., '12.0')` check in `Schema::findColumns()` for identity column detection
+  (`attidentity != ''`). The identity column clause is now always included in the SQL query.
+- Version guards in PostgreSQL tests (`SchemaTest`, `QueryBuilderTest`) for features available since PostgreSQL 10 and 12.
+
+**Documentation links:** All PostgreSQL documentation references in `Schema`, `QueryBuilder`, and `PgsqlMutex` have been
+updated from version-specific URLs (9.0, 9.5) to current-version URLs.
+
+If your application extends `\yii\db\pgsql\QueryBuilder` and overrides or calls `oldUpsert()` or `newUpsert()`, remove
+those references. The upsert logic now lives directly in `upsert()` using the `ON CONFLICT` syntax.

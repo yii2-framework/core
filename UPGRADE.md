@@ -290,9 +290,11 @@ those references. The upsert logic now lives directly in `upsert()` using the `O
 
 ### SQLite dead code removal, minimum SQLite 3.40.0
 
-The minimum supported SQLite version is now **3.40.0**. PHP 8.2+ bundles SQLite via `ext-pdo_sqlite` (statically
-compiled), so the SQLite version is determined entirely by the PHP version. PHP 8.2 ships with SQLite ~3.40.x, making
-all version-guarded code for SQLite < 3.7.11 and < 3.8.3 unreachable dead code. The following has been removed:
+The minimum supported SQLite version is now **3.40.0**. PHP's `ext-pdo_sqlite` can be compiled against a bundled
+SQLite or the system-provided `libsqlite3` (discovered via `pkg-config`), so the actual runtime version depends on the
+build configuration and OS distribution. Official PHP builds (php.net, Docker `php:*` images) bundle SQLite ~3.40.x+
+for PHP 8.2, but custom or distro builds may link against an older system library. Verify your runtime version with
+`SELECT sqlite_version()`. All version-guarded code for SQLite < 3.7.11 and < 3.8.3 has been removed:
 
 - `QueryBuilder::batchInsert()` override (version check `>= 3.7.11` always passed, delegated to parent). The ~45-line
   UNION SELECT fallback (`INSERT INTO ... SELECT ... UNION SELECT ...`) for SQLite < 3.7.11 was dead code.

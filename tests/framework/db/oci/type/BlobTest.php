@@ -4,7 +4,11 @@ declare(strict_types=1);
 
 namespace yiiunit\framework\db\oci\type;
 
+use PDO;
 use PHPUnit\Framework\Attributes\Group;
+use yii\db\oci\ColumnSchema;
+use yii\db\oci\Schema;
+use yii\db\PdoValue;
 use yii\db\Query;
 use yiiunit\base\db\BaseDatabase;
 
@@ -44,7 +48,7 @@ class BlobTest extends BaseDatabase
             ->createCommand($db)
             ->queryScalar();
 
-        $this->assertSame(
+        self::assertSame(
             'a:1:{s:13:"template";s:1:"1";}',
             $result,
             'BLOB column should return the exact serialized string that was inserted.',
@@ -65,10 +69,28 @@ class BlobTest extends BaseDatabase
             ->createCommand($db)
             ->queryScalar();
 
-        $this->assertSame(
+        self::assertSame(
             $updatedBlob,
             $result,
             'BLOB column should return the exact serialized string after update.',
+        );
+    }
+
+    public function testDbTypecastPreservesPdoValue(): void
+    {
+        $columnSchema = new ColumnSchema();
+
+        $columnSchema->type = Schema::TYPE_BINARY;
+        $columnSchema->dbType = 'BLOB';
+
+        $pdoValue = new PdoValue('binary content', PDO::PARAM_LOB);
+
+        $result = $columnSchema->dbTypecast($pdoValue);
+
+        self::assertInstanceOf(
+            PdoValue::class,
+            $result,
+            'PdoValue should be preserved and delegated to parent without unwrapping.',
         );
     }
 }

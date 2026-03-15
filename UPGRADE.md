@@ -197,9 +197,9 @@ map. MySQL 8.0.17+ deprecated display width for integer types and emits deprecat
 | `smallint(6)` | `smallint` |
 | `tinyint(3)` | `tinyint` |
 
-`tinyint(1)` for `TYPE_BOOLEAN` is preserved MySQL uses it as the canonical boolean representation.
+`tinyint(1)` for `TYPE_BOOLEAN` is preserved. MySQL uses it as the canonical boolean representation.
 
-Explicit integer sizes (for example, `$this->primaryKey(8)`) are now ignored display width is no longer emitted.
+Explicit integer sizes (for example, `$this->primaryKey(8)`) are now ignored; display width is no longer emitted.
 
 If your application or migrations rely on the exact SQL output of `QueryBuilder::getColumnType()` for integer types
 (for example, in string assertions or snapshot tests), update the expected values.
@@ -212,7 +212,7 @@ instead of literal `NULL` comparisons. This aligns with SQL semantics where `col
 **Before:** `(col1 = :p0 AND col2 = NULL)` always fails due to SQL NULL semantics
 **After:** `(col1 = :p0 AND col2 IS NULL)` correctly matches NULL values
 
-### MSSQL dead code removal minimum SQL Server 2017
+### MSSQL dead code removal, minimum SQL Server 2017
 
 The minimum supported SQL Server version is now **2017** (internal version `14`). With PHP 8.2+, `pdo_sqlsrv 5.11+` is
 required. SQL Server 2017 is the oldest version with official Docker images and Microsoft extended support (until October
@@ -225,7 +225,7 @@ required. SQL Server 2017 is the oldest version with official Docker images and 
 - ROW_NUMBER() workaround in `QueryBuilder::upsert()`.
 - The `getLastInsertID()` fallback in `Schema::insert()` for pre-2005 servers.
 - Pre-2017 boolean type heuristics in `Schema::loadColumnSchema()` (`tinyint(1)` / `bit(n)` size-based mapping).
-- The `$isVersion2017orLater` version check `bit` now maps directly to `boolean` in `Schema::$typeMap`.
+- The `$isVersion2017orLater` version check was removed; `bit` now maps directly to `boolean` in `Schema::$typeMap`.
 
 **Type map change:** `Schema::$typeMap['bit']` changed from `TYPE_SMALLINT` to `TYPE_BOOLEAN`. If your application
 reads `$schema->typeMap['bit']` directly, update accordingly.
@@ -234,7 +234,7 @@ If your application extends `\yii\db\mssql\QueryBuilder` and overrides `oldBuild
 `newBuildOrderByAndLimit()`, or `isOldMssql()`, remove those overrides. The pagination logic now lives directly in
 `buildOrderByAndLimit()` using the `OFFSET ... FETCH` syntax.
 
-### Oracle modernization minimum Oracle 19c
+### Oracle modernization, minimum Oracle 19c
 
 The minimum supported Oracle version is now **19c**. Oracle 19c is the only version with active Long-Term Support
 (until December 2032). Oracle 11g, 12c, and 18c are all in Sustaining Support (EOL, no patches).
@@ -262,21 +262,21 @@ If your application extends `\yii\db\oci\QueryBuilder` and overrides `buildOrder
 to match the new `OFFSET ... FETCH` syntax.
 
 **WITH RECURSIVE:** `buildWithQueries()` no longer emits the `RECURSIVE` keyword. Oracle does not support
-`WITH RECURSIVE` recursion is implicit when a CTE references itself. If your application relied on the generated SQL
+`WITH RECURSIVE`; recursion is implicit when a CTE references itself. If your application relied on the generated SQL
 containing `WITH RECURSIVE`, update your expectations.
 
 **Documentation links:** All Oracle documentation references in `Schema`, `QueryBuilder`, and `OracleMutex` have been
 updated from Oracle 10g/11g URLs to Oracle 19c URLs.
 
-### PostgreSQL dead code removal minimum PostgreSQL 12
+### PostgreSQL dead code removal, minimum PostgreSQL 12
 
 The minimum supported PostgreSQL version is now **12**. PHP 8.2's `pdo_pgsql` requires libpq 10.0+ as the minimum
 client library, and PostgreSQL 12 is already EOL (November 2024). PostgreSQL versions 9.x through 11 are all completely
 unsupported. The following dead code has been removed:
 
-- `QueryBuilder::oldUpsert()` method CTE-based upsert workaround for PostgreSQL < 9.5. The `ON CONFLICT` syntax
+- `QueryBuilder::oldUpsert()` method (CTE-based upsert workaround for PostgreSQL < 9.5). The `ON CONFLICT` syntax
   (available since 9.5) is now used unconditionally.
-- `QueryBuilder::newUpsert()` method inlined directly into `upsert()` since the version branch is gone.
+- `QueryBuilder::newUpsert()` method (inlined directly into `upsert()` since the version branch is gone).
 - The `version_compare(..., '9.5')` check in `QueryBuilder::upsert()`.
 - The `version_compare(..., '12.0')` check in `Schema::findColumns()` for identity column detection
   (`attidentity != ''`). The identity column clause is now always included in the SQL query.
@@ -288,22 +288,21 @@ updated from version-specific URLs (9.0, 9.5) to current-version URLs.
 If your application extends `\yii\db\pgsql\QueryBuilder` and overrides or calls `oldUpsert()` or `newUpsert()`, remove
 those references. The upsert logic now lives directly in `upsert()` using the `ON CONFLICT` syntax.
 
-### SQLite dead code removal minimum SQLite 3.40.0
+### SQLite dead code removal, minimum SQLite 3.40.0
 
 The minimum supported SQLite version is now **3.40.0**. PHP 8.2+ bundles SQLite via `ext-pdo_sqlite` (statically
 compiled), so the SQLite version is determined entirely by the PHP version. PHP 8.2 ships with SQLite ~3.40.x, making
 all version-guarded code for SQLite < 3.7.11 and < 3.8.3 unreachable dead code. The following has been removed:
 
-- `QueryBuilder::batchInsert()` override the version check `>= 3.7.11` always passed, so it always delegated to
-  `parent::batchInsert()`. The ~45-line UNION SELECT fallback (`INSERT INTO ... SELECT ... UNION SELECT ...`) for
-  SQLite < 3.7.11 was dead code.
-- `use yii\helpers\StringHelper` import from `QueryBuilder` only used in the dead fallback.
-- `testBatchInsertOnOlderVersions()` test always skipped because SQLite >= 3.7.11.
-- `testUpsert()` override in `CommandTest` the `< 3.8.3` version guard never triggered; the parent test runs
-  correctly.
-- Version guard in `DbSessionTest::setUp()` the `< 3.8.3` check never triggered.
-- Schema PHPDoc updated from `"SQLite (2/3)"` to `"SQLite 3"` SQLite 2 is not supported by `ext-pdo_sqlite`.
+- `QueryBuilder::batchInsert()` override (version check `>= 3.7.11` always passed, delegated to parent). The ~45-line
+  UNION SELECT fallback (`INSERT INTO ... SELECT ... UNION SELECT ...`) for SQLite < 3.7.11 was dead code.
+- `use yii\helpers\StringHelper` import from `QueryBuilder` (only used in the dead fallback).
+- `testBatchInsertOnOlderVersions()` test (always skipped because SQLite >= 3.7.11).
+- `testUpsert()` override in `CommandTest` (the `< 3.8.3` version guard never triggered; the parent test runs
+  correctly).
+- Version guard in `DbSessionTest::setUp()` (the `< 3.8.3` check never triggered).
+- Schema PHPDoc updated from `"SQLite (2/3)"` to `"SQLite 3"` (`ext-pdo_sqlite` does not support SQLite 2).
 
-If your application extends `\yii\db\sqlite\QueryBuilder` and overrides `batchInsert()`, remove your override the
+If your application extends `\yii\db\sqlite\QueryBuilder` and overrides `batchInsert()`, remove your override. The
 parent `\yii\db\QueryBuilder::batchInsert()` handles all cases since native multi-row INSERT has been supported since
 SQLite 3.7.11.

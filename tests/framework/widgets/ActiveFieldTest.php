@@ -583,6 +583,7 @@ EOD;
         $this->assertNotTrue(isset($actualValue['validateOnType']));
         $this->assertNotTrue(isset($actualValue['validationDelay']));
         $this->assertNotTrue(isset($actualValue['enableAjaxValidation']));
+        $this->assertNotTrue(isset($actualValue['hasWhenClient']));
 
         $this->activeField->validateOnChange = $expectedValidateOnChange = false;
         $this->activeField->validateOnBlur = $expectedValidateOnBlur = false;
@@ -614,6 +615,7 @@ EOD;
             . "{ return 'yii2' == 'yii2'; })(attribute, value)) { return true; }}";
 
         $this->assertEquals($expectedJsExpression, $actualValue['validate']->expression);
+        $this->assertTrue($actualValue['hasWhenClient']);
     }
 
     /**

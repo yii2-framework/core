@@ -842,11 +842,13 @@ class ActiveField extends Component
 
         if ($clientValidation) {
             $validators = [];
+            $hasWhenClient = false;
             foreach ($this->model->getActiveValidators($attribute) as $validator) {
                 /** @var \yii\validators\Validator $validator */
                 $js = $validator->clientValidateAttribute($this->model, $attribute, $this->form->getView());
                 if ($validator->enableClientValidation && $js != '') {
                     if ($validator->whenClient !== null) {
+                        $hasWhenClient = true;
                         $js = "if (({$validator->whenClient})(attribute, value)) { $js }";
                     }
                     $validators[] = $js;
@@ -880,6 +882,10 @@ class ActiveField extends Component
         }
         foreach (['validateOnChange', 'validateOnBlur', 'validateOnType', 'validationDelay'] as $name) {
             $options[$name] = $this->$name === null ? $this->form->$name : $this->$name;
+        }
+
+        if (!empty($hasWhenClient)) {
+            $options['hasWhenClient'] = true;
         }
 
         if (!empty($validators)) {

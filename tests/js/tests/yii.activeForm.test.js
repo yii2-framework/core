@@ -15,7 +15,7 @@ describe('yii.activeForm', function () {
     function registerYii() {
         var code = fs.readFileSync(yiiPath);
         var script = new vm.Script(code);
-        var sandbox = {window: window, jQuery: $};
+        var sandbox = {window: window, document: window.document, navigator: window.navigator, jQuery: $};
         var context = new vm.createContext(sandbox);
         script.runInContext(context);
         return sandbox.window.yii;
@@ -158,6 +158,9 @@ describe('yii.activeForm', function () {
                             jqXHR: {
                                 abort: function () {
                                     request.aborted = true;
+                                },
+                                getResponseHeader: function () {
+                                    return null;
                                 }
                             },
                             aborted: false,
@@ -186,7 +189,42 @@ describe('yii.activeForm', function () {
                     ajaxStub.restore();
                 });
             });
-        })
+        });
+
+        describe('with conditional validation', function () {
+            it('should clear stale errors for conditional attributes when related input changes', function () {
+                $activeForm = $('#w4');
+                $activeForm.yiiActiveForm([{
+                    id: 'test-att1',
+                    input: '#test-att1',
+                    container: '.field-test-att1',
+                    hasWhenClient: true,
+                    validate: function (attribute, value, messages) {
+                        if ($('#test-att2').val() === 'show' && value === '') {
+                            messages.push('Att1 cannot be blank.');
+                        }
+                    }
+                }, {
+                    id: 'test-att2',
+                    input: '#test-att2',
+                    container: '.field-test-att2'
+                }]);
+
+                var $dependentField = $activeForm.find('.field-test-att1');
+                var $dependentInput = $('#test-att1');
+                var $toggleInput = $('#test-att2');
+
+                $toggleInput.val('show');
+                $dependentInput.val('');
+                $activeForm.yiiActiveForm('validateAttribute', 'test-att1');
+                assert.isTrue($dependentField.hasClass('has-error'));
+
+                $toggleInput.val('hide');
+                $activeForm.yiiActiveForm('validateAttribute', 'test-att2');
+                assert.isFalse($dependentField.hasClass('has-error'));
+                assert.equal('', $dependentField.find('.help-block').text());
+            });
+        });
     });
 
     describe('resetForm method', function () {

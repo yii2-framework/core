@@ -32,7 +32,7 @@ describe('yii.gridView', function () {
     function registerYii() {
         var code = fs.readFileSync(yiiPath);
         var script = new vm.Script(code);
-        var sandbox = {window: window, jQuery: $};
+        var sandbox = {window: window, document: window.document, navigator: window.navigator, jQuery: $};
         var context = new vm.createContext(sandbox);
         script.runInContext(context);
         return sandbox.window.yii;

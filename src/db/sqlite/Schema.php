@@ -25,7 +25,7 @@ use yii\helpers\ArrayHelper;
 use yii\db\Schema as BaseSchema;
 
 /**
- * Schema is the class for retrieving metadata from a SQLite (2/3) database.
+ * Schema is the class for retrieving metadata from a SQLite 3 database.
  *
  * @property-write string $transactionIsolationLevel The transaction isolation level to use for this
  * transaction. This can be either [[Transaction::READ_UNCOMMITTED]] or [[Transaction::SERIALIZABLE]].

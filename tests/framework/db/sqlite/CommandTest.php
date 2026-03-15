@@ -31,21 +31,6 @@ class CommandTest extends BaseCommand
     }
 
     /**
-     * @dataProvider upsertProvider
-     * @param array $firstData
-     * @param array $secondData
-     */
-    public function testUpsert(array $firstData, array $secondData): void
-    {
-        if (version_compare($this->getConnection(false)->getServerVersion(), '3.8.3', '<')) {
-            $this->markTestSkipped('SQLite < 3.8.3 does not support "WITH" keyword.');
-            return;
-        }
-
-        parent::testUpsert($firstData, $secondData);
-    }
-
-    /**
      * @dataProvider addPrimaryKeyProvider
      *
      * @param string $name

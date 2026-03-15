@@ -14,10 +14,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - refactor(db)!: remove CUBRID database driver, tests, fixture, configuration entries, and PHPStan baseline suppressions.
 - refactor(caching)!: rename `ApcCache` to `ApcuCache` and remove legacy APC extension support.
 - refactor(base): remove dead `E_STRICT` handling and `PHP_VERSION_ID < 80100` guards from `ErrorException` and `ErrorHandler`.
-- refactor(base)!: remove all HHVM support — drop `E_HHVM_FATAL_ERROR` constant, `handleHhvmError()` method, `$_hhvmException` property, and all HHVM-specific conditionals and test skips.
+- refactor(base)!: remove all HHVM support drop `E_HHVM_FATAL_ERROR` constant, `handleHhvmError()` method, `$_hhvmException` property, and all HHVM-specific conditionals and test skips.
 - refactor!: remove `PHP < 8.2` version guards and dead fallbacks across `src/` and `tests`.
 - feat(widgets): enhance `ActiveField::label()` with `tag` option and fix `labelOptions` for `checkbox`/`radio`.
-- feat: make jQuery optional via strategy pattern — introduce `Application::$useJquery`, `ClientValidatorScriptInterface`, `ClientScriptInterface`, and extracted jQuery client script classes for all validators and widgets.
+- feat: make jQuery optional via strategy pattern introduce `Application::$useJquery`, `ClientValidatorScriptInterface`, `ClientScriptInterface`, and extracted jQuery client script classes for all validators and widgets.
 - test(validators): add comprehensive test coverage for `CompareValidator` data-provider-driven tests, closure validation, client-side validation, and numeric type conversion scenarios.
 - tests(base): raise code coverage to `100%` for `Component`, `Event` and `Model` classes, and update related tests.
 - refactor(tests): simplify BaseDatabase, migrate Oracle to `gvenzl/oracle-free` and optimize test performance.
@@ -30,11 +30,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - fix(helpers): preserve escaped non-format literals in `FormatConverter::convertDatePhpToIcu()` and keep ICU/PHP round-trip output consistent.
 - fix(helpers): support escaped PHP `date()` format chars `v`, `p`, `X`, `x` in `FormatConverter::convertDatePhpToIcu()`, split escape handling, and optimize the hot path while preserving #35/#37 behavior.
 - refactor(db)!: remove MySQL `< 8.0` dead code and deprecated integer display width from type map (`int(11)` → `int`, `bigint(20)` → `bigint`, etc.); `tinyint(1)` for `BOOLEAN` is preserved.
-- refactor(db)!: remove MSSQL `< 2017` dead code drop `isOldMssql()`, `oldBuildOrderByAndLimit()`, `newBuildOrderByAndLimit()`, ROW_NUMBER() pagination, SQL Server 2005 version checks, and pre-2017 boolean type heuristics; `bit` now maps directly to `boolean` in `typeMap`; minimum supported version is now SQL Server 2017.
-- refactor(db)!: modernize Oracle support for 19c+ replace `ROWNUM`/CTE pagination with standard `OFFSET x ROWS FETCH NEXT y ROWS ONLY`, fix `buildWithQueries()` emitting unsupported `WITH RECURSIVE` keyword (same issue as MSSQL #34), and update documentation links; minimum supported version is now Oracle 19c.
+- refactor(db)!: remove MSSQL `< 2017` dead code drop `isOldMssql()`, `oldBuildOrderByAndLimit()`, `newBuildOrderByAndLimit()`, ROW_NUMBER() pagination, SQL Server `2005` version checks, and pre-2017 boolean type heuristics; `bit` now maps directly to `boolean` in `typeMap`; minimum supported version is now SQL Server `2017`.
+- refactor(db)!: modernize Oracle support for 19c+ replace `ROWNUM`/CTE pagination with standard `OFFSET x ROWS FETCH NEXT y ROWS ONLY`, fix `buildWithQueries()` emitting unsupported `WITH RECURSIVE` keyword (same issue as MSSQL #34), and update documentation links; minimum supported version is now Oracle `19c`.
 - fix(db): keep `inverseOf()` array hydration shape consistent and avoid indirect modification notices in mixed object/array inverse population (`asArray()`).
 - fix(db): MSSQL RBAC cascade gaps and `varbinary` type-casting move binary type-casting to `ColumnSchema::dbTypecast()`, remove `normalizeTableRowData()`, extend `auth_item` triggers to cascade to `auth_assignment`, add `auth_rule` INSTEAD OF triggers, and add `MsSQLManagerTest`/`MsSQLManagerCacheTest`.
 - fix(db): prevent `ActiveRecord::refresh()` parameter mismatch when custom `find()` adds bound parameters.
 - chore: adjust code style.
 - fix(console): `MessageController` crashes on dynamic concatenation in `Yii::t()` calls validate tokens as `T_CONSTANT_ENCAPSED_STRING` before extracting and use `null` sentinel to preserve empty-string messages.
-- refactor(db)!: remove PostgreSQL `< 12` dead code drop `oldUpsert()` CTE workaround for `< 9.5`, remove identity column version check for `< 12`, and remove test version guards; minimum supported version is now PostgreSQL 12.
+- refactor(db)!: remove PostgreSQL `< 12` dead code drop `oldUpsert()` CTE workaround for `< 9.5`, remove identity column version check for `< 12`, and remove test version guards; minimum supported version is now PostgreSQL `12`.
+- refactor(db)!: remove SQLite `< 3.40.0` dead code drop `batchInsert()` UNION SELECT fallback for `< 3.7.11`, remove `testUpsert()` version guard for `< 3.8.3`, remove `DbSessionTest` version guard, and update Schema PHPDoc from `SQLite (2/3)` to `SQLite 3`; minimum supported version is now SQLite `3.40.0`.

@@ -9,7 +9,7 @@
 namespace yiiunit\framework\db\sqlite;
 
 use Closure;
-use PDO;
+
 use yii\base\NotSupportedException;
 use yii\db\Schema;
 use yii\db\sqlite\QueryBuilder;
@@ -81,16 +81,6 @@ class QueryBuilderTest extends BaseQueryBuilder
         $data = parent::batchInsertProvider();
         $data['escape-danger-chars']['expected'] = "INSERT INTO `customer` (`address`) VALUES ('SQL-danger chars are escaped: ''); --')";
         return $data;
-    }
-
-    public function testBatchInsertOnOlderVersions(): void
-    {
-        $db = $this->getConnection();
-        if (version_compare($db->pdo->getAttribute(PDO::ATTR_SERVER_VERSION), '3.7.11', '>=')) {
-            $this->markTestSkipped('This test is only relevant for SQLite < 3.7.11');
-        }
-        $sql = $this->getQueryBuilder()->batchInsert('{{customer}} t', ['t.id', 't.name'], [[1, 'a'], [2, 'b']]);
-        $this->assertEquals("INSERT INTO {{customer}} t (`t`.`id`, `t`.`name`) SELECT 1, 'a' UNION SELECT 2, 'b'", $sql);
     }
 
     public function testRenameTable(): void

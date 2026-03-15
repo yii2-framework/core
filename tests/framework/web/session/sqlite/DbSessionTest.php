@@ -9,7 +9,6 @@
 namespace yiiunit\framework\web\session\sqlite;
 
 use yiiunit\base\web\session\BaseDbSession;
-use Yii;
 
 /**
  * Class DbSessionTest.
@@ -24,10 +23,6 @@ class DbSessionTest extends BaseDbSession
     protected function setUp(): void
     {
         parent::setUp();
-
-        if (version_compare(Yii::$app->get('db')->getServerVersion(), '3.8.3', '<')) {
-            $this->markTestSkipped('SQLite < 3.8.3 does not support "WITH" keyword.');
-        }
     }
 
     protected function getDriverNames()

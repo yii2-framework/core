@@ -80,25 +80,25 @@ jQuery is no longer hardcoded in validators and widgets. A new `Application::$us
 controls whether jQuery-based client scripts are registered. When set to `false`, no jQuery assets are loaded and
 `clientValidateAttribute()` returns `null` for all built-in validators.
 
-**No action required** for existing applications — the default behavior is fully backward compatible.
+**No action required** for existing applications. The default behavior is fully backward-compatible.
 
 #### New interfaces
 
-- `\yii\validators\client\ClientValidatorScriptInterface` — strategy for validator client scripts.
-- `\yii\web\client\ClientScriptInterface` — strategy for widget client scripts.
+- `\yii\validators\client\ClientValidatorScriptInterface` strategy for validator client scripts.
+- `\yii\web\client\ClientScriptInterface` strategy for widget client scripts.
 
 #### New properties
 
-- `\yii\base\Application::$useJquery` — master switch for jQuery client scripts (default: `true`).
-- `Validator::$clientScript` — on all 13 validators that support client validation (`BooleanValidator`,
+- `\yii\base\Application::$useJquery` master switch for jQuery client scripts (default: `true`).
+- `Validator::$clientScript` on all 13 validators that support client validation (`BooleanValidator`,
   `CompareValidator`, `EmailValidator`, `FileValidator`, `ImageValidator`, `IpValidator`, `NumberValidator`,
   `RangeValidator`, `RegularExpressionValidator`, `RequiredValidator`, `StringValidator`, `TrimValidator`,
   `UrlValidator`).
-- `ActiveForm::$clientScript`, `GridView::$clientScript`, `CheckboxColumn::$clientScript` — widget-level overrides.
+- `ActiveForm::$clientScript`, `GridView::$clientScript`, `CheckboxColumn::$clientScript` widget-level overrides.
 
 #### New method
 
-- `Validator::getFormattedClientMessage(string, array): string` — public wrapper around the protected
+- `Validator::getFormattedClientMessage(string, array): string` public wrapper around the protected
   `formatMessage()`, used by extracted client script classes.
 
 #### Opting out of jQuery
@@ -138,7 +138,7 @@ public function rules()
 ActiveForm::begin(['clientScript' => ['class' => '\app\widgets\MyFormClientScript']]);
 ```
 
-### `InCondition` — typed constructor and return types (#27)
+### `InCondition` typed constructor and return types (#27)
 
 `InCondition` now uses constructor promotion with explicit union types. All public methods declare return types.
 
@@ -154,7 +154,7 @@ Return types added: `getOperator(): string`, `getColumn(): array|string|Expressi
 > **Note:** `getColumn()` and `getValues()` now convert any `Traversable` (including Generators) to `array` on first
 > access. Subsequent calls return the cached array. This means the return types no longer include `Traversable`.
 
-### `InConditionBuilder` — typed protected methods (#27)
+### `InConditionBuilder` typed protected methods (#27)
 
 All `protected` methods in `InConditionBuilder` now declare parameter types and return types. If you extend
 `InConditionBuilder` and override any of the following methods, update your signatures to match:
@@ -171,7 +171,7 @@ All `protected` methods in `InConditionBuilder` now declare parameter types and 
 > **Note:** `getRawValuesFromTraversableObject()` has been removed. Traversable normalization now happens in
 > `InCondition::getValues()`, so all values are arrays by the time they reach the builder.
 
-### `oci\InConditionBuilder` — typed `build()` and `splitCondition()` (`#27`)
+### `oci\InConditionBuilder` typed `build()` and `splitCondition()` (`#27`)
 
 `build()` now returns `string` explicitly. `splitCondition()` now returns `string|null` explicitly. If you extend the Oracle
 builder, update your overrides accordingly.
@@ -197,22 +197,22 @@ map. MySQL 8.0.17+ deprecated display width for integer types and emits deprecat
 | `smallint(6)` | `smallint` |
 | `tinyint(3)` | `tinyint` |
 
-`tinyint(1)` for `TYPE_BOOLEAN` is preserved — MySQL uses it as the canonical boolean representation.
+`tinyint(1)` for `TYPE_BOOLEAN` is preserved. MySQL uses it as the canonical boolean representation.
 
-Explicit integer sizes (for example, `$this->primaryKey(8)`) are now ignored — display width is no longer emitted.
+Explicit integer sizes (for example, `$this->primaryKey(8)`) are now ignored; display width is no longer emitted.
 
 If your application or migrations rely on the exact SQL output of `QueryBuilder::getColumnType()` for integer types
 (for example, in string assertions or snapshot tests), update the expected values.
 
-### Composite `IN`/`NOT IN` conditions — `IS NULL`/`IS NOT NULL` generation (`#27`)
+### Composite `IN`/`NOT IN` conditions `IS NULL`/`IS NOT NULL` generation (`#27`)
 
 Composite `IN`/`NOT IN` conditions now generate `IS NULL`/`IS NOT NULL` expressions for `NULL` values in the value list,
 instead of literal `NULL` comparisons. This aligns with SQL semantics where `column = NULL` always evaluates to `UNKNOWN`.
 
-**Before:** `(col1 = :p0 AND col2 = NULL)` — always fails due to SQL NULL semantics
-**After:** `(col1 = :p0 AND col2 IS NULL)` — correctly matches NULL values
+**Before:** `(col1 = :p0 AND col2 = NULL)` always fails due to SQL NULL semantics
+**After:** `(col1 = :p0 AND col2 IS NULL)` correctly matches NULL values
 
-### MSSQL dead code removal — minimum SQL Server 2017
+### MSSQL dead code removal, minimum SQL Server 2017
 
 The minimum supported SQL Server version is now **2017** (internal version `14`). With PHP 8.2+, `pdo_sqlsrv 5.11+` is
 required. SQL Server 2017 is the oldest version with official Docker images and Microsoft extended support (until October
@@ -225,7 +225,7 @@ required. SQL Server 2017 is the oldest version with official Docker images and 
 - ROW_NUMBER() workaround in `QueryBuilder::upsert()`.
 - The `getLastInsertID()` fallback in `Schema::insert()` for pre-2005 servers.
 - Pre-2017 boolean type heuristics in `Schema::loadColumnSchema()` (`tinyint(1)` / `bit(n)` size-based mapping).
-- The `$isVersion2017orLater` version check — `bit` now maps directly to `boolean` in `Schema::$typeMap`.
+- The `$isVersion2017orLater` version check was removed; `bit` now maps directly to `boolean` in `Schema::$typeMap`.
 
 **Type map change:** `Schema::$typeMap['bit']` changed from `TYPE_SMALLINT` to `TYPE_BOOLEAN`. If your application
 reads `$schema->typeMap['bit']` directly, update accordingly.
@@ -234,7 +234,7 @@ If your application extends `\yii\db\mssql\QueryBuilder` and overrides `oldBuild
 `newBuildOrderByAndLimit()`, or `isOldMssql()`, remove those overrides. The pagination logic now lives directly in
 `buildOrderByAndLimit()` using the `OFFSET ... FETCH` syntax.
 
-### Oracle modernization — minimum Oracle 19c
+### Oracle modernization, minimum Oracle 19c
 
 The minimum supported Oracle version is now **19c**. Oracle 19c is the only version with active Long-Term Support
 (until December 2032). Oracle 11g, 12c, and 18c are all in Sustaining Support (EOL, no patches).
@@ -262,21 +262,21 @@ If your application extends `\yii\db\oci\QueryBuilder` and overrides `buildOrder
 to match the new `OFFSET ... FETCH` syntax.
 
 **WITH RECURSIVE:** `buildWithQueries()` no longer emits the `RECURSIVE` keyword. Oracle does not support
-`WITH RECURSIVE` — recursion is implicit when a CTE references itself. If your application relied on the generated SQL
+`WITH RECURSIVE`; recursion is implicit when a CTE references itself. If your application relied on the generated SQL
 containing `WITH RECURSIVE`, update your expectations.
 
 **Documentation links:** All Oracle documentation references in `Schema`, `QueryBuilder`, and `OracleMutex` have been
 updated from Oracle 10g/11g URLs to Oracle 19c URLs.
 
-### PostgreSQL dead code removal — minimum PostgreSQL 12
+### PostgreSQL dead code removal, minimum PostgreSQL 12
 
 The minimum supported PostgreSQL version is now **12**. PHP 8.2's `pdo_pgsql` requires libpq 10.0+ as the minimum
 client library, and PostgreSQL 12 is already EOL (November 2024). PostgreSQL versions 9.x through 11 are all completely
 unsupported. The following dead code has been removed:
 
-- `QueryBuilder::oldUpsert()` method — CTE-based upsert workaround for PostgreSQL < 9.5. The `ON CONFLICT` syntax
+- `QueryBuilder::oldUpsert()` method (CTE-based upsert workaround for PostgreSQL < 9.5). The `ON CONFLICT` syntax
   (available since 9.5) is now used unconditionally.
-- `QueryBuilder::newUpsert()` method — inlined directly into `upsert()` since the version branch is gone.
+- `QueryBuilder::newUpsert()` method (inlined directly into `upsert()` since the version branch is gone).
 - The `version_compare(..., '9.5')` check in `QueryBuilder::upsert()`.
 - The `version_compare(..., '12.0')` check in `Schema::findColumns()` for identity column detection
   (`attidentity != ''`). The identity column clause is now always included in the SQL query.
@@ -287,3 +287,24 @@ updated from version-specific URLs (9.0, 9.5) to current-version URLs.
 
 If your application extends `\yii\db\pgsql\QueryBuilder` and overrides or calls `oldUpsert()` or `newUpsert()`, remove
 those references. The upsert logic now lives directly in `upsert()` using the `ON CONFLICT` syntax.
+
+### SQLite dead code removal, minimum SQLite 3.40.0
+
+The minimum supported SQLite version is now **3.40.0**. PHP's `ext-pdo_sqlite` can be compiled against a bundled
+SQLite or the system-provided `libsqlite3` (discovered via `pkg-config`), so the actual runtime version depends on the
+build configuration and OS distribution. Official PHP builds (php.net, Docker `php:*` images) bundle SQLite ~3.40.x+
+for PHP 8.2, but custom or distro builds may link against an older system library. Verify your runtime version with
+`SELECT sqlite_version()`. All version-guarded code for SQLite < 3.7.11 and < 3.8.3 has been removed:
+
+- `QueryBuilder::batchInsert()` override (version check `>= 3.7.11` always passed, delegated to parent). The ~45-line
+  UNION SELECT fallback (`INSERT INTO ... SELECT ... UNION SELECT ...`) for SQLite < 3.7.11 was dead code.
+- `use yii\helpers\StringHelper` import from `QueryBuilder` (only used in the dead fallback).
+- `testBatchInsertOnOlderVersions()` test (always skipped because SQLite >= 3.7.11).
+- `testUpsert()` override in `CommandTest` (the `< 3.8.3` version guard never triggered; the parent test runs
+  correctly).
+- Version guard in `DbSessionTest::setUp()` (the `< 3.8.3` check never triggered).
+- Schema PHPDoc updated from `"SQLite (2/3)"` to `"SQLite 3"` (`ext-pdo_sqlite` does not support SQLite 2).
+
+If your application extends `\yii\db\sqlite\QueryBuilder` and overrides `batchInsert()`, remove your override. The
+parent `\yii\db\QueryBuilder::batchInsert()` handles all cases since native multi-row INSERT has been supported since
+SQLite 3.7.11.

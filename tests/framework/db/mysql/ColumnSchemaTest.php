@@ -27,6 +27,7 @@ use yiiunit\framework\db\mysql\providers\ColumnSchemaProvider;
  */
 #[Group('db')]
 #[Group('mysql')]
+#[Group('column-schema')]
 final class ColumnSchemaTest extends TestCase
 {
     #[DataProviderExternal(ColumnSchemaProvider::class, 'defaultPhpTypecast')]

@@ -411,9 +411,8 @@ SQL;
 
         $column->phpType = $this->getColumnPhpType($column);
 
-        if (!$column->isPrimaryKey) {
-            $column->defaultValue = $column->defaultPhpTypecast($info['column_default']);
-        }
+        // Store raw default for deferred resolution in findColumns(), where isPrimaryKey is known.
+        $column->defaultValue = $info['column_default'];
 
         return $column;
     }
@@ -484,6 +483,11 @@ SQL;
             }
             if ($column->isPrimaryKey && $column->autoIncrement) {
                 $table->sequenceName = '';
+            }
+            if (!$column->isPrimaryKey) {
+                $column->defaultValue = $column->defaultPhpTypecast($column->defaultValue);
+            } else {
+                $column->defaultValue = null;
             }
             $table->columns[$column->name] = $column;
         }

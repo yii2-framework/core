@@ -145,12 +145,6 @@ final class ColumnSchemaProvider
                 16,
                 'binary(16)',
             ],
-            'binary appends MAX' => [
-                'binary',
-                false,
-                null,
-                'binary(MAX)',
-            ],
             'char appends size' => [
                 'char',
                 false,

@@ -15,7 +15,8 @@ use yii\db\Expression;
 /**
  * Data provider for {@see \yiiunit\framework\db\pgsql\ColumnSchemaTest} test cases.
  *
- * Provides representative input/output pairs for the `defaultPhpTypecast()` method.
+ * Provides representative input/output pairs for the `dbTypecast()`, `defaultPhpTypecast()`, and `phpTypecast()`
+ * methods.
  *
  * @author Wilmer Arambula <terabytesoftw@gmail.com>
  * @since 2.2
@@ -42,11 +43,25 @@ final class ColumnSchemaProvider
                 'false',
                 false,
             ],
+            "boolean false cast 'false'::boolean" => [
+                'boolean',
+                'bool',
+                'boolean',
+                "'false'::boolean",
+                false,
+            ],
             'boolean true' => [
                 'boolean',
                 'bool',
                 'boolean',
                 'true',
+                true,
+            ],
+            "boolean true cast 'true'::boolean" => [
+                'boolean',
+                'bool',
+                'boolean',
+                "'true'::boolean",
                 true,
             ],
             'cast notation integer' => [
@@ -153,6 +168,92 @@ final class ColumnSchemaProvider
                 'string',
                 "timezone('UTC'::text, now())",
                 new Expression("timezone('UTC'::text, now())"),
+            ],
+        ];
+    }
+
+    /**
+     * @phpstan-return array<string, array{string, string, string, mixed, mixed}>
+     */
+    public static function phpTypecast(): array
+    {
+        return [
+            'boolean native false returns false' => [
+                'boolean',
+                'bool',
+                'boolean',
+                false,
+                false,
+            ],
+            'boolean native true returns true' => [
+                'boolean',
+                'bool',
+                'boolean',
+                true,
+                true,
+            ],
+            'boolean other value casts to bool' => [
+                'boolean',
+                'bool',
+                'boolean',
+                '1',
+                true,
+            ],
+            'boolean string f returns false' => [
+                'boolean',
+                'bool',
+                'boolean',
+                'f',
+                false,
+            ],
+            'boolean string false returns false' => [
+                'boolean',
+                'bool',
+                'boolean',
+                'false',
+                false,
+            ],
+            'boolean string t returns true' => [
+                'boolean',
+                'bool',
+                'boolean',
+                't',
+                true,
+            ],
+            'boolean string true returns true' => [
+                'boolean',
+                'bool',
+                'boolean',
+                'true',
+                true,
+            ],
+            'integer fallback to parent' => [
+                'integer',
+                'int4',
+                'integer',
+                '42',
+                42,
+            ],
+            'json decodes to array' => [
+                'json',
+                'json',
+                'string',
+                '{"a":1}',
+                ['a' => 1],
+            ],
+            'null returns null' => [
+                'boolean',
+                'bool',
+                'boolean',
+                null,
+                null,
+            ],
+            'string fallback to parent' => [
+                'string',
+                'varchar',
+                'string',
+                'hello',
+                'hello',
             ],
         ];
     }

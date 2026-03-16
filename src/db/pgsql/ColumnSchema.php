@@ -104,9 +104,12 @@ class ColumnSchema extends \yii\db\ColumnSchema
             }
 
             if (is_array($value)) {
-                array_walk_recursive($value, function (&$val, $key) {
-                    $val = $this->phpTypecastValue($val);
-                });
+                array_walk_recursive(
+                    $value,
+                    function (&$val, $key) {
+                        $val = $this->phpTypecastValue($val);
+                    },
+                );
             } elseif ($value === null) {
                 return null;
             }
@@ -194,10 +197,6 @@ class ColumnSchema extends \yii\db\ColumnSchema
             return new Expression($value);
         }
 
-        if ($this->type === 'boolean') {
-            return ($value === 'true');
-        }
-
         if (preg_match("/^B'(.*?)'::/", $value, $matches)) {
             return bindec($matches[1]);
         }
@@ -210,15 +209,18 @@ class ColumnSchema extends \yii\db\ColumnSchema
             return $this->phpTypecast($matches[1]);
         }
 
-        if (preg_match('/^(\()?(.*?)(?(1)\))(?:::.+)?$/', $value, $matches)) {
-            if ($matches[2] === 'NULL') {
-                return null;
-            }
-
-            return $this->phpTypecast($matches[2]);
+        if ($this->type === 'boolean') {
+            return ($value === 'true');
         }
 
-        return $this->phpTypecast($value);
+        // This regex matches any string: bare values, parenthesized values, and cast notation.
+        preg_match('/^(\()?(.*?)(?(1)\))(?:::.+)?$/', $value, $matches);
+
+        if ($matches[2] === 'NULL') {
+            return null;
+        }
+
+        return $this->phpTypecast($matches[2]);
     }
 
     /**

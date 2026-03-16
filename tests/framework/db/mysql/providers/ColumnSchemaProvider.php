@@ -29,9 +29,9 @@ final class ColumnSchemaProvider
     {
         return [
             'bit default b\'1\'' => [
-                'integer',
+                'boolean',
                 'bit(1)',
-                'integer',
+                'boolean',
                 "b'1'",
                 1,
             ],

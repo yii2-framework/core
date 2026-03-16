@@ -74,14 +74,24 @@ final class ColumnSchemaProvider
     public static function defaultPhpTypecast(): array
     {
         return [
-            'CURRENT_TIMESTAMP on non-timestamp column unwraps normally' => [
-                Schema::TYPE_STRING,
-                'CURRENT_TIMESTAMP',
-                'RRENT_TIMESTA',
-            ],
             'CURRENT_TIMESTAMP on timestamp column returns null' => [
                 Schema::TYPE_TIMESTAMP,
                 'CURRENT_TIMESTAMP',
+                null,
+            ],
+            'decimal default value unwrapped' => [
+                Schema::TYPE_DECIMAL,
+                '((3.14))',
+                '3.14',
+            ],
+            'expression default getdate returns null' => [
+                Schema::TYPE_STRING,
+                '(getdate())',
+                null,
+            ],
+            'expression default newid returns null' => [
+                Schema::TYPE_STRING,
+                '(newid())',
                 null,
             ],
             'integer default value unwrapped' => [
@@ -104,6 +114,16 @@ final class ColumnSchemaProvider
                 "('hello')",
                 'hello',
             ],
+            'string with escaped single quotes' => [
+                Schema::TYPE_STRING,
+                "('it''s')",
+                "it's",
+            ],
+            'unicode string default value unwrapped' => [
+                Schema::TYPE_STRING,
+                "(N'unicode')",
+                'unicode',
+            ],
         ];
     }
 
@@ -118,6 +138,12 @@ final class ColumnSchemaProvider
                 false,
                 null,
                 'bigint',
+            ],
+            'binary appends size' => [
+                'binary',
+                false,
+                16,
+                'binary(16)',
             ],
             'binary appends MAX' => [
                 'binary',

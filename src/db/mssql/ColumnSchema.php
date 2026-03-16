@@ -64,9 +64,11 @@ class ColumnSchema extends \yii\db\ColumnSchema
      * Converts a MSSQL column default value to its PHP representation.
      *
      * Handles MSSQL-specific default value formats:
-     * - `(NULL)` string literal → `null`.
-     * - `('value')` wrapper → unwrapped and cast via {@see \yii\db\ColumnSchema::phpTypecast()}.
+     * - `null` or `(NULL)` → `null`.
      * - `CURRENT_TIMESTAMP` on `timestamp` columns → `null` (server-managed value).
+     * - `('value')` / `(N'value')` string wrappers → unwrapped literal with escaped quotes resolved.
+     * - `((number))` numeric wrapper → unwrapped numeric string.
+     * - Expression defaults like `(getdate())` or `(newid())` → `null` (server-computed, not representable as literal).
      *
      * @param mixed $value default value in MSSQL format.
      *
@@ -84,8 +86,18 @@ class ColumnSchema extends \yii\db\ColumnSchema
             return null;
         }
 
-        // convert from MSSQL column_default format, for example. ('1') -> 1, ('string') -> string
-        $value = substr(substr($value, 2), 0, -2);
+        if (is_string($value)) {
+            // String defaults: ('value') or unicode (N'value') — unwrap and resolve escaped single quotes.
+            if (preg_match("/^\(N?'(.*)'\)$/s", $value, $matches) === 1) {
+                $value = str_replace("''", "'", $matches[1]);
+            } elseif (preg_match('/^\(\((.+)\)\)$/s', $value, $matches) === 1) {
+                // Numeric defaults: ((0)), ((42)), ((3.14))
+                $value = $matches[1];
+            } else {
+                // Expression defaults: (`getdate()`), (`newid()`) — not representable as PHP literal.
+                return null;
+            }
+        }
 
         return parent::phpTypecast($value);
     }
@@ -93,8 +105,8 @@ class ColumnSchema extends \yii\db\ColumnSchema
     /**
      * Returns the SQL type declaration for this column in an OUTPUT clause temp table.
      *
-     * Appends `(MAX)` to variable-length types (`varchar`, `nvarchar`, `binary`, `varbinary`), preserves the declared
-     * size for fixed-length types (`char`, `nchar`), and maps `timestamp` to `varbinary(8)` or `binary(8)`.
+     * Appends `(MAX)` to variable-length types (`varchar`, `nvarchar`, `varbinary`), preserves the declared size for
+     * fixed-length types (`char`, `nchar`, `binary`), and maps `timestamp` to `varbinary(8)` or `binary(8)`.
      *
      * @return string SQL type declaration.
      */
@@ -106,9 +118,9 @@ class ColumnSchema extends \yii\db\ColumnSchema
 
         $dbType = $this->dbType;
 
-        if (in_array($dbType, ['varchar', 'nvarchar', 'binary', 'varbinary'], true)) {
+        if (in_array($dbType, ['varchar', 'nvarchar', 'varbinary'], true)) {
             $dbType .= '(MAX)';
-        } elseif (in_array($dbType, ['char', 'nchar'], true)) {
+        } elseif (in_array($dbType, ['char', 'nchar', 'binary'], true)) {
             $dbType .= "($this->size)";
         }
 

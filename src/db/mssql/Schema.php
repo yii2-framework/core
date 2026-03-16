@@ -507,43 +507,40 @@ SQL;
     /**
      * Collects the constraint details for the given table and constraint type.
      * @param TableSchema $table
-     * @param string $type either PRIMARY KEY or UNIQUE
+     * @param string $type either `PK` or `UQ`
      * @return array each entry contains index_name and field_name
      * @since 2.0.4
+     * @see https://learn.microsoft.com/en-us/sql/relational-databases/system-catalog-views/sys-key-constraints-transact-sql
      */
     protected function findTableConstraints($table, $type)
     {
-        $keyColumnUsageTableName = 'INFORMATION_SCHEMA.KEY_COLUMN_USAGE';
-        $tableConstraintsTableName = 'INFORMATION_SCHEMA.TABLE_CONSTRAINTS';
-        if ($table->catalogName !== null) {
-            $keyColumnUsageTableName = $table->catalogName . '.' . $keyColumnUsageTableName;
-            $tableConstraintsTableName = $table->catalogName . '.' . $tableConstraintsTableName;
+        $fullName = $this->quoteSimpleTableName($table->name);
+
+        if ($table->schemaName !== null) {
+            $fullName = $this->quoteSimpleTableName($table->schemaName) . '.' . $fullName;
         }
-        $keyColumnUsageTableName = $this->quoteTableName($keyColumnUsageTableName);
-        $tableConstraintsTableName = $this->quoteTableName($tableConstraintsTableName);
+
+        if ($table->catalogName !== null) {
+            $fullName = $this->quoteSimpleTableName($table->catalogName) . '.' . $fullName;
+        }
 
         $sql = <<<SQL
-SELECT
-    [kcu].[constraint_name] AS [index_name],
-    [kcu].[column_name] AS [field_name]
-FROM {$keyColumnUsageTableName} AS [kcu]
-LEFT JOIN {$tableConstraintsTableName} AS [tc] ON
-    [kcu].[table_schema] = [tc].[table_schema] AND
-    [kcu].[table_name] = [tc].[table_name] AND
-    [kcu].[constraint_name] = [tc].[constraint_name]
-WHERE
-    [tc].[constraint_type] = :type AND
-    [kcu].[table_name] = :tableName AND
-    [kcu].[table_schema] = :schemaName
-SQL;
+        SELECT
+            [kc].[name] AS [index_name],
+            [col].[name] AS [field_name]
+        FROM [sys].[key_constraints] AS [kc]
+        INNER JOIN [sys].[index_columns] AS [ic]
+            ON [ic].[object_id] = [kc].[parent_object_id]
+            AND [ic].[index_id] = [kc].[unique_index_id]
+        INNER JOIN [sys].[columns] AS [col]
+            ON [col].[object_id] = [ic].[object_id]
+            AND [col].[column_id] = [ic].[column_id]
+        WHERE [kc].[parent_object_id] = OBJECT_ID(:fullName)
+            AND [kc].[type] = :type
+        ORDER BY [ic].[key_ordinal] ASC
+        SQL;
 
-        return $this->db
-            ->createCommand($sql, [
-                ':tableName' => $table->name,
-                ':schemaName' => $table->schemaName,
-                ':type' => $type,
-            ])
-            ->queryAll();
+        return $this->db->createCommand($sql, [':fullName' => $fullName, ':type' => $type])->queryAll();
     }
 
     /**
@@ -553,9 +550,11 @@ SQL;
     protected function findPrimaryKeys($table)
     {
         $result = [];
-        foreach ($this->findTableConstraints($table, 'PRIMARY KEY') as $row) {
+
+        foreach ($this->findTableConstraints($table, 'PK') as $row) {
             $result[] = $row['field_name'];
         }
+
         $table->primaryKey = $result;
     }
 
@@ -566,9 +565,11 @@ SQL;
     protected function findForeignKeys($table)
     {
         $object = $this->quoteSimpleTableName($table->name);
+
         if ($table->schemaName !== null) {
             $object = $this->quoteSimpleTableName($table->schemaName) . '.' . $object;
         }
+
         if ($table->catalogName !== null) {
             $object = $this->quoteSimpleTableName($table->catalogName) . '.' . $object;
         }
@@ -646,7 +647,8 @@ SQL;
     public function findUniqueIndexes($table)
     {
         $result = [];
-        foreach ($this->findTableConstraints($table, 'UNIQUE') as $row) {
+
+        foreach ($this->findTableConstraints($table, 'UQ') as $row) {
             $result[$row['index_name']][] = $row['field_name'];
         }
 
@@ -788,6 +790,7 @@ SQL;
     public function insert($table, $columns)
     {
         $command = $this->db->createCommand()->insert($table, $columns);
+
         if (!$command->execute()) {
             return false;
         }

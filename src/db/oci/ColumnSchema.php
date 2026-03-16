@@ -32,9 +32,6 @@ use function uniqid;
  *
  * @author Wilmer Arambula <terabytesoftw@gmail.com>
  * @since 2.2
- *
- * @copyright Copyright (c) 2008 Yii Software LLC
- * @license https://www.yiiframework.com/license/
  */
 class ColumnSchema extends \yii\db\ColumnSchema
 {
@@ -43,6 +40,8 @@ class ColumnSchema extends \yii\db\ColumnSchema
      *
      * Converts string values for BLOB columns to `TO_BLOB(UTL_RAW.CAST_TO_RAW(:placeholder))` expressions to avoid
      * direct string binding errors in Oracle when inserting into BLOB columns.
+     *
+     * @since 2.2
      */
     public function dbTypecast($value)
     {
@@ -77,6 +76,8 @@ class ColumnSchema extends \yii\db\ColumnSchema
      * @param mixed $value default value in Oracle format.
      *
      * @return mixed converted value.
+     *
+     * @since 2.2
      */
     public function defaultPhpTypecast($value)
     {

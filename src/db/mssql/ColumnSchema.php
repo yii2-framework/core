@@ -24,9 +24,6 @@ use function is_string;
  * - Strips MSSQL default value formatting `('value')` and normalizes `(NULL)` / `CURRENT_TIMESTAMP` defaults.
  *
  * @since 2.0.23
- *
- * @copyright Copyright (c) 2008 Yii Software LLC
- * @license https://www.yiiframework.com/license/
  */
 class ColumnSchema extends \yii\db\ColumnSchema
 {
@@ -44,6 +41,8 @@ class ColumnSchema extends \yii\db\ColumnSchema
      * `INSERT ... OUTPUT INTO` or `UPDATE` with INSTEAD OF triggers.
      *
      * @see https://github.com/yiisoft/yii2/issues/12599
+     *
+     * @since 2.2
      */
     public function dbTypecast($value)
     {
@@ -109,6 +108,8 @@ class ColumnSchema extends \yii\db\ColumnSchema
      * fixed-length types (`char`, `nchar`, `binary`), and maps `timestamp` to `varbinary(8)` or `binary(8)`.
      *
      * @return string SQL type declaration.
+     *
+     * @since 2.2
      */
     public function getOutputColumnDeclaration(): string
     {

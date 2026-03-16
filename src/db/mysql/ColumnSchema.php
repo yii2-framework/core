@@ -27,9 +27,6 @@ use function is_string;
  *
  * @author Dmytro Naumenko <d.naumenko.a@gmail.com>
  * @since 2.0.14.1
- *
- * @copyright Copyright (c) 2008 Yii Software LLC
- * @license https://www.yiiframework.com/license/
  */
 class ColumnSchema extends \yii\db\ColumnSchema
 {
@@ -94,7 +91,7 @@ class ColumnSchema extends \yii\db\ColumnSchema
      *
      * @return mixed converted value.
      *
-     * @since 2.0.24
+     * @since 2.2
      */
     public function defaultPhpTypecast($value)
     {

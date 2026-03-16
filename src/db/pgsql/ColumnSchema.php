@@ -175,7 +175,7 @@ class ColumnSchema extends \yii\db\ColumnSchema
      *
      * @return mixed converted value.
      *
-     * @since 2.0.24
+     * @since 2.2
      */
     public function defaultPhpTypecast($value)
     {

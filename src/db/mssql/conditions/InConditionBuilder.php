@@ -44,6 +44,8 @@ class InConditionBuilder extends \yii\db\conditions\InConditionBuilder
 
     /**
      * {@inheritdoc}
+     *
+     * @since 2.2
      */
     protected function getNotEqualOperator(): string
     {

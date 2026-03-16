@@ -218,6 +218,7 @@ SQL;
             'privileges' => 'select,insert,update,references',
             'comment' => '',
         ]]);
+        $column->defaultValue = $column->defaultPhpTypecast($column->defaultValue);
 
         $this->assertInstanceOf(ColumnSchema::class, $column);
         $this->assertInstanceOf(Expression::class, $column->defaultValue);
@@ -244,6 +245,7 @@ SQL;
             'privileges' => 'select,insert,update,references',
             'comment' => '',
         ]]);
+        $column->defaultValue = $column->defaultPhpTypecast($column->defaultValue);
 
         $this->assertInstanceOf(ColumnSchema::class, $column);
         $this->assertEquals(null, $column->defaultValue);

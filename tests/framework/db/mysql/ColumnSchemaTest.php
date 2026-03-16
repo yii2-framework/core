@@ -46,23 +46,25 @@ final class ColumnSchemaTest extends TestCase
 
         $result = $column->defaultPhpTypecast($value);
 
-        if ($expected instanceof Expression) {
-            self::assertInstanceOf(
-                Expression::class,
-                $result,
-                'Should return an Expression instance.',
-            );
-            self::assertSame(
-                $expected->expression,
-                $result->expression,
-                'Expression SQL does not match expected output.',
-            );
-        } else {
+        if (!($expected instanceof Expression)) {
             self::assertSame(
                 $expected,
                 $result,
                 'Result does not match expected value.',
             );
+
+            return;
         }
+
+        self::assertInstanceOf(
+            Expression::class,
+            $result,
+            'Should return an Expression instance.',
+        );
+        self::assertSame(
+            $expected->expression,
+            $result->expression,
+            'Expression SQL does not match.',
+        );
     }
 }

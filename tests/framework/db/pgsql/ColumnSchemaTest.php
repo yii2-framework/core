@@ -70,15 +70,18 @@ final class ColumnSchemaTest extends TestCase
         );
         self::assertSame(
             [1, 2, 3],
-            $result->getValue(), 'ArrayExpression value does not match.',
+            $result->getValue(),
+            'ArrayExpression value does not match.',
         );
         self::assertSame(
             'int4',
-            $result->getType(), 'ArrayExpression type does not match.',
+            $result->getType(),
+            'ArrayExpression type does not match.',
         );
         self::assertSame(
             1,
-            $result->getDimension(), 'ArrayExpression dimension does not match.',
+            $result->getDimension(),
+            'ArrayExpression dimension does not match.',
         );
     }
 
@@ -162,7 +165,7 @@ final class ColumnSchemaTest extends TestCase
         self::assertSame(
             42,
             $column->dbTypecast('42'),
-            'Should typecast regular value to integer.',
+            "Should typecast regular value to 'integer'.",
         );
     }
 
@@ -178,24 +181,26 @@ final class ColumnSchemaTest extends TestCase
 
         $result = $column->defaultPhpTypecast($value);
 
-        if ($expected instanceof Expression) {
-            self::assertInstanceOf(
-                Expression::class,
-                $result,
-                'Should return an Expression instance.',
-            );
-            self::assertSame(
-                $expected->expression,
-                $result->expression,
-                'Expression SQL does not match.',
-            );
-        } else {
+        if (!($expected instanceof Expression)) {
             self::assertSame(
                 $expected,
                 $result,
                 'Result does not match expected value.',
             );
+
+            return;
         }
+
+        self::assertInstanceOf(
+            Expression::class,
+            $result,
+            'Should return an Expression instance.',
+        );
+        self::assertSame(
+            $expected->expression,
+            $result->expression,
+            'Expression SQL does not match.',
+        );
     }
 
     #[DataProviderExternal(ColumnSchemaProvider::class, 'phpTypecast')]
@@ -238,7 +243,7 @@ final class ColumnSchemaTest extends TestCase
         self::assertSame(
             '{1,2,3}',
             $column->phpTypecast('{1,2,3}'),
-            'Should return raw value when array support is disabled.',
+            "Should return raw value when 'array' support is disabled.",
         );
     }
 
@@ -258,7 +263,7 @@ final class ColumnSchemaTest extends TestCase
         self::assertSame(
             [1, 2, 3],
             $result->getValue(),
-            'Parsed array values do not match.',
+            "Parsed 'array' values do not match.",
         );
     }
 

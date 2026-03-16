@@ -47,24 +47,25 @@ final class ColumnSchemaTest extends TestCase
 
         $result = $column->dbTypecast($value);
 
-        if ($expected === Expression::class) {
-            self::assertInstanceOf(
-                Expression::class,
-                $result,
-                'Should return an Expression instance.',
-            );
-            self::assertStringContainsString(
-                'TO_BLOB(UTL_RAW.CAST_TO_RAW(',
-                $result->expression,
-                'Expression SQL should contain TO_BLOB wrapper.',
-            );
-        } else {
+        if ($expected !== Expression::class) {
             self::assertSame(
                 $expected,
                 $result,
                 'Result does not match expected value.',
             );
+
+            return;
         }
+
+        self::assertInstanceOf(
+            Expression::class, $result,
+            'Should return an Expression instance.',
+        );
+        self::assertStringContainsString(
+            'TO_BLOB(UTL_RAW.CAST_TO_RAW(',
+            $result->expression,
+            'Expression SQL should contain TO_BLOB wrapper.',
+        );
     }
 
     public function testDbTypecastBlobPdoValue(): void
@@ -81,7 +82,7 @@ final class ColumnSchemaTest extends TestCase
         self::assertInstanceOf(
             PdoValue::class,
             $result,
-            'PdoValue should pass through to parent dbTypecast().',
+            "PdoValue should pass through to parent 'dbTypecast()'.",
         );
     }
 
@@ -101,23 +102,25 @@ final class ColumnSchemaTest extends TestCase
 
         $result = $column->defaultPhpTypecast($value);
 
-        if ($expected instanceof Expression) {
-            self::assertInstanceOf(
-                Expression::class,
-                $result,
-                'Should return an Expression instance.',
-            );
-            self::assertSame(
-                $expected->expression,
-                $result->expression,
-                'Expression SQL does not match expected output.',
-            );
-        } else {
+        if (!($expected instanceof Expression)) {
             self::assertSame(
                 $expected,
                 $result,
                 'Result does not match expected value.',
             );
+
+            return;
         }
+
+        self::assertInstanceOf(
+            Expression::class,
+            $result,
+            'Should return an Expression instance.',
+        );
+        self::assertSame(
+            $expected->expression,
+            $result->expression,
+            'Expression SQL does not match.',
+        );
     }
 }

@@ -25,7 +25,7 @@ use yii\db\mssql\Schema;
 final class ColumnSchemaProvider
 {
     /**
-     * @phpstan-return array{string, array{string, string, bool, mixed, mixed}}
+     * @phpstan-return array<string, array{string, string, bool, mixed, mixed}>
      */
     public static function dbTypecast(): array
     {
@@ -69,7 +69,7 @@ final class ColumnSchemaProvider
     }
 
     /**
-     * @phpstan-return array{string, array{string, mixed, mixed}}
+     * @phpstan-return array<string, array{string, mixed, mixed}>
      */
     public static function defaultPhpTypecast(): array
     {
@@ -128,7 +128,7 @@ final class ColumnSchemaProvider
     }
 
     /**
-     * @phpstan-return array{string, array{string, bool, int|null, string}}
+     * @phpstan-return array<string, array{string, bool, int|null, string}>
      */
     public static function getOutputColumnDeclaration(): array
     {

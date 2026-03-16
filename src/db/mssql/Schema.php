@@ -484,11 +484,9 @@ SQL;
             if ($column->isPrimaryKey && $column->autoIncrement) {
                 $table->sequenceName = '';
             }
-            if (!$column->isPrimaryKey) {
-                $column->defaultValue = $column->defaultPhpTypecast($column->defaultValue);
-            } else {
-                $column->defaultValue = null;
-            }
+            $column->defaultValue = $column->isPrimaryKey
+                ? null
+                : $column->defaultPhpTypecast($column->defaultValue);
             $table->columns[$column->name] = $column;
         }
 

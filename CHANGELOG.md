@@ -43,3 +43,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - fix(widgets): clear stale client-side errors for conditional (`whenClient`) validators after related field changes.
 - refactor(js): remove all ESLint warnings in core JS assets/tests and enforce `npm run lint` with `--max-warnings=0`.
 - refactor(db): consolidate MSSQL data type conversions into `ColumnSchema` absorb `(NULL)` and `CURRENT_TIMESTAMP` default handling into `defaultPhpTypecast()`, move OUTPUT clause type declarations into new `getOutputColumnDeclaration()`, and simplify `Schema::loadColumnSchema()` and `QueryBuilder::insert()`.
+- refactor(db): consolidate MySQL data type conversions into `ColumnSchema` absorb `CURRENT_TIMESTAMP` and bit default handling into `defaultPhpTypecast()`, simplify `Schema::loadColumnSchema()` to store raw defaults, and resolve defaults in `findColumns()`.

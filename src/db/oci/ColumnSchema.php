@@ -105,6 +105,6 @@ class ColumnSchema extends \yii\db\ColumnSchema
             $value = substr($value, 1, -1);
         }
 
-        return $this->phpTypecast($value);
+        return parent::defaultPhpTypecast($value);
     }
 }

@@ -95,8 +95,8 @@ class ColumnSchema extends \yii\db\ColumnSchema
             return new Expression('CURRENT_TIMESTAMP');
         }
 
-        // Server-managed timestamp defaults: SYSTIMESTAMP, TIMESTAMP 'literal', etc.
-        if (stripos($value, 'timestamp') !== false) {
+        // Server-managed timestamp defaults: SYSTIMESTAMP, TIMESTAMP 'literal', LOCALTIMESTAMP, etc.
+        if ($this->type === 'timestamp' && stripos($value, 'timestamp') !== false) {
             return null;
         }
 

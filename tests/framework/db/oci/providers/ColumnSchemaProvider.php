@@ -63,25 +63,25 @@ final class ColumnSchemaProvider
     public static function defaultPhpTypecast(): array
     {
         return [
-            'CURRENT_TIMESTAMP with leading/trailing spaces on timestamp column' => [
-                'timestamp',
-                'TIMESTAMP(6)',
-                'string',
-                '  CURRENT_TIMESTAMP  ',
-                new Expression('CURRENT_TIMESTAMP'),
-            ],
-            'CURRENT_TIMESTAMP on non-timestamp column returns null (contains timestamp keyword)' => [
+            'CURRENT_TIMESTAMP on non-timestamp column passes through as string' => [
                 'string',
                 'VARCHAR2',
                 'string',
                 'CURRENT_TIMESTAMP',
-                null,
+                'CURRENT_TIMESTAMP',
             ],
             'CURRENT_TIMESTAMP on timestamp column returns Expression' => [
                 'timestamp',
                 'TIMESTAMP(6)',
                 'string',
                 'CURRENT_TIMESTAMP',
+                new Expression('CURRENT_TIMESTAMP'),
+            ],
+            'CURRENT_TIMESTAMP with leading/trailing spaces on timestamp column' => [
+                'timestamp',
+                'TIMESTAMP(6)',
+                'string',
+                '  CURRENT_TIMESTAMP  ',
                 new Expression('CURRENT_TIMESTAMP'),
             ],
             'decimal default' => [
@@ -111,6 +111,13 @@ final class ColumnSchemaProvider
                 'string',
                 'NULL',
                 null,
+            ],
+            'quoted string containing timestamp keyword is not nullified' => [
+                'string',
+                'VARCHAR2',
+                'string',
+                "'update_timestamp_flag'",
+                'update_timestamp_flag',
             ],
             'regular integer default' => [
                 'integer',

@@ -15,6 +15,8 @@ use yii\db\PdoValue;
 use yii\db\Query;
 use yii\di\Instance;
 
+use function in_array;
+
 /**
  * DbCache implements a cache application component by storing cached data in a database.
  *
@@ -217,7 +219,6 @@ class DbCache extends Cache
             return true;
         } catch (\Exception $e) {
             Yii::warning("Unable to update or insert cache data: {$e->getMessage()}", __METHOD__);
-
             return false;
         }
     }
@@ -306,9 +307,10 @@ class DbCache extends Cache
     protected function isVarbinaryDataField()
     {
         if ($this->isVarbinaryDataField === null) {
-            $this->isVarbinaryDataField = in_array($this->db->getDriverName(), ['sqlsrv', 'dblib']) &&
-                $this->db->getTableSchema($this->cacheTable)->columns['data']->dbType === 'varbinary';
+            $this->isVarbinaryDataField = in_array($this->db->getDriverName(), ['sqlsrv', 'dblib'])
+                && strpos($this->db->getTableSchema($this->cacheTable)->columns['data']->dbType, 'varbinary') === 0;
         }
+
         return $this->isVarbinaryDataField;
     }
 

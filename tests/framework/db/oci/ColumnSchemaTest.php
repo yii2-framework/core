@@ -30,6 +30,7 @@ use yiiunit\framework\db\oci\providers\ColumnSchemaProvider;
  */
 #[Group('db')]
 #[Group('oci')]
+#[Group('column-schema')]
 final class ColumnSchemaTest extends TestCase
 {
     #[DataProviderExternal(ColumnSchemaProvider::class, 'dbTypecast')]

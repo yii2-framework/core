@@ -27,6 +27,7 @@ use yiiunit\framework\db\mssql\providers\ColumnSchemaProvider;
  */
 #[Group('db')]
 #[Group('mssql')]
+#[Group('column-schema')]
 final class ColumnSchemaTest extends TestCase
 {
     #[DataProviderExternal(ColumnSchemaProvider::class, 'dbTypecast')]

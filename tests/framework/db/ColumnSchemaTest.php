@@ -25,6 +25,7 @@ use yiiunit\framework\db\providers\ColumnSchemaProvider;
  * @since 2.2
  */
 #[Group('db')]
+#[Group('column-schema')]
 final class ColumnSchemaTest extends TestCase
 {
     #[DataProviderExternal(ColumnSchemaProvider::class, 'defaultPhpTypecast')]

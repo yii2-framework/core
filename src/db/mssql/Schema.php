@@ -22,6 +22,7 @@ use yii\db\ViewFinderTrait;
 use yii\helpers\ArrayHelper;
 
 use function count;
+use function is_array;
 
 /**
  * Schema is the class for retrieving metadata from MS SQL Server databases (version 2017 and later).
@@ -109,36 +110,29 @@ class Schema extends \yii\db\Schema implements ConstraintFinderInterface
      */
     protected function resolveTableName($name)
     {
-        $resolvedName = new TableSchema();
-
         $parts = $this->getTableNameParts($name);
-
         $partCount = count($parts);
 
-        if ($partCount === 4) {
-            // server name, catalog name, schema name and table name passed
-            $resolvedName->catalogName = $parts[1];
-            $resolvedName->schemaName = $parts[2];
-            $resolvedName->name = $parts[3];
-            $resolvedName->fullName = "{$resolvedName->catalogName}.{$resolvedName->schemaName}.{$resolvedName->name}";
-        } elseif ($partCount === 3) {
-            // catalog name, schema name and table name passed
-            $resolvedName->catalogName = $parts[0];
-            $resolvedName->schemaName = $parts[1];
-            $resolvedName->name = $parts[2];
-            $resolvedName->fullName = "{$resolvedName->catalogName}.{$resolvedName->schemaName}.{$resolvedName->name}";
-        } elseif ($partCount === 2) {
-            // only schema name and table name passed
-            $resolvedName->schemaName = $parts[0];
-            $resolvedName->name = $parts[1];
-            $resolvedName->fullName = ($resolvedName->schemaName !== $this->defaultSchema
-                ? "{$resolvedName->schemaName}." : '') .
-                $resolvedName->name;
-        } else {
-            // only table name passed
-            $resolvedName->schemaName = $this->defaultSchema;
-            $resolvedName->fullName = $resolvedName->name = $parts[0];
-        }
+        $last = $partCount - 1;
+        $penultimate = $partCount - 2;
+        $catalogIndex = $partCount === 4 ? 1 : 0;
+
+        $tableName = $parts[$last];
+        $schemaName = $partCount >= 2 ? $parts[$penultimate] : $this->defaultSchema;
+        $catalogName = $partCount >= 3 ? $parts[$catalogIndex] : null;
+
+        $fullName = match (true) {
+            $catalogName !== null => "{$catalogName}.{$schemaName}.{$tableName}",
+            $schemaName !== $this->defaultSchema => "{$schemaName}.{$tableName}",
+            default => $tableName,
+        };
+
+        $resolvedName = new TableSchema();
+
+        $resolvedName->name = $tableName;
+        $resolvedName->schemaName = $schemaName;
+        $resolvedName->catalogName = $catalogName;
+        $resolvedName->fullName = $fullName;
 
         return $resolvedName;
     }
@@ -159,9 +153,7 @@ class Schema extends \yii\db\Schema implements ConstraintFinderInterface
             $parts = $matches[0];
         }
 
-        $parts = str_replace(['[', ']'], '', $parts);
-
-        return $parts;
+        return str_replace(['[', ']'], '', $parts);
     }
 
     /**
@@ -208,9 +200,8 @@ class Schema extends \yii\db\Schema implements ConstraintFinderInterface
      */
     protected function loadTableSchema($name)
     {
-        $table = new TableSchema();
+        $table = $this->resolveTableName($name);
 
-        $this->resolveTableNames($table, $name);
         $this->findPrimaryKeys($table);
 
         if ($this->findColumns($table)) {
@@ -292,7 +283,6 @@ class Schema extends \yii\db\Schema implements ConstraintFinderInterface
 
         $indexes = $this->db->createCommand($sql, [':fullName' => $fullName])->queryAll();
         $indexes = $this->normalizePdoRowKeyCase($indexes, true);
-
         $indexes = ArrayHelper::index($indexes, null, 'name');
 
         $result = [];
@@ -300,8 +290,8 @@ class Schema extends \yii\db\Schema implements ConstraintFinderInterface
         foreach ($indexes as $name => $index) {
             $result[] = new IndexConstraint(
                 [
-                    'isPrimary' => (bool)$index[0]['index_is_primary'],
-                    'isUnique' => (bool)$index[0]['index_is_unique'],
+                    'isPrimary' => (bool) $index[0]['index_is_primary'],
+                    'isUnique' => (bool) $index[0]['index_is_unique'],
                     'name' => $name,
                     'columnNames' => ArrayHelper::getColumn($index, 'column_name'),
                 ],
@@ -369,41 +359,6 @@ class Schema extends \yii\db\Schema implements ConstraintFinderInterface
     }
 
     /**
-     * Resolves the table name and schema name (if any).
-     * @param TableSchema $table the table metadata object
-     * @param string $name the table name
-     */
-    protected function resolveTableNames($table, $name)
-    {
-        $parts = $this->getTableNameParts($name);
-        $partCount = count($parts);
-        if ($partCount === 4) {
-            // server name, catalog name, schema name and table name passed
-            $table->catalogName = $parts[1];
-            $table->schemaName = $parts[2];
-            $table->name = $parts[3];
-            $table->fullName = "{$table->catalogName}.{$table->schemaName}.{$table->name}";
-        } elseif ($partCount === 3) {
-            // catalog name, schema name and table name passed
-            $table->catalogName = $parts[0];
-            $table->schemaName = $parts[1];
-            $table->name = $parts[2];
-            $table->fullName = "{$table->catalogName}.{$table->schemaName}.{$table->name}";
-        } elseif ($partCount === 2) {
-            // only schema name and table name passed
-            $table->schemaName = $parts[0];
-            $table->name = $parts[1];
-            $table->fullName = $table->schemaName !== $this->defaultSchema
-                ? "{$table->schemaName}.{$table->name}"
-                : $table->name;
-        } else {
-            // only table name passed
-            $table->schemaName = $this->defaultSchema;
-            $table->fullName = $table->name = $parts[0];
-        }
-    }
-
-    /**
      * Loads the column information into a [[ColumnSchema]] object.
      * @param array $info column information
      * @return T the column schema object
@@ -418,9 +373,9 @@ class Schema extends \yii\db\Schema implements ConstraintFinderInterface
         $column->enumValues = []; // mssql has only vague equivalents to enum
         $column->isPrimaryKey = null; // primary key will be determined in findColumns() method
         $column->autoIncrement = $info['is_identity'] == 1;
-        $column->isComputed = (bool)$info['is_computed'];
+        $column->isComputed = (bool) $info['is_computed'];
         $column->unsigned = stripos($column->dbType, 'unsigned') !== false;
-        $column->comment = $info['comment'] === null ? '' : $info['comment'];
+        $column->comment = $info['comment'] ?? '';
         $column->type = self::TYPE_STRING;
 
         if (preg_match('/^(\w+)(?:\(([^\)]+)\))?/', $column->dbType, $matches)) {
@@ -682,8 +637,9 @@ class Schema extends \yii\db\Schema implements ConstraintFinderInterface
 
         if ($resolvedName->catalogName !== null) {
             $catalogPrefix = $this->quoteSimpleTableName($resolvedName->catalogName) . '.';
-            $fullName = $catalogPrefix . $fullName;
             $dbIdExpr = 'DB_ID(' . $this->db->quoteValue($resolvedName->catalogName) . ')';
+
+            $fullName = "{$catalogPrefix}{$fullName}";
         }
 
         return [$fullName, $catalogPrefix, $dbIdExpr];

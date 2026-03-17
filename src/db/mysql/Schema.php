@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 /**
  * @link https://www.yiiframework.com/
  * @copyright Copyright (c) 2008 Yii Software LLC
@@ -16,9 +18,9 @@ use yii\db\ConstraintFinderInterface;
 use yii\db\ConstraintFinderTrait;
 use yii\db\ForeignKeyConstraint;
 use yii\db\IndexConstraint;
+use yii\db\mysql\ColumnSchema;
 use yii\db\TableSchema;
 use yii\helpers\ArrayHelper;
-use yii\db\Schema as BaseSchema;
 
 /**
  * Schema is the class for retrieving metadata from a MySQL database (version 8.0 and later).
@@ -27,17 +29,16 @@ use yii\db\Schema as BaseSchema;
  * @since 2.0
  *
  * @template T of ColumnSchema = ColumnSchema
- * @extends BaseSchema<T>
+ * @extends \yii\db\Schema<T>
  */
-class Schema extends BaseSchema implements ConstraintFinderInterface
+class Schema extends \yii\db\Schema implements ConstraintFinderInterface
 {
     use ConstraintFinderTrait;
 
     /**
      * {@inheritdoc}
      */
-    public $columnSchemaClass = 'yii\db\mysql\ColumnSchema';
-
+    public $columnSchemaClass = ColumnSchema::class;
     /**
      * @var array mapping from physical column types (keys) to abstract column types (values)
      */
@@ -94,16 +95,21 @@ class Schema extends BaseSchema implements ConstraintFinderInterface
      */
     protected function resolveTableName($name)
     {
-        $resolvedName = new TableSchema();
         $parts = explode('.', str_replace('`', '', $name));
-        if (isset($parts[1])) {
-            $resolvedName->schemaName = $parts[0];
-            $resolvedName->name = $parts[1];
-        } else {
-            $resolvedName->schemaName = $this->defaultSchema;
-            $resolvedName->name = $name;
-        }
-        $resolvedName->fullName = ($resolvedName->schemaName !== $this->defaultSchema ? $resolvedName->schemaName . '.' : '') . $resolvedName->name;
+
+        $tableName = $parts[1] ?? $parts[0];
+        $schemaName = isset($parts[1]) ? $parts[0] : $this->defaultSchema;
+
+        $fullName = $schemaName !== $this->defaultSchema
+            ? "{$schemaName}.{$tableName}"
+            : $tableName;
+
+        $resolvedName = new TableSchema();
+
+        $resolvedName->name = $tableName;
+        $resolvedName->schemaName = $schemaName;
+        $resolvedName->fullName = $fullName;
+
         return $resolvedName;
     }
 
@@ -113,6 +119,7 @@ class Schema extends BaseSchema implements ConstraintFinderInterface
     protected function findTableNames($schema = '')
     {
         $sql = 'SHOW TABLES';
+
         if ($schema !== '') {
             $sql .= ' FROM ' . $this->quoteSimpleTableName($schema);
         }
@@ -125,11 +132,11 @@ class Schema extends BaseSchema implements ConstraintFinderInterface
      */
     protected function loadTableSchema($name)
     {
-        $table = new TableSchema();
-        $this->resolveTableNames($table, $name);
+        $table = $this->resolveTableName($name);
 
         if ($this->findColumns($table)) {
             $this->findConstraints($table);
+
             return $table;
         }
 
@@ -255,24 +262,7 @@ SQL;
      */
     public function createQueryBuilder()
     {
-        return Yii::createObject(QueryBuilder::className(), [$this->db]);
-    }
-
-    /**
-     * Resolves the table name and schema name (if any).
-     * @param TableSchema $table the table metadata object
-     * @param string $name the table name
-     */
-    protected function resolveTableNames($table, $name)
-    {
-        $parts = explode('.', str_replace('`', '', $name));
-        if (isset($parts[1])) {
-            $table->schemaName = $parts[0];
-            $table->name = $parts[1];
-            $table->fullName = $table->schemaName . '.' . $table->name;
-        } else {
-            $table->fullName = $table->name = $parts[0];
-        }
+        return Yii::createObject(QueryBuilder::class, [$this->db]);
     }
 
     /**
@@ -501,7 +491,7 @@ SQL;
      */
     public function createColumnSchemaBuilder($type, $length = null)
     {
-        return Yii::createObject(ColumnSchemaBuilder::className(), [$type, $length, $this->db]);
+        return Yii::createObject(ColumnSchemaBuilder::class, [$type, $length, $this->db]);
     }
 
     /**

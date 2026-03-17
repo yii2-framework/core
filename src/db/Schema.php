@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 /**
  * @link https://www.yiiframework.com/
  * @copyright Copyright (c) 2008 Yii Software LLC
@@ -16,6 +18,7 @@ use yii\base\NotSupportedException;
 use yii\caching\Cache;
 use yii\caching\CacheInterface;
 use yii\caching\TagDependency;
+use yii\db\IntegrityException;
 
 /**
  * Schema is the base class for concrete DBMS-specific schema classes.
@@ -84,13 +87,14 @@ abstract class Schema extends BaseObject
      * If left part is found in DB error message exception class from the right part is used.
      */
     public $exceptionMap = [
-        'SQLSTATE[23' => 'yii\db\IntegrityException',
+        'SQLSTATE[23' => IntegrityException::class,
     ];
     /**
-     * @var class-string<T>|array{class?: class-string<T>, __class?: class-string<T>, ...} column schema class or class config
+     * @var class-string<T>|array{class?: class-string<T>, __class?: class-string<T>, ...} column schema class or class
+     * config.
      * @since 2.0.11
      */
-    public $columnSchemaClass = 'yii\db\ColumnSchema';
+    public $columnSchemaClass = ColumnSchema::class;
 
     /**
      * @var string|string[] character used to quote schema, table, etc. names.
@@ -125,7 +129,6 @@ abstract class Schema extends BaseObject
      * @var string server version as a string.
      */
     private $_serverVersion;
-
 
     /**
      * Resolves the table name and schema name (if any).
@@ -315,7 +318,7 @@ abstract class Schema extends BaseObject
      */
     public function createQueryBuilder()
     {
-        return Yii::createObject(QueryBuilder::className(), [$this->db]);
+        return Yii::createObject(QueryBuilder::class, [$this->db]);
     }
 
     /**
@@ -330,7 +333,7 @@ abstract class Schema extends BaseObject
      */
     public function createColumnSchemaBuilder($type, $length = null)
     {
-        return Yii::createObject(ColumnSchemaBuilder::className(), [$type, $length]);
+        return Yii::createObject(ColumnSchemaBuilder::class, [$type, $length]);
     }
 
     /**

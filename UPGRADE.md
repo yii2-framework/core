@@ -308,3 +308,24 @@ for PHP 8.2, but custom or distro builds may link against an older system librar
 If your application extends `\yii\db\sqlite\QueryBuilder` and overrides `batchInsert()`, remove your override. The
 parent `\yii\db\QueryBuilder::batchInsert()` handles all cases since native multi-row INSERT has been supported since
 SQLite 3.7.11.
+
+### `resolveTableNames()` removed from all database drivers
+
+The `protected` method `resolveTableNames($table, $name)` has been removed from MSSQL, MySQL, PostgreSQL, and Oracle
+Schema classes. This method was never defined in the parent `\yii\db\Schema` class it was a per-driver internal method 
+that duplicated the logic of `resolveTableName($name)`.
+
+`loadTableSchema()` now uses `resolveTableName()` directly:
+
+```php
+// before
+$table = new TableSchema();
+$this->resolveTableNames($table, $name);
+
+// after
+$table = $this->resolveTableName($name);
+```
+
+If your application extends any database Schema class and overrides `resolveTableNames()`, migrate your logic to
+`resolveTableName()` instead. The method signature differs: `resolveTableName($name)` returns a new `TableSchema`
+with the resolved parts, rather than mutating an existing one.

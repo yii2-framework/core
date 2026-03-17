@@ -309,10 +309,10 @@ If your application extends `\yii\db\sqlite\QueryBuilder` and overrides `batchIn
 parent `\yii\db\QueryBuilder::batchInsert()` handles all cases since native multi-row INSERT has been supported since
 SQLite 3.7.11.
 
-### `resolveTableNames()` removed from all database drivers
+### `resolveTableNames()` removed from MSSQL, MySQL, PostgreSQL, and Oracle drivers
 
 The `protected` method `resolveTableNames($table, $name)` has been removed from MSSQL, MySQL, PostgreSQL, and Oracle
-Schema classes. This method was never defined in the parent `\yii\db\Schema` class it was a per-driver internal method 
+Schema classes. This method was never defined in the parent `\yii\db\Schema` class; it was a per-driver internal method
 that duplicated the logic of `resolveTableName($name)`.
 
 `loadTableSchema()` now uses `resolveTableName()` directly:

@@ -18,7 +18,6 @@ use yii\db\ConstraintFinderTrait;
 use yii\db\DefaultValueConstraint;
 use yii\db\ForeignKeyConstraint;
 use yii\db\IndexConstraint;
-use yii\db\mssql\ColumnSchema;
 use yii\db\ViewFinderTrait;
 use yii\helpers\ArrayHelper;
 

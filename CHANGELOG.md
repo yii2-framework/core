@@ -52,3 +52,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - refactor(db): replace MSSQL `INFORMATION_SCHEMA.TABLES` with `sys.objects` + `sys.views` in `findTableNames()` and `findViewNames()`, remove legacy SQL Server 2000 doc link from `findForeignKeys()`.
 - fix(db): add `quoteSimpleTableName()` quoting and cross-database `catalogPrefix` to MSSQL `loadTableIndexes()`, `findForeignKeys()`, and `loadTableConstraints()`; remove `static $sql` and normalize heredoc format across all Schema methods.
 - refactor(db)!: remove redundant `resolveTableNames()` from MSSQL, MySQL, PostgreSQL, and Oracle Schema classes; `loadTableSchema()` now uses `resolveTableName()` directly; simplify `resolveTableName()` in all drivers.
+- refactor(db)!: modernize MSSQL `QueryBuilder` replace deprecated `sys.sysconstraints` and `fn_listextendedproperty` with modern catalog views, adopt `{{table}}` / `[[column]]` deferred quoting.

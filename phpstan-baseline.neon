@@ -1761,7 +1761,7 @@ parameters:
 		-
 			message: '#^Construct empty\(\) is not allowed\. Use more strict comparison\.$#'
 			identifier: empty.notAllowed
-			count: 5
+			count: 4
 			path: src/db/mssql/QueryBuilder.php
 
 		-
@@ -1779,13 +1779,13 @@ parameters:
 		-
 			message: '#^Only booleans are allowed in a ternary operator condition, string given\.$#'
 			identifier: ternary.condNotBoolean
-			count: 2
+			count: 4
 			path: src/db/mssql/QueryBuilder.php
 
 		-
 			message: '#^Only booleans are allowed in a ternary operator condition, string\|null given\.$#'
 			identifier: ternary.condNotBoolean
-			count: 6
+			count: 4
 			path: src/db/mssql/QueryBuilder.php
 
 		-

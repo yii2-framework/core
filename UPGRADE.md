@@ -329,3 +329,18 @@ $table = $this->resolveTableName($name);
 If your application extends any database Schema class and overrides `resolveTableNames()`, migrate your logic to
 `resolveTableName()` instead. The method signature differs: `resolveTableName($name)` returns a new `TableSchema`
 with the resolved parts, rather than mutating an existing one.
+
+### MSSQL QueryBuilder uses deferred `{{table}}` / `[[column]]` quoting
+
+The following `\yii\db\mssql\QueryBuilder` methods now return SQL with `{{table}}` / `[[column]]` placeholders instead
+of pre-quoted `[table]` / `[column]` identifiers: `renameTable()`, `alterColumn()`, `addDefaultValue()`,
+`dropDefaultValue()`, `dropColumn()`, `checkIntegrity()`.
+
+These placeholders are resolved automatically by `Command::setSql()` → `Connection::quoteSql()` during normal
+execution. **No action required** unless your code compares raw QueryBuilder output strings directly.
+
+Additionally:
+- `buildAddCommentSql()` and `buildRemoveCommentSql()` (protected) now use `sys.extended_properties` instead of
+  `fn_listextendedproperty`, and the property name is `MS_Description` (capital D) instead of `MS_description`.
+- `dropConstraintsForColumn()` (private) now uses `sys.default_constraints` + `sys.check_constraints` instead of
+  the deprecated `sys.sysconstraints` compatibility view.

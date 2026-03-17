@@ -1381,7 +1381,7 @@ abstract class BaseQueryBuilder extends BaseDatabase
      */
     public function testAddDropDefaultValue($sql, Closure $builder): void
     {
-        $this->assertSame($this->getConnection(false)->quoteSql($sql), $builder($this->getQueryBuilder(false)));
+        $this->assertSame($sql, $builder($this->getQueryBuilder(false)));
     }
 
     public static function existsParamsProvider(): array

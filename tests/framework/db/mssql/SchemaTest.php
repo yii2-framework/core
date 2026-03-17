@@ -228,6 +228,72 @@ class SchemaTest extends BaseSchema
         );
     }
 
+    public function testCompositePrimaryKeyColumnOrder(): void
+    {
+        $db = $this->getConnection(false);
+
+        if ($db->getSchema()->getTableSchema('test_composite_pk') !== null) {
+            $db->createCommand()->dropTable('test_composite_pk')->execute();
+        }
+
+        $db->createCommand()->setSql(
+            <<<SQL
+            CREATE TABLE [test_composite_pk] (
+                [col_b] INT NOT NULL,
+                [col_a] INT NOT NULL,
+                [col_c] INT NOT NULL,
+                [data] VARCHAR(50),
+                CONSTRAINT [PK_test_composite] PRIMARY KEY ([col_b], [col_a], [col_c])
+            )
+            SQL,
+        )->execute();
+
+        $db->getSchema()->refreshTableSchema('test_composite_pk');
+        $tableSchema = $db->getSchema()->getTableSchema('test_composite_pk');
+
+        self::assertSame(
+            ['col_b', 'col_a', 'col_c'],
+            $tableSchema->primaryKey,
+            "Composite PK columns should follow 'key_ordinal' order, not alphabetical.",
+        );
+    }
+
+    public function testCompositeUniqueConstraintColumnOrder(): void
+    {
+        $db = $this->getConnection(false);
+
+        if ($db->getSchema()->getTableSchema('test_composite_uq') !== null) {
+            $db->createCommand()->dropTable('test_composite_uq')->execute();
+        }
+
+        $db->createCommand()->setSql(
+            <<<SQL
+            CREATE TABLE [test_composite_uq] (
+                [id] INT IDENTITY PRIMARY KEY,
+                [col_z] INT NOT NULL,
+                [col_y] INT NOT NULL,
+                [col_x] INT NOT NULL,
+                CONSTRAINT [UQ_test_composite] UNIQUE ([col_z], [col_y], [col_x])
+            )
+            SQL,
+        )->execute();
+
+        $db->getSchema()->refreshTableSchema('test_composite_uq');
+        $tableSchema = $db->getSchema()->getTableSchema('test_composite_uq');
+        $uniqueIndexes = $db->getSchema()->findUniqueIndexes($tableSchema);
+
+        self::assertArrayHasKey(
+            'UQ_test_composite',
+            $uniqueIndexes,
+            'Unique constraint should be found by name.',
+        );
+        self::assertSame(
+            ['col_z', 'col_y', 'col_x'],
+            $uniqueIndexes['UQ_test_composite'],
+            "Composite UQ columns should follow 'key_ordinal' order, not alphabetical.",
+        );
+    }
+
     public function testGetPrimaryKey(): void
     {
         $db = $this->getConnection();

@@ -429,8 +429,11 @@ SQL;
             $fullName = $this->quoteSimpleTableName($table->schemaName) . '.' . $fullName;
         }
 
+        $catalogPrefix = '';
+
         if ($table->catalogName !== null) {
-            $fullName = $this->quoteSimpleTableName($table->catalogName) . '.' . $fullName;
+            $catalogPrefix = $this->quoteSimpleTableName($table->catalogName) . '.';
+            $fullName = "{$catalogPrefix}{$fullName}";
         }
 
         $sql = <<<SQL
@@ -455,14 +458,14 @@ SQL;
             [c].[is_identity],
             [c].[is_computed],
             CAST([ep].[value] AS NVARCHAR(MAX)) AS [comment]
-        FROM [sys].[columns] AS [c]
-        INNER JOIN [sys].[types] AS [t]
+        FROM {$catalogPrefix}[sys].[columns] AS [c]
+        INNER JOIN {$catalogPrefix}[sys].[types] AS [t]
             ON [c].[system_type_id] = [t].[system_type_id]
             AND [t].[user_type_id] = [t].[system_type_id]
-        LEFT JOIN [sys].[default_constraints] AS [dc]
+        LEFT JOIN {$catalogPrefix}[sys].[default_constraints] AS [dc]
             ON [dc].[parent_object_id] = [c].[object_id]
             AND [dc].[parent_column_id] = [c].[column_id]
-        LEFT JOIN [sys].[extended_properties] AS [ep]
+        LEFT JOIN {$catalogPrefix}[sys].[extended_properties] AS [ep]
             ON [ep].[major_id] = [c].[object_id]
             AND [ep].[minor_id] = [c].[column_id]
             AND [ep].[class] = 1
@@ -520,19 +523,22 @@ SQL;
             $fullName = $this->quoteSimpleTableName($table->schemaName) . '.' . $fullName;
         }
 
+        $catalogPrefix = '';
+
         if ($table->catalogName !== null) {
-            $fullName = $this->quoteSimpleTableName($table->catalogName) . '.' . $fullName;
+            $catalogPrefix = $this->quoteSimpleTableName($table->catalogName) . '.';
+            $fullName = "{$catalogPrefix}{$fullName}";
         }
 
         $sql = <<<SQL
         SELECT
             [kc].[name] AS [index_name],
             [col].[name] AS [field_name]
-        FROM [sys].[key_constraints] AS [kc]
-        INNER JOIN [sys].[index_columns] AS [ic]
+        FROM {$catalogPrefix}[sys].[key_constraints] AS [kc]
+        INNER JOIN {$catalogPrefix}[sys].[index_columns] AS [ic]
             ON [ic].[object_id] = [kc].[parent_object_id]
             AND [ic].[index_id] = [kc].[unique_index_id]
-        INNER JOIN [sys].[columns] AS [col]
+        INNER JOIN {$catalogPrefix}[sys].[columns] AS [col]
             ON [col].[object_id] = [ic].[object_id]
             AND [col].[column_id] = [ic].[column_id]
         WHERE [kc].[parent_object_id] = OBJECT_ID(:fullName)

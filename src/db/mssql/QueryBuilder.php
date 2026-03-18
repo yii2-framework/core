@@ -111,7 +111,7 @@ class QueryBuilder extends \yii\db\QueryBuilder
         $newName = $this->db->quoteTableName($newName);
 
         return <<<SQL
-        sp_rename N'{$oldName}', N'{$newName}'
+        sp_rename {$oldName}, {$newName}
         SQL;
     }
 
@@ -129,7 +129,7 @@ class QueryBuilder extends \yii\db\QueryBuilder
         $newName = $this->db->quoteColumnName($newName);
 
         return <<<SQL
-        sp_rename N'{$table}.{$oldName}', N'{$newName}', N'COLUMN'
+        sp_rename N'{$table}.{$oldName}', {$newName}, N'COLUMN'
         SQL;
     }
 

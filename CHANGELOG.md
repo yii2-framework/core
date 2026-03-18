@@ -55,3 +55,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - refactor(db)!: modernize MSSQL `QueryBuilder` replace deprecated `sys.sysconstraints` and `fn_listextendedproperty` with modern catalog views, adopt `{{table}}` / `[[column]]` deferred quoting.
 - refactor(db): extract `dbType` size/precision/scale parsing from MySQL, SQLite, and MSSQL `Schema::loadColumnSchema()` into `ColumnSchema::extractSizeFromDbType()`.
 - refactor(db): modernize MySQL `Schema` SQL queries remove `static $sql`, use explicit `INNER JOIN`, one-condition-per-line WHERE, `@see` doc links, and parameterized schema filtering.
+- refactor(db): modernize MySQL `QueryBuilder` add `declare(strict_types=1)`, heredoc SQL, `::class` constants, fix raw backtick quoting in `resetSequence()`, and `@see` doc links.

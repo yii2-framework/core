@@ -521,6 +521,7 @@ class Schema extends \yii\db\Schema implements ConstraintFinderInterface
         $uniqueIndexes = [];
 
         $regexp = '/UNIQUE KEY\s+[`"](.+)[`"]\s*\(([`"].+[`"])+\)/mi';
+
         if (preg_match_all($regexp, $sql, $matches, PREG_SET_ORDER)) {
             foreach ($matches as $match) {
                 $indexName = $match[1];

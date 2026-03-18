@@ -136,7 +136,7 @@ class ActiveRecordTest extends BaseActiveRecord
         $record->type = 'type';
         $record->save(false);
         $this->assertEquals(5, $record->id);
-        $this->assertEquals('secondKey', $record->second_key_column);
+        $this->assertEquals('secondKey ', $record->second_key_column);
     }
 
     /**

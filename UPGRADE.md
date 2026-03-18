@@ -268,6 +268,11 @@ containing `WITH RECURSIVE`, update your expectations.
 **Documentation links:** All Oracle documentation references in `Schema`, `QueryBuilder`, and `OracleMutex` have been
 updated from Oracle 10g/11g URLs to Oracle 19c URLs.
 
+**Schema query modernization:** Internal SQL queries in `\yii\db\oci\Schema` have been modernized. No public API
+changes. `findSchemaNames()` now queries `ALL_USERS` with `ORACLE_MAINTAINED = 'N'` instead of `DBA_USERS` with
+tablespace filtering — this no longer requires DBA privileges and uses the precise Oracle 12c+ column to identify
+user-created accounts.
+
 ### PostgreSQL dead code removal, minimum PostgreSQL 12
 
 The minimum supported PostgreSQL version is now **12**. PHP 8.2's `pdo_pgsql` requires libpq 10.0+ as the minimum

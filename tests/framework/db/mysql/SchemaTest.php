@@ -101,14 +101,6 @@ SQL;
         if (
             $this->driverName === 'mysql' &&
             \stripos($version, 'MariaDb') === false &&
-            version_compare($version, '8.0.16', '<') &&
-            $type === 'checks'
-        ) {
-            $this->expectException('yii\base\NotSupportedException');
-        } elseif (
-            $this->driverName === 'mysql' &&
-            \stripos($version, 'MariaDb') === false &&
-            version_compare($version, '8.0.16', '>=') &&
             $tableName === 'T_constraints_1' &&
             $type === 'checks'
         ) {
@@ -136,14 +128,6 @@ SQL;
         if (
             $this->driverName === 'mysql' &&
             \stripos($version, 'MariaDb') === false &&
-            version_compare($version, '8.0.16', '<') &&
-            $type === 'checks'
-        ) {
-            $this->expectException('yii\base\NotSupportedException');
-        } elseif (
-            $this->driverName === 'mysql' &&
-            \stripos($version, 'MariaDb') === false &&
-            version_compare($version, '8.0.16', '>=') &&
             $tableName === 'T_constraints_1' &&
             $type === 'checks'
         ) {
@@ -173,14 +157,6 @@ SQL;
         if (
             $this->driverName === 'mysql' &&
             \stripos($version, 'MariaDb') === false &&
-            version_compare($version, '8.0.16', '<') &&
-            $type === 'checks'
-        ) {
-            $this->expectException('yii\base\NotSupportedException');
-        } elseif (
-            $this->driverName === 'mysql' &&
-            \stripos($version, 'MariaDb') === false &&
-            version_compare($version, '8.0.16', '>=') &&
             $tableName === 'T_constraints_1' &&
             $type === 'checks'
         ) {

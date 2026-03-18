@@ -10,6 +10,9 @@ declare(strict_types=1);
 
 namespace yii\db\mysql;
 
+use Exception;
+use PDO;
+use PDOException;
 use Yii;
 use yii\base\NotSupportedException;
 use yii\db\CheckConstraint;
@@ -21,6 +24,8 @@ use yii\db\IndexConstraint;
 use yii\db\mysql\ColumnSchema;
 use yii\db\TableSchema;
 use yii\helpers\ArrayHelper;
+
+use function in_array;
 
 /**
  * Schema is the class for retrieving metadata from a MySQL database (version 8.0 and later).
@@ -98,6 +103,7 @@ class Schema extends \yii\db\Schema implements ConstraintFinderInterface
         $parts = explode('.', str_replace('`', '', $name));
 
         $tableName = $parts[1] ?? $parts[0];
+
         $schemaName = isset($parts[1]) ? $parts[0] : $this->defaultSchema;
 
         $fullName = $schemaName !== $this->defaultSchema
@@ -115,6 +121,8 @@ class Schema extends \yii\db\Schema implements ConstraintFinderInterface
 
     /**
      * {@inheritdoc}
+     *
+     * @see https://dev.mysql.com/doc/refman/8.0/en/show-tables.html
      */
     protected function findTableNames($schema = '')
     {
@@ -164,32 +172,44 @@ class Schema extends \yii\db\Schema implements ConstraintFinderInterface
      */
     protected function loadTableIndexes($tableName)
     {
-        static $sql = <<<'SQL'
-SELECT
-    `s`.`INDEX_NAME` AS `name`,
-    `s`.`COLUMN_NAME` AS `column_name`,
-    `s`.`NON_UNIQUE` ^ 1 AS `index_is_unique`,
-    `s`.`INDEX_NAME` = 'PRIMARY' AS `index_is_primary`
-FROM `information_schema`.`STATISTICS` AS `s`
-WHERE `s`.`TABLE_SCHEMA` = COALESCE(:schemaName, DATABASE()) AND `s`.`INDEX_SCHEMA` = `s`.`TABLE_SCHEMA` AND `s`.`TABLE_NAME` = :tableName
-ORDER BY `s`.`SEQ_IN_INDEX` ASC
-SQL;
-
         $resolvedName = $this->resolveTableName($tableName);
-        $indexes = $this->db->createCommand($sql, [
-            ':schemaName' => $resolvedName->schemaName,
-            ':tableName' => $resolvedName->name,
-        ])->queryAll();
+
+        /** @see https://dev.mysql.com/doc/refman/8.0/en/information-schema-statistics-table.html */
+        $sql = <<<SQL
+        SELECT
+            `s`.`INDEX_NAME` AS `name`,
+            `s`.`COLUMN_NAME` AS `column_name`,
+            `s`.`NON_UNIQUE` ^ 1 AS `index_is_unique`,
+            `s`.`INDEX_NAME` = 'PRIMARY' AS `index_is_primary`
+        FROM `information_schema`.`STATISTICS` AS `s`
+        WHERE
+            `s`.`TABLE_SCHEMA` = COALESCE(:schemaName, DATABASE())
+            AND `s`.`INDEX_SCHEMA` = `s`.`TABLE_SCHEMA`
+            AND `s`.`TABLE_NAME` = :tableName
+        ORDER BY `s`.`SEQ_IN_INDEX` ASC
+        SQL;
+
+        $indexes = $this->db->createCommand(
+            $sql,
+            [
+                ':schemaName' => $resolvedName->schemaName,
+                ':tableName' => $resolvedName->name,
+            ],
+        )->queryAll();
         $indexes = $this->normalizePdoRowKeyCase($indexes, true);
         $indexes = ArrayHelper::index($indexes, null, 'name');
+
         $result = [];
+
         foreach ($indexes as $name => $index) {
-            $result[] = new IndexConstraint([
-                'isPrimary' => (bool) $index[0]['index_is_primary'],
-                'isUnique' => (bool) $index[0]['index_is_unique'],
-                'name' => $name !== 'PRIMARY' ? $name : null,
-                'columnNames' => ArrayHelper::getColumn($index, 'column_name'),
-            ]);
+            $result[] = new IndexConstraint(
+                [
+                    'isPrimary' => (bool) $index[0]['index_is_primary'],
+                    'isUnique' => (bool) $index[0]['index_is_unique'],
+                    'name' => $name !== 'PRIMARY' ? $name : null,
+                    'columnNames' => ArrayHelper::getColumn($index, 'column_name'),
+                ],
+            );
         }
 
         return $result;
@@ -208,40 +228,46 @@ SQL;
      */
     protected function loadTableChecks($tableName)
     {
-        $version = $this->db->getServerVersion();
+        $resolvedName = $this->resolveTableName($tableName);
 
-        // check version MySQL >= 8.0.16
-        if (\stripos($version, 'MariaDb') === false && \version_compare($version, '8.0.16', '<')) {
-            throw new NotSupportedException('MySQL < 8.0.16 does not support check constraints.');
-        }
-
-        $checks = [];
-
+        /** @see https://dev.mysql.com/doc/refman/8.0/en/information-schema-check-constraints-table.html */
         $sql = <<<SQL
-        SELECT cc.CONSTRAINT_NAME as constraint_name, cc.CHECK_CLAUSE as check_clause
-        FROM INFORMATION_SCHEMA.TABLE_CONSTRAINTS tc
-        JOIN INFORMATION_SCHEMA.CHECK_CONSTRAINTS cc
-        ON tc.CONSTRAINT_NAME = cc.CONSTRAINT_NAME
-        WHERE tc.TABLE_NAME = :tableName AND tc.CONSTRAINT_TYPE = 'CHECK';
+        SELECT
+            `cc`.`CONSTRAINT_NAME` AS `constraint_name`,
+            `cc`.`CHECK_CLAUSE` AS `check_clause`
+        FROM `information_schema`.`TABLE_CONSTRAINTS` AS `tc`
+        INNER JOIN `information_schema`.`CHECK_CONSTRAINTS` AS `cc`
+            ON `cc`.`CONSTRAINT_SCHEMA` = `tc`.`CONSTRAINT_SCHEMA`
+            AND `cc`.`CONSTRAINT_NAME` = `tc`.`CONSTRAINT_NAME`
+        WHERE
+            `tc`.`TABLE_SCHEMA` = COALESCE(:schemaName, DATABASE())
+            AND `tc`.`TABLE_NAME` = :tableName
+            AND `tc`.`CONSTRAINT_TYPE` = 'CHECK'
         SQL;
 
-        $resolvedName = $this->resolveTableName($tableName);
-        $tableRows = $this->db->createCommand($sql, [':tableName' => $resolvedName->name])->queryAll();
+        $tableRows = $this->db->createCommand(
+            $sql,
+            [
+                ':schemaName' => $resolvedName->schemaName,
+                ':tableName' => $resolvedName->name,
+            ],
+        )->queryAll();
 
         if ($tableRows === []) {
-            return $checks;
+            return [];
         }
 
         $tableRows = $this->normalizePdoRowKeyCase($tableRows, true);
 
+        $checks = [];
+
         foreach ($tableRows as $tableRow) {
-            $check = new CheckConstraint(
+            $checks[] = new CheckConstraint(
                 [
                     'name' => $tableRow['constraint_name'],
                     'expression' => $tableRow['check_clause'],
-                ]
+                ],
             );
-            $checks[] = $check;
         }
 
         return $checks;
@@ -321,41 +347,48 @@ SQL;
      */
     protected function findColumns($table)
     {
+        /** @see https://dev.mysql.com/doc/refman/8.0/en/show-columns.html */
         $sql = 'SHOW FULL COLUMNS FROM ' . $this->quoteTableName($table->fullName);
+
         try {
             $columns = $this->db->createCommand($sql)->queryAll();
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             $previous = $e->getPrevious();
-            if ($previous instanceof \PDOException && strpos($previous->getMessage(), 'SQLSTATE[42S02') !== false) {
+
+            if ($previous instanceof PDOException && strpos($previous->getMessage(), 'SQLSTATE[42S02') !== false) {
                 // table does not exist
-                // https://dev.mysql.com/doc/refman/5.5/en/error-messages-server.html#error_er_bad_table_error
+                // https://dev.mysql.com/doc/refman/8.0/en/error-messages-server.html#error_er_bad_table_error
                 return false;
             }
+
             throw $e;
         }
-
 
         $jsonColumns = $this->getJsonColumns($table);
 
         foreach ($columns as $info) {
-            if ($this->db->slavePdo->getAttribute(\PDO::ATTR_CASE) !== \PDO::CASE_LOWER) {
+            if ($this->db->slavePdo->getAttribute(PDO::ATTR_CASE) !== PDO::CASE_LOWER) {
                 $info = array_change_key_case($info, CASE_LOWER);
             }
 
-            if (\in_array($info['field'], $jsonColumns, true)) {
+            if (in_array($info['field'], $jsonColumns, true)) {
                 $info['type'] = static::TYPE_JSON;
             }
 
             $column = $this->loadColumnSchema($info);
+
             if ($column->isPrimaryKey) {
                 $table->primaryKey[] = $column->name;
+
                 if ($column->autoIncrement) {
                     $table->sequenceName = '';
                 }
             }
+
             $column->defaultValue = $column->isPrimaryKey
                 ? null
                 : $column->defaultPhpTypecast($column->defaultValue);
+
             $table->columns[$column->name] = $column;
         }
 
@@ -366,10 +399,13 @@ SQL;
      * Gets the CREATE TABLE sql string.
      * @param TableSchema $table the table metadata
      * @return string $sql the result of 'SHOW CREATE TABLE'
+     *
+     * @see https://dev.mysql.com/doc/refman/8.0/en/show-create-table.html
      */
     protected function getCreateTableSql($table)
     {
         $row = $this->db->createCommand('SHOW CREATE TABLE ' . $this->quoteTableName($table->fullName))->queryOne();
+
         if (isset($row['Create Table'])) {
             $sql = $row['Create Table'];
         } else {
@@ -387,26 +423,37 @@ SQL;
      */
     protected function findConstraints($table)
     {
-        $sql = <<<'SQL'
-SELECT
-    `kcu`.`CONSTRAINT_NAME` AS `constraint_name`,
-    `kcu`.`COLUMN_NAME` AS `column_name`,
-    `kcu`.`REFERENCED_TABLE_NAME` AS `referenced_table_name`,
-    `kcu`.`REFERENCED_COLUMN_NAME` AS `referenced_column_name`
-FROM `information_schema`.`REFERENTIAL_CONSTRAINTS` AS `rc`
-JOIN `information_schema`.`KEY_COLUMN_USAGE` AS `kcu` ON
-    (
-        `kcu`.`CONSTRAINT_CATALOG` = `rc`.`CONSTRAINT_CATALOG` OR
-        (`kcu`.`CONSTRAINT_CATALOG` IS NULL AND `rc`.`CONSTRAINT_CATALOG` IS NULL)
-    ) AND
-    `kcu`.`CONSTRAINT_SCHEMA` = `rc`.`CONSTRAINT_SCHEMA` AND
-    `kcu`.`CONSTRAINT_NAME` = `rc`.`CONSTRAINT_NAME`
-WHERE `rc`.`CONSTRAINT_SCHEMA` = database() AND `kcu`.`TABLE_SCHEMA` = database()
-AND `rc`.`TABLE_NAME` = :tableName AND `kcu`.`TABLE_NAME` = :tableName1
-SQL;
+        /** @see https://dev.mysql.com/doc/refman/8.0/en/information-schema-referential-constraints-table.html */
+        $sql = <<<SQL
+        SELECT
+            `kcu`.`CONSTRAINT_NAME` AS `constraint_name`,
+            `kcu`.`COLUMN_NAME` AS `column_name`,
+            `kcu`.`REFERENCED_TABLE_NAME` AS `referenced_table_name`,
+            `kcu`.`REFERENCED_COLUMN_NAME` AS `referenced_column_name`
+        FROM `information_schema`.`REFERENTIAL_CONSTRAINTS` AS `rc`
+        INNER JOIN `information_schema`.`KEY_COLUMN_USAGE` AS `kcu`
+            ON `kcu`.`CONSTRAINT_CATALOG` = `rc`.`CONSTRAINT_CATALOG`
+            AND `kcu`.`CONSTRAINT_SCHEMA` = `rc`.`CONSTRAINT_SCHEMA`
+            AND `kcu`.`CONSTRAINT_NAME` = `rc`.`CONSTRAINT_NAME`
+        WHERE
+            `rc`.`CONSTRAINT_SCHEMA` = COALESCE(:schemaName, DATABASE())
+            AND `kcu`.`TABLE_SCHEMA` = COALESCE(:schemaName1, DATABASE())
+            AND `rc`.`TABLE_NAME` = :tableName
+            AND `kcu`.`TABLE_NAME` = :tableName1
+        SQL;
 
         try {
-            $rows = $this->db->createCommand($sql, [':tableName' => $table->name, ':tableName1' => $table->name])->queryAll();
+            $rows = $this->db->createCommand(
+                $sql,
+                [
+                    ':schemaName' => $table->schemaName,
+                    ':schemaName1' => $table->schemaName,
+                    ':tableName' => $table->name,
+                    ':tableName1' => $table->name,
+                ],
+            )->queryAll();
+            $rows = $this->normalizePdoRowKeyCase($rows, true);
+
             $constraints = [];
 
             foreach ($rows as $row) {
@@ -415,31 +462,38 @@ SQL;
             }
 
             $table->foreignKeys = [];
+
             foreach ($constraints as $name => $constraint) {
-                $table->foreignKeys[$name] = array_merge(
-                    [$constraint['referenced_table_name']],
-                    $constraint['columns']
-                );
+                $table->foreignKeys[$name] = [
+                    $constraint['referenced_table_name'],
+                    ...$constraint['columns']
+                ];
             }
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             $previous = $e->getPrevious();
-            if (!$previous instanceof \PDOException || strpos($previous->getMessage(), 'SQLSTATE[42S02') === false) {
+
+            if (!$previous instanceof PDOException || strpos($previous->getMessage(), 'SQLSTATE[42S02') === false) {
                 throw $e;
             }
 
             // table does not exist, try to determine the foreign keys using the table creation sql
             $sql = $this->getCreateTableSql($table);
+
             $regexp = '/FOREIGN KEY\s+\(([^\)]+)\)\s+REFERENCES\s+([^\(^\s]+)\s*\(([^\)]+)\)/mi';
+
             if (preg_match_all($regexp, $sql, $matches, PREG_SET_ORDER)) {
                 foreach ($matches as $match) {
                     $fks = array_map('trim', explode(',', str_replace(['`', '"'], '', $match[1])));
                     $pks = array_map('trim', explode(',', str_replace(['`', '"'], '', $match[3])));
                     $constraint = [str_replace(['`', '"'], '', $match[2])];
+
                     foreach ($fks as $k => $name) {
                         $constraint[$name] = $pks[$k];
                     }
+
                     $table->foreignKeys[md5(serialize($constraint))] = $constraint;
                 }
+
                 $table->foreignKeys = array_values($table->foreignKeys);
             }
         }
@@ -463,6 +517,7 @@ SQL;
     public function findUniqueIndexes($table)
     {
         $sql = $this->getCreateTableSql($table);
+
         $uniqueIndexes = [];
 
         $regexp = '/UNIQUE KEY\s+[`"](.+)[`"]\s*\(([`"].+[`"])+\)/mi';
@@ -496,66 +551,86 @@ SQL;
      */
     private function loadTableConstraints($tableName, $returnType)
     {
-        static $sql = <<<'SQL'
-SELECT
-    `kcu`.`CONSTRAINT_NAME` AS `name`,
-    `kcu`.`COLUMN_NAME` AS `column_name`,
-    `tc`.`CONSTRAINT_TYPE` AS `type`,
-    CASE
-        WHEN :schemaName IS NULL AND `kcu`.`REFERENCED_TABLE_SCHEMA` = DATABASE() THEN NULL
-        ELSE `kcu`.`REFERENCED_TABLE_SCHEMA`
-    END AS `foreign_table_schema`,
-    `kcu`.`REFERENCED_TABLE_NAME` AS `foreign_table_name`,
-    `kcu`.`REFERENCED_COLUMN_NAME` AS `foreign_column_name`,
-    `rc`.`UPDATE_RULE` AS `on_update`,
-    `rc`.`DELETE_RULE` AS `on_delete`,
-    `kcu`.`ORDINAL_POSITION` AS `position`
-FROM
-    `information_schema`.`KEY_COLUMN_USAGE` AS `kcu`,
-    `information_schema`.`REFERENTIAL_CONSTRAINTS` AS `rc`,
-    `information_schema`.`TABLE_CONSTRAINTS` AS `tc`
-WHERE
-    `kcu`.`TABLE_SCHEMA` = COALESCE(:schemaName1, DATABASE()) AND `kcu`.`CONSTRAINT_SCHEMA` = `kcu`.`TABLE_SCHEMA` AND `kcu`.`TABLE_NAME` = :tableName
-    AND `rc`.`CONSTRAINT_SCHEMA` = `kcu`.`TABLE_SCHEMA` AND `rc`.`TABLE_NAME` = :tableName1 AND `rc`.`CONSTRAINT_NAME` = `kcu`.`CONSTRAINT_NAME`
-    AND `tc`.`TABLE_SCHEMA` = `kcu`.`TABLE_SCHEMA` AND `tc`.`TABLE_NAME` = :tableName2 AND `tc`.`CONSTRAINT_NAME` = `kcu`.`CONSTRAINT_NAME` AND `tc`.`CONSTRAINT_TYPE` = 'FOREIGN KEY'
-UNION
-SELECT
-    `kcu`.`CONSTRAINT_NAME` AS `name`,
-    `kcu`.`COLUMN_NAME` AS `column_name`,
-    `tc`.`CONSTRAINT_TYPE` AS `type`,
-    NULL AS `foreign_table_schema`,
-    NULL AS `foreign_table_name`,
-    NULL AS `foreign_column_name`,
-    NULL AS `on_update`,
-    NULL AS `on_delete`,
-    `kcu`.`ORDINAL_POSITION` AS `position`
-FROM
-    `information_schema`.`KEY_COLUMN_USAGE` AS `kcu`,
-    `information_schema`.`TABLE_CONSTRAINTS` AS `tc`
-WHERE
-    `kcu`.`TABLE_SCHEMA` = COALESCE(:schemaName2, DATABASE()) AND `kcu`.`TABLE_NAME` = :tableName3
-    AND `tc`.`TABLE_SCHEMA` = `kcu`.`TABLE_SCHEMA` AND `tc`.`TABLE_NAME` = :tableName4 AND `tc`.`CONSTRAINT_NAME` = `kcu`.`CONSTRAINT_NAME` AND `tc`.`CONSTRAINT_TYPE` IN ('PRIMARY KEY', 'UNIQUE')
-ORDER BY `position` ASC
-SQL;
-
         $resolvedName = $this->resolveTableName($tableName);
-        $constraints = $this->db->createCommand($sql, [
-            ':schemaName' => $resolvedName->schemaName,
-            ':schemaName1' => $resolvedName->schemaName,
-            ':schemaName2' => $resolvedName->schemaName,
-            ':tableName' => $resolvedName->name,
-            ':tableName1' => $resolvedName->name,
-            ':tableName2' => $resolvedName->name,
-            ':tableName3' => $resolvedName->name,
-            ':tableName4' => $resolvedName->name
-        ])->queryAll();
+
+        /**
+         * @see https://dev.mysql.com/doc/refman/8.0/en/information-schema-key-column-usage-table.html
+         * @see https://dev.mysql.com/doc/refman/8.0/en/information-schema-referential-constraints-table.html
+         * @see https://dev.mysql.com/doc/refman/8.0/en/information-schema-table-constraints-table.html
+         */
+        $sql = <<<SQL
+        SELECT
+            `kcu`.`CONSTRAINT_NAME` AS `name`,
+            `kcu`.`COLUMN_NAME` AS `column_name`,
+            `tc`.`CONSTRAINT_TYPE` AS `type`,
+            CASE
+                WHEN :schemaName IS NULL AND `kcu`.`REFERENCED_TABLE_SCHEMA` = DATABASE() THEN NULL
+                ELSE `kcu`.`REFERENCED_TABLE_SCHEMA`
+            END AS `foreign_table_schema`,
+            `kcu`.`REFERENCED_TABLE_NAME` AS `foreign_table_name`,
+            `kcu`.`REFERENCED_COLUMN_NAME` AS `foreign_column_name`,
+            `rc`.`UPDATE_RULE` AS `on_update`,
+            `rc`.`DELETE_RULE` AS `on_delete`,
+            `kcu`.`ORDINAL_POSITION` AS `position`
+        FROM `information_schema`.`KEY_COLUMN_USAGE` AS `kcu`
+        INNER JOIN `information_schema`.`REFERENTIAL_CONSTRAINTS` AS `rc`
+            ON `rc`.`CONSTRAINT_SCHEMA` = `kcu`.`TABLE_SCHEMA`
+            AND `rc`.`TABLE_NAME` = :tableName1
+            AND `rc`.`CONSTRAINT_NAME` = `kcu`.`CONSTRAINT_NAME`
+        INNER JOIN `information_schema`.`TABLE_CONSTRAINTS` AS `tc`
+            ON `tc`.`TABLE_SCHEMA` = `kcu`.`TABLE_SCHEMA`
+            AND `tc`.`TABLE_NAME` = :tableName2
+            AND `tc`.`CONSTRAINT_NAME` = `kcu`.`CONSTRAINT_NAME`
+            AND `tc`.`CONSTRAINT_TYPE` = 'FOREIGN KEY'
+        WHERE
+            `kcu`.`TABLE_SCHEMA` = COALESCE(:schemaName1, DATABASE())
+            AND `kcu`.`CONSTRAINT_SCHEMA` = `kcu`.`TABLE_SCHEMA`
+            AND `kcu`.`TABLE_NAME` = :tableName
+        UNION
+        SELECT
+            `kcu`.`CONSTRAINT_NAME` AS `name`,
+            `kcu`.`COLUMN_NAME` AS `column_name`,
+            `tc`.`CONSTRAINT_TYPE` AS `type`,
+            NULL AS `foreign_table_schema`,
+            NULL AS `foreign_table_name`,
+            NULL AS `foreign_column_name`,
+            NULL AS `on_update`,
+            NULL AS `on_delete`,
+            `kcu`.`ORDINAL_POSITION` AS `position`
+        FROM `information_schema`.`KEY_COLUMN_USAGE` AS `kcu`
+        INNER JOIN `information_schema`.`TABLE_CONSTRAINTS` AS `tc`
+            ON `tc`.`TABLE_SCHEMA` = `kcu`.`TABLE_SCHEMA`
+            AND `tc`.`TABLE_NAME` = :tableName4
+            AND `tc`.`CONSTRAINT_NAME` = `kcu`.`CONSTRAINT_NAME`
+            AND `tc`.`CONSTRAINT_TYPE` IN ('PRIMARY KEY', 'UNIQUE')
+        WHERE
+            `kcu`.`TABLE_SCHEMA` = COALESCE(:schemaName2, DATABASE())
+            AND `kcu`.`TABLE_NAME` = :tableName3
+        ORDER BY `position` ASC
+        SQL;
+
+        $constraints = $this->db->createCommand(
+            $sql,
+            [
+                ':schemaName' => $resolvedName->schemaName,
+                ':schemaName1' => $resolvedName->schemaName,
+                ':schemaName2' => $resolvedName->schemaName,
+                ':tableName' => $resolvedName->name,
+                ':tableName1' => $resolvedName->name,
+                ':tableName2' => $resolvedName->name,
+                ':tableName3' => $resolvedName->name,
+                ':tableName4' => $resolvedName->name,
+            ],
+        )->queryAll();
         $constraints = $this->normalizePdoRowKeyCase($constraints, true);
         $constraints = ArrayHelper::index($constraints, null, ['type', 'name']);
+
         $result = [
             'primaryKey' => null,
             'foreignKeys' => [],
             'uniques' => [],
         ];
+
         foreach ($constraints as $type => $names) {
             foreach ($names as $name => $constraint) {
                 switch ($type) {
@@ -584,6 +659,7 @@ SQL;
                 }
             }
         }
+
         foreach ($result as $type => $data) {
             $this->setTableMetadata($tableName, $type, $data);
         }
@@ -594,11 +670,12 @@ SQL;
     private function getJsonColumns(TableSchema $table): array
     {
         $sql = $this->getCreateTableSql($table);
+
         $result = [];
 
         $regexp = '/json_valid\([\`"](.+)[\`"]\s*\)/mi';
 
-        if (\preg_match_all($regexp, $sql, $matches, PREG_SET_ORDER)) {
+        if (preg_match_all($regexp, $sql, $matches, PREG_SET_ORDER)) {
             foreach ($matches as $match) {
                 $result[] = $match[1];
             }

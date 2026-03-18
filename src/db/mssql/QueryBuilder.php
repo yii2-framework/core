@@ -306,13 +306,15 @@ class QueryBuilder extends \yii\db\QueryBuilder
             throw new InvalidArgumentException("Table not found: $table");
         }
 
-        $schemaName = $tableSchema->schemaName ? "N'{$tableSchema->schemaName}'" : 'SCHEMA_NAME()';
+        $schemaName = $tableSchema->schemaName !== null
+            ? 'N' . $this->db->quoteValue($tableSchema->schemaName)
+            : 'SCHEMA_NAME()';
 
         $tableName = 'N' . $this->db->quoteValue($tableSchema->name);
         $columnName = $column !== null ? 'N' . $this->db->quoteValue($column) : null;
         $comment = 'N' . $this->db->quoteValue($comment);
 
-        $schemaAndTable = $tableSchema->schemaName
+        $schemaAndTable = $tableSchema->schemaName !== null
             ? $tableSchema->schemaName . '.' . $tableSchema->name
             : $tableSchema->name;
 
@@ -393,12 +395,14 @@ class QueryBuilder extends \yii\db\QueryBuilder
             throw new InvalidArgumentException("Table not found: $table");
         }
 
-        $schemaName = $tableSchema->schemaName ? "N'{$tableSchema->schemaName}'" : 'SCHEMA_NAME()';
+        $schemaName = $tableSchema->schemaName !== null
+            ? 'N' . $this->db->quoteValue($tableSchema->schemaName)
+            : 'SCHEMA_NAME()';
 
         $tableName = 'N' . $this->db->quoteValue($tableSchema->name);
         $columnName = $column !== null ? 'N' . $this->db->quoteValue($column) : null;
 
-        $schemaAndTable = $tableSchema->schemaName
+        $schemaAndTable = $tableSchema->schemaName !== null
             ? $tableSchema->schemaName . '.' . $tableSchema->name
             : $tableSchema->name;
 
@@ -666,7 +670,8 @@ class QueryBuilder extends \yii\db\QueryBuilder
     private function dropConstraintsForColumn($table, $column, $type = '')
     {
         $tableName = $this->db->quoteTableName($table);
-        $typeFilter = $type !== '' ? "\n    WHERE [so].[type] = N'{$type}'" : '';
+        $quotedType = $this->db->quoteValue($type);
+        $typeFilter = $type !== '' ? "\n    WHERE [so].[type] = N{$quotedType}" : '';
 
         return <<<SQL
         DECLARE @tableName NVARCHAR(MAX) = N'{$tableName}'

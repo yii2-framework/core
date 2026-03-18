@@ -452,6 +452,7 @@ class Schema extends \yii\db\Schema implements ConstraintFinderInterface
                     ':tableName1' => $table->name,
                 ],
             )->queryAll();
+            $rows = $this->normalizePdoRowKeyCase($rows, true);
 
             $constraints = [];
 

@@ -107,8 +107,11 @@ class QueryBuilder extends \yii\db\QueryBuilder
      */
     public function renameTable($oldName, $newName)
     {
+        $oldName = $this->db->quoteTableName($oldName);
+        $newName = $this->db->quoteTableName($newName);
+
         return <<<SQL
-        sp_rename {{{$oldName}}}, {{{$newName}}}
+        sp_rename {$oldName}, {$newName}
         SQL;
     }
 
@@ -121,8 +124,12 @@ class QueryBuilder extends \yii\db\QueryBuilder
      */
     public function renameColumn($table, $oldName, $newName)
     {
+        $table = $this->db->quoteTableName($table);
+        $oldName = $this->db->quoteColumnName($oldName);
+        $newName = $this->db->quoteColumnName($newName);
+
         return <<<SQL
-        sp_rename N'{{{$table}}}.[[{$oldName}]]', [[{$newName}]], N'COLUMN'
+        sp_rename N'{$table}.{$oldName}', {$newName}, N'COLUMN'
         SQL;
     }
 

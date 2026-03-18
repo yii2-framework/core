@@ -53,3 +53,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - fix(db): add `quoteSimpleTableName()` quoting and cross-database `catalogPrefix` to MSSQL `loadTableIndexes()`, `findForeignKeys()`, and `loadTableConstraints()`; remove `static $sql` and normalize heredoc format across all Schema methods.
 - refactor(db)!: remove redundant `resolveTableNames()` from MSSQL, MySQL, PostgreSQL, and Oracle Schema classes; `loadTableSchema()` now uses `resolveTableName()` directly; simplify `resolveTableName()` in all drivers.
 - refactor(db)!: modernize MSSQL `QueryBuilder` replace deprecated `sys.sysconstraints` and `fn_listextendedproperty` with modern catalog views, adopt `{{table}}` / `[[column]]` deferred quoting.
+- refactor(db): extract `dbType` size/precision/scale parsing from MySQL, SQLite, and MSSQL `Schema::loadColumnSchema()` into `ColumnSchema::extractSizeFromDbType()`.

@@ -274,44 +274,35 @@ SQL;
     {
         $column = $this->createColumnSchema();
 
-        $column->name = $info['field'];
         $column->allowNull = $info['null'] === 'YES';
-        $column->isPrimaryKey = strpos($info['key'], 'PRI') !== false;
         $column->autoIncrement = stripos($info['extra'], 'auto_increment') !== false;
         $column->comment = $info['comment'];
-
         $column->dbType = $info['type'];
+        $column->isPrimaryKey = strpos($info['key'], 'PRI') !== false;
+        $column->name = $info['field'];
         $column->unsigned = stripos($column->dbType, 'unsigned') !== false;
 
-        $column->type = self::TYPE_STRING;
-        if (preg_match('/^(\w+)(?:\(([^\)]+)\))?/', $column->dbType, $matches)) {
-            $type = strtolower($matches[1]);
-            if (isset($this->typeMap[$type])) {
-                $column->type = $this->typeMap[$type];
-            }
-            if (!empty($matches[2])) {
-                if ($type === 'enum') {
-                    preg_match_all("/'[^']*'/", $matches[2], $values);
-                    foreach ($values[0] as $i => $value) {
-                        $values[$i] = trim($value, "'");
-                    }
-                    $column->enumValues = $values;
-                } else {
-                    $values = explode(',', $matches[2]);
-                    $column->size = $column->precision = (int) $values[0];
-                    if (isset($values[1])) {
-                        $column->scale = (int) $values[1];
-                    }
-                    if ($column->size === 1 && $type === 'bit') {
-                        $column->type = 'boolean';
-                    } elseif ($type === 'bit') {
-                        if ($column->size > 32) {
-                            $column->type = 'bigint';
-                        } elseif ($column->size === 32) {
-                            $column->type = 'integer';
-                        }
-                    }
+        $type = strtolower($column->extractSizeFromDbType());
+
+        $column->type = $this->typeMap[$type] ?? self::TYPE_STRING;
+
+        if ($type === 'enum') {
+            if (preg_match('/\(([^\)]+)\)/', $column->dbType, $enumMatch)) {
+                preg_match_all("/'[^']*'/", $enumMatch[1], $values);
+
+                foreach ($values[0] as $i => $value) {
+                    $values[$i] = trim($value, "'");
                 }
+
+                $column->enumValues = $values;
+            }
+        } elseif ($column->size === 1 && $type === 'bit') {
+            $column->type = 'boolean';
+        } elseif ($type === 'bit') {
+            if ($column->size > 32) {
+                $column->type = 'bigint';
+            } elseif ($column->size === 32) {
+                $column->type = 'integer';
             }
         }
 

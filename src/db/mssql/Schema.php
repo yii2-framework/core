@@ -367,38 +367,25 @@ class Schema extends \yii\db\Schema implements ConstraintFinderInterface
     {
         $column = $this->createColumnSchema();
 
-        $column->name = $info['column_name'];
         $column->allowNull = $info['is_nullable'] === 'YES';
-        $column->dbType = $info['data_type'];
-        $column->enumValues = []; // mssql has only vague equivalents to enum
-        $column->isPrimaryKey = null; // primary key will be determined in findColumns() method
         $column->autoIncrement = $info['is_identity'] == 1;
-        $column->isComputed = (bool) $info['is_computed'];
-        $column->unsigned = stripos($column->dbType, 'unsigned') !== false;
         $column->comment = $info['comment'] ?? '';
-        $column->type = self::TYPE_STRING;
+        $column->dbType = $info['data_type'];
+        // store raw default for deferred resolution in `findColumns()`, where `isPrimaryKey` is known
+        $column->defaultValue = $info['column_default'];
+        // mssql has only vague equivalents to enum
+        $column->enumValues = [];
+        $column->isComputed = (bool) $info['is_computed'];
+        // primary key will be determined in `findColumns()` method
+        $column->isPrimaryKey = false;
+        $column->name = $info['column_name'];
+        $column->unsigned = stripos($column->dbType, 'unsigned') !== false;
 
-        if (preg_match('/^(\w+)(?:\(([^\)]+)\))?/', $column->dbType, $matches)) {
-            $type = $matches[1];
+        $type = $column->extractSizeFromDbType();
 
-            if (isset($this->typeMap[$type])) {
-                $column->type = $this->typeMap[$type];
-            }
-
-            if (!empty($matches[2]) && strcasecmp($matches[2], 'max') !== 0) {
-                $values = explode(',', $matches[2]);
-                $column->size = $column->precision = (int) $values[0];
-
-                if (isset($values[1])) {
-                    $column->scale = (int) $values[1];
-                }
-            }
-        }
+        $column->type = $this->typeMap[$type] ?? self::TYPE_STRING;
 
         $column->phpType = $this->getColumnPhpType($column);
-
-        // Store raw default for deferred resolution in findColumns(), where isPrimaryKey is known.
-        $column->defaultValue = $info['column_default'];
 
         return $column;
     }

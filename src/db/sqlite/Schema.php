@@ -83,7 +83,6 @@ class Schema extends BaseSchema implements ConstraintFinderInterface
      */
     protected $columnQuoteCharacter = '`';
 
-
     /**
      * {@inheritdoc}
      */
@@ -322,41 +321,30 @@ class Schema extends BaseSchema implements ConstraintFinderInterface
     protected function loadColumnSchema($info)
     {
         $column = $this->createColumnSchema();
-        $column->name = $info['name'];
-        $column->allowNull = !$info['notnull'];
-        $column->isPrimaryKey = $info['pk'] != 0;
 
+        $column->allowNull = !$info['notnull'];
         $column->dbType = strtolower($info['type']);
+        // store raw default for deferred resolution in `loadTableSchema()`.
+        $column->defaultValue = $info['dflt_value'];
+        $column->isPrimaryKey = $info['pk'] != 0;
+        $column->name = $info['name'];
         $column->unsigned = strpos($column->dbType, 'unsigned') !== false;
 
-        $column->type = self::TYPE_STRING;
-        if (preg_match('/^(\w+)(?:\(([^\)]+)\))?/', $column->dbType, $matches)) {
-            $type = strtolower($matches[1]);
-            if (isset($this->typeMap[$type])) {
-                $column->type = $this->typeMap[$type];
-            }
+        $type = strtolower($column->extractSizeFromDbType());
 
-            if (!empty($matches[2])) {
-                $values = explode(',', $matches[2]);
-                $column->size = $column->precision = (int) $values[0];
-                if (isset($values[1])) {
-                    $column->scale = (int) $values[1];
-                }
-                if ($column->size === 1 && ($type === 'tinyint' || $type === 'bit')) {
-                    $column->type = 'boolean';
-                } elseif ($type === 'bit') {
-                    if ($column->size > 32) {
-                        $column->type = 'bigint';
-                    } elseif ($column->size === 32) {
-                        $column->type = 'integer';
-                    }
-                }
+        $column->type = $this->typeMap[$type] ?? self::TYPE_STRING;
+
+        if ($column->size === 1 && ($type === 'tinyint' || $type === 'bit')) {
+            $column->type = 'boolean';
+        } elseif ($type === 'bit') {
+            if ($column->size > 32) {
+                $column->type = 'bigint';
+            } elseif ($column->size === 32) {
+                $column->type = 'integer';
             }
         }
-        $column->phpType = $this->getColumnPhpType($column);
 
-        // Store raw default for deferred resolution in loadTableSchema().
-        $column->defaultValue = $info['dflt_value'];
+        $column->phpType = $this->getColumnPhpType($column);
 
         return $column;
     }

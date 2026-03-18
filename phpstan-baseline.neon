@@ -1777,18 +1777,6 @@ parameters:
 			path: src/db/mssql/QueryBuilder.php
 
 		-
-			message: '#^Only booleans are allowed in a ternary operator condition, string given\.$#'
-			identifier: ternary.condNotBoolean
-			count: 4
-			path: src/db/mssql/QueryBuilder.php
-
-		-
-			message: '#^Only booleans are allowed in a ternary operator condition, string\|null given\.$#'
-			identifier: ternary.condNotBoolean
-			count: 4
-			path: src/db/mssql/QueryBuilder.php
-
-		-
 			message: '#^Only booleans are allowed in a ternary operator condition, yii\\db\\TableSchema\|null given\.$#'
 			identifier: ternary.condNotBoolean
 			count: 1

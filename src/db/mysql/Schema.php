@@ -228,13 +228,6 @@ class Schema extends \yii\db\Schema implements ConstraintFinderInterface
      */
     protected function loadTableChecks($tableName)
     {
-        $version = $this->db->getServerVersion();
-
-        // check version MySQL >= 8.0.16
-        if (\stripos($version, 'MariaDb') === false && \version_compare($version, '8.0.16', '<')) {
-            throw new NotSupportedException('MySQL < 8.0.16 does not support check constraints.');
-        }
-
         $resolvedName = $this->resolveTableName($tableName);
 
         /** @see https://dev.mysql.com/doc/refman/8.0/en/information-schema-check-constraints-table.html */

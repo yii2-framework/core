@@ -203,9 +203,9 @@ class Schema extends \yii\db\Schema implements ConstraintFinderInterface
     /**
      * {@inheritdoc}
      *
-     * @see https://docs.oracle.com/en/database/oracle/oracle-database/19/refrn/USER_INDEXES.html
-     * @see https://docs.oracle.com/en/database/oracle/oracle-database/19/refrn/USER_IND_COLUMNS.html
-     * @see https://docs.oracle.com/en/database/oracle/oracle-database/19/refrn/USER_CONSTRAINTS.html
+     * @see https://docs.oracle.com/en/database/oracle/oracle-database/19/refrn/ALL_INDEXES.html
+     * @see https://docs.oracle.com/en/database/oracle/oracle-database/19/refrn/ALL_IND_COLUMNS.html
+     * @see https://docs.oracle.com/en/database/oracle/oracle-database/19/refrn/ALL_CONSTRAINTS.html
      */
     protected function loadTableIndexes($tableName)
     {
@@ -215,10 +215,11 @@ class Schema extends \yii\db\Schema implements ConstraintFinderInterface
                 "uicol"."COLUMN_NAME" AS "column_name",
                 CASE "ui"."UNIQUENESS" WHEN 'UNIQUE' THEN 1 ELSE 0 END AS "index_is_unique",
                 CASE WHEN "uc"."CONSTRAINT_NAME" IS NOT NULL THEN 1 ELSE 0 END AS "index_is_primary"
-            FROM "USER_INDEXES" "ui"
-            LEFT JOIN "USER_IND_COLUMNS" "uicol"
-                ON "uicol"."INDEX_NAME" = "ui"."INDEX_NAME"
-            LEFT JOIN "USER_CONSTRAINTS" "uc"
+            FROM "ALL_INDEXES" "ui"
+            LEFT JOIN "ALL_IND_COLUMNS" "uicol"
+                ON "uicol"."INDEX_OWNER" = "ui"."OWNER"
+                AND "uicol"."INDEX_NAME" = "ui"."INDEX_NAME"
+            LEFT JOIN "ALL_CONSTRAINTS" "uc"
                 ON "uc"."OWNER" = "ui"."TABLE_OWNER"
                 AND "uc"."CONSTRAINT_NAME" = "ui"."INDEX_NAME"
                 AND "uc"."CONSTRAINT_TYPE" = 'P'
@@ -554,8 +555,7 @@ class Schema extends \yii\db\Schema implements ConstraintFinderInterface
             $constraints[$name]['columns'][$row['COLUMN_NAME']] = $row['COLUMN_REF'];
         }
 
-        foreach ($constraints as $constraint) {
-            $name = current(array_keys($constraint));
+        foreach ($constraints as $name => $constraint) {
             $table->foreignKeys[$name] = [
                 $constraint['tableName'],
                 ...$constraint['columns'],
@@ -765,8 +765,8 @@ class Schema extends \yii\db\Schema implements ConstraintFinderInterface
      * - checks
      * @return mixed constraints.
      *
-     * @see https://docs.oracle.com/en/database/oracle/oracle-database/19/refrn/USER_CONSTRAINTS.html
-     * @see https://docs.oracle.com/en/database/oracle/oracle-database/19/refrn/USER_CONS_COLUMNS.html
+     * @see https://docs.oracle.com/en/database/oracle/oracle-database/19/refrn/ALL_CONSTRAINTS.html
+     * @see https://docs.oracle.com/en/database/oracle/oracle-database/19/refrn/ALL_CONS_COLUMNS.html
      */
     private function loadTableConstraints($tableName, $returnType)
     {
@@ -780,14 +780,14 @@ class Schema extends \yii\db\Schema implements ConstraintFinderInterface
                 "fuccol"."COLUMN_NAME" AS "foreign_column_name",
                 "uc"."DELETE_RULE" AS "on_delete",
                 "uc"."SEARCH_CONDITION" AS "check_expr"
-            FROM "USER_CONSTRAINTS" "uc"
-            INNER JOIN "USER_CONS_COLUMNS" "uccol"
+            FROM "ALL_CONSTRAINTS" "uc"
+            INNER JOIN "ALL_CONS_COLUMNS" "uccol"
                 ON "uccol"."OWNER" = "uc"."OWNER"
                 AND "uccol"."CONSTRAINT_NAME" = "uc"."CONSTRAINT_NAME"
-            LEFT JOIN "USER_CONSTRAINTS" "fuc"
+            LEFT JOIN "ALL_CONSTRAINTS" "fuc"
                 ON "fuc"."OWNER" = "uc"."R_OWNER"
                 AND "fuc"."CONSTRAINT_NAME" = "uc"."R_CONSTRAINT_NAME"
-            LEFT JOIN "USER_CONS_COLUMNS" "fuccol"
+            LEFT JOIN "ALL_CONS_COLUMNS" "fuccol"
                 ON "fuccol"."OWNER" = "fuc"."OWNER"
                 AND "fuccol"."CONSTRAINT_NAME" = "fuc"."CONSTRAINT_NAME"
                 AND "fuccol"."POSITION" = "uccol"."POSITION"

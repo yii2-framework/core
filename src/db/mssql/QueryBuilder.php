@@ -309,7 +309,7 @@ class QueryBuilder extends \yii\db\QueryBuilder
         $schemaName = $tableSchema->schemaName ? "N'{$tableSchema->schemaName}'" : 'SCHEMA_NAME()';
 
         $tableName = 'N' . $this->db->quoteValue($tableSchema->name);
-        $columnName = $column ? 'N' . $this->db->quoteValue($column) : null;
+        $columnName = $column !== null ? 'N' . $this->db->quoteValue($column) : null;
         $comment = 'N' . $this->db->quoteValue($comment);
 
         $schemaAndTable = $tableSchema->schemaName
@@ -336,7 +336,7 @@ class QueryBuilder extends \yii\db\QueryBuilder
             SQL;
         }
 
-        $columnParam = $column ? ", @level2type = N'COLUMN', @level2name = {$columnName}" : '';
+        $columnParam = $column !== null ? ", @level2type = N'COLUMN', @level2name = {$columnName}" : '';
 
         $functionParams = <<<SQL
         @name = N'MS_Description',
@@ -396,7 +396,7 @@ class QueryBuilder extends \yii\db\QueryBuilder
         $schemaName = $tableSchema->schemaName ? "N'{$tableSchema->schemaName}'" : 'SCHEMA_NAME()';
 
         $tableName = 'N' . $this->db->quoteValue($tableSchema->name);
-        $columnName = $column ? 'N' . $this->db->quoteValue($column) : null;
+        $columnName = $column !== null ? 'N' . $this->db->quoteValue($column) : null;
 
         $schemaAndTable = $tableSchema->schemaName
             ? $tableSchema->schemaName . '.' . $tableSchema->name
@@ -422,7 +422,7 @@ class QueryBuilder extends \yii\db\QueryBuilder
             SQL;
         }
 
-        $columnParam = $column ? ", @level2type = N'COLUMN', @level2name = {$columnName}" : '';
+        $columnParam = $column !== null ? ", @level2type = N'COLUMN', @level2name = {$columnName}" : '';
 
         $dropParams = <<<SQL
         @name = N'MS_Description',

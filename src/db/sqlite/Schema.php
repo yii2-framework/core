@@ -328,14 +328,11 @@ class Schema extends BaseSchema implements ConstraintFinderInterface
         $column->defaultValue = $info['dflt_value'];
         $column->isPrimaryKey = $info['pk'] != 0;
         $column->name = $info['name'];
-        $column->type = self::TYPE_STRING;
         $column->unsigned = strpos($column->dbType, 'unsigned') !== false;
 
         $type = strtolower($column->extractSizeFromDbType());
 
-        if (isset($this->typeMap[$type])) {
-            $column->type = $this->typeMap[$type];
-        }
+        $column->type = $this->typeMap[$type] ?? self::TYPE_STRING;
 
         if ($column->size === 1 && ($type === 'tinyint' || $type === 'bit')) {
             $column->type = 'boolean';

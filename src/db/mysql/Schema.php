@@ -280,14 +280,11 @@ SQL;
         $column->dbType = $info['type'];
         $column->isPrimaryKey = strpos($info['key'], 'PRI') !== false;
         $column->name = $info['field'];
-        $column->type = self::TYPE_STRING;
         $column->unsigned = stripos($column->dbType, 'unsigned') !== false;
 
         $type = strtolower($column->extractSizeFromDbType());
 
-        if (isset($this->typeMap[$type])) {
-            $column->type = $this->typeMap[$type];
-        }
+        $column->type = $this->typeMap[$type] ?? self::TYPE_STRING;
 
         if ($type === 'enum') {
             if (preg_match('/\(([^\)]+)\)/', $column->dbType, $enumMatch)) {

@@ -379,14 +379,11 @@ class Schema extends \yii\db\Schema implements ConstraintFinderInterface
         // primary key will be determined in `findColumns()` method
         $column->isPrimaryKey = false;
         $column->name = $info['column_name'];
-        $column->type = self::TYPE_STRING;
         $column->unsigned = stripos($column->dbType, 'unsigned') !== false;
 
         $type = $column->extractSizeFromDbType();
 
-        if (isset($this->typeMap[$type])) {
-            $column->type = $this->typeMap[$type];
-        }
+        $column->type = $this->typeMap[$type] ?? self::TYPE_STRING;
 
         $column->phpType = $this->getColumnPhpType($column);
 

@@ -354,22 +354,22 @@ class QueryBuilderTest extends BaseQueryBuilder
         $data = parent::batchInsertProvider();
 
         $data[0][3] = 'INSERT ALL  INTO "customer" ("email", "name", "address") ' .
-            "VALUES ('test@example.com', 'silverfire', 'Kyiv {{city}}, Ukraine') SELECT 1 FROM SYS.DUAL";
+            "VALUES ('test@example.com', 'silverfire', 'Kyiv {{city}}, Ukraine') SELECT 1 FROM DUAL";
 
         $data['escape-danger-chars']['expected'] = 'INSERT ALL  INTO "customer" ("address") ' .
-            "VALUES ('SQL-danger chars are escaped: ''); --') SELECT 1 FROM SYS.DUAL";
+            "VALUES ('SQL-danger chars are escaped: ''); --') SELECT 1 FROM DUAL";
 
         $data[2][3] = 'INSERT ALL  INTO "customer" () ' .
-            "VALUES ('no columns passed') SELECT 1 FROM SYS.DUAL";
+            "VALUES ('no columns passed') SELECT 1 FROM DUAL";
 
         $data['bool-false, bool2-null']['expected'] = 'INSERT ALL  INTO "type" ("bool_col", "bool_col2") ' .
-            "VALUES ('', NULL) SELECT 1 FROM SYS.DUAL";
+            "VALUES ('', NULL) SELECT 1 FROM DUAL";
 
         $data[3][3] = 'INSERT ALL  INTO {{%type}} ({{%type}}.[[float_col]], [[time]]) ' .
-            'VALUES (NULL, now()) SELECT 1 FROM SYS.DUAL';
+            'VALUES (NULL, now()) SELECT 1 FROM DUAL';
 
         $data['bool-false, time-now()']['expected'] = 'INSERT ALL  INTO {{%type}} ({{%type}}.[[bool_col]], [[time]]) ' .
-            'VALUES (0, now()) SELECT 1 FROM SYS.DUAL';
+            'VALUES (0, now()) SELECT 1 FROM DUAL';
 
         return $data;
     }

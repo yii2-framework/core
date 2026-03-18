@@ -273,6 +273,10 @@ changes. `findSchemaNames()` now queries `ALL_USERS` with `ORACLE_MAINTAINED = '
 tablespace filtering — this no longer requires DBA privileges and uses the precise Oracle 12c+ column to identify
 user-created accounts.
 
+**`executeResetSequence()` privilege change:** `executeResetSequence()` now uses `ALTER SEQUENCE ... RESTART START WITH`
+(Oracle 18c+) instead of `DROP SEQUENCE` + `CREATE SEQUENCE`. If your database user has `CREATE SEQUENCE` but not
+`ALTER` privilege on the relevant sequences, you must grant it.
+
 ### PostgreSQL dead code removal, minimum PostgreSQL 12
 
 The minimum supported PostgreSQL version is now **12**. PHP 8.2's `pdo_pgsql` requires libpq 10.0+ as the minimum

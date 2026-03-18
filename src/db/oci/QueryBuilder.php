@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 /**
  * @link https://www.yiiframework.com/
  * @copyright Copyright (c) 2008 Yii Software LLC
@@ -9,12 +11,16 @@
 namespace yii\db\oci;
 
 use yii\base\InvalidArgumentException;
+use yii\db\conditions\InCondition;
+use yii\db\conditions\LikeCondition;
 use yii\db\Connection;
 use yii\db\Exception;
 use yii\db\Expression;
+use yii\db\ExpressionInterface;
 use yii\db\Query;
 use yii\helpers\StringHelper;
-use yii\db\ExpressionInterface;
+
+use function count;
 
 /**
  * QueryBuilder is the query builder for Oracle databases (version 19c and later).
@@ -51,20 +57,22 @@ class QueryBuilder extends \yii\db\QueryBuilder
         Schema::TYPE_MONEY => 'NUMBER(19,4)',
     ];
 
-
     /**
      * {@inheritdoc}
      */
     protected function defaultExpressionBuilders()
     {
-        return array_merge(parent::defaultExpressionBuilders(), [
-            'yii\db\conditions\InCondition' => 'yii\db\oci\conditions\InConditionBuilder',
-            'yii\db\conditions\LikeCondition' => 'yii\db\oci\conditions\LikeConditionBuilder',
-        ]);
+        return [
+            ...parent::defaultExpressionBuilders(),
+            InCondition::class => conditions\InConditionBuilder::class,
+            LikeCondition::class => conditions\LikeConditionBuilder::class,
+        ];
     }
 
     /**
      * {@inheritdoc}
+     *
+     * @see https://docs.oracle.com/en/database/oracle/oracle-database/19/sqlrf/SELECT.html#row_limiting_clause
      */
     public function buildOrderByAndLimit($sql, $orderBy, $limit, $offset)
     {
@@ -75,6 +83,7 @@ class QueryBuilder extends \yii\db\QueryBuilder
         }
 
         $orderBy = $this->buildOrderBy($orderBy);
+
         if ($orderBy === '') {
             // ORDER BY clause is required when FETCH and OFFSET are in the SQL
             $orderBy = 'ORDER BY (SELECT NULL)';
@@ -99,27 +108,42 @@ class QueryBuilder extends \yii\db\QueryBuilder
      * @param string $table the table to be renamed. The name will be properly quoted by the method.
      * @param string $newName the new table name. The name will be properly quoted by the method.
      * @return string the SQL statement for renaming a DB table.
+     *
+     * @see https://docs.oracle.com/en/database/oracle/oracle-database/19/sqlrf/ALTER-TABLE.html
      */
     public function renameTable($table, $newName)
     {
-        return 'ALTER TABLE ' . $this->db->quoteTableName($table) . ' RENAME TO ' . $this->db->quoteTableName($newName);
+        $quotedTable = $this->db->quoteTableName($table);
+        $quotedNewName = $this->db->quoteTableName($newName);
+
+        return <<<SQL
+        ALTER TABLE {$quotedTable} RENAME TO {$quotedNewName}
+        SQL;
     }
 
     /**
      * Builds a SQL statement for changing the definition of a column.
      *
-     * @param string $table the table whose column is to be changed. The table name will be properly quoted by the method.
+     * @param string $table the table whose column is to be changed. The table name will be properly quoted by the
+     * method.
      * @param string $column the name of the column to be changed. The name will be properly quoted by the method.
-     * @param string $type the new column type. The [[getColumnType]] method will be invoked to convert abstract column type (if any)
-     * into the physical one. Anything that is not recognized as abstract type will be kept in the generated SQL.
-     * For example, 'string' will be turned into 'varchar(255)', while 'string not null' will become 'varchar(255) not null'.
+     * @param string $type the new column type. The [[getColumnType]] method will be invoked to convert abstract column
+     * type (if any) into the physical one. Anything that is not recognized as abstract type will be kept in the
+     * generated SQL. For example, 'string' will be turned into 'varchar(255)', while 'string not null' will become
+     * 'varchar(255) not null'.
      * @return string the SQL statement for changing the definition of a column.
+     *
+     * @see https://docs.oracle.com/en/database/oracle/oracle-database/19/sqlrf/ALTER-TABLE.html#modify_col_properties
      */
     public function alterColumn($table, $column, $type)
     {
         $type = $this->getColumnType($type);
+        $quotedTable = $this->db->quoteTableName($table);
+        $quotedColumn = $this->db->quoteColumnName($column);
 
-        return 'ALTER TABLE ' . $this->db->quoteTableName($table) . ' MODIFY ' . $this->db->quoteColumnName($column) . ' ' . $this->getColumnType($type);
+        return <<<SQL
+        ALTER TABLE {$quotedTable} MODIFY {$quotedColumn} {$type}
+        SQL;
     }
 
     /**
@@ -128,21 +152,31 @@ class QueryBuilder extends \yii\db\QueryBuilder
      * @param string $name the name of the index to be dropped. The name will be properly quoted by the method.
      * @param string $table the table whose index is to be dropped. The name will be properly quoted by the method.
      * @return string the SQL statement for dropping an index.
+     *
+     * @see https://docs.oracle.com/en/database/oracle/oracle-database/19/sqlrf/DROP-INDEX.html
      */
     public function dropIndex($name, $table)
     {
-        return 'DROP INDEX ' . $this->db->quoteTableName($name);
+        $quotedName = $this->db->quoteTableName($name);
+
+        return <<<SQL
+        DROP INDEX {$quotedName}
+        SQL;
     }
 
     /**
      * {@inheritdoc}
+     *
+     * @see https://docs.oracle.com/en/database/oracle/oracle-database/19/sqlrf/ALTER-SEQUENCE.html
      */
     public function executeResetSequence($table, $value = null)
     {
         $tableSchema = $this->db->getTableSchema($table);
+
         if ($tableSchema === null) {
             throw new InvalidArgumentException("Unknown table: $table");
         }
+
         if ($tableSchema->sequenceName === null) {
             throw new InvalidArgumentException("There is no sequence associated with table: $table");
         }
@@ -153,22 +187,27 @@ class QueryBuilder extends \yii\db\QueryBuilder
             if (count($tableSchema->primaryKey) > 1) {
                 throw new InvalidArgumentException("Can't reset sequence for composite primary key in table: $table");
             }
+
             // use master connection to get the biggest PK value
-            $value = $this->db->useMaster(function (Connection $db) use ($tableSchema) {
-                return $db->createCommand(
-                    'SELECT MAX("' . $tableSchema->primaryKey[0] . '") FROM "' . $tableSchema->name . '"'
-                )->queryScalar();
-            }) + 1;
+            $columnName = $this->db->quoteColumnName($tableSchema->primaryKey[0]);
+            $tableName = $this->db->quoteTableName($tableSchema->name);
+
+            $sql = <<<SQL
+            SELECT MAX({$columnName}) FROM {$tableName}
+            SQL;
+
+            $value = $this->db->useMaster(static fn(Connection $db) => $db->createCommand($sql)->queryScalar()) + 1;
         }
 
-        //Oracle needs at least two queries to reset sequence (see adding transactions and/or use alter method to avoid grants' issue?)
-        $this->db->createCommand('DROP SEQUENCE "' . $tableSchema->sequenceName . '"')->execute();
-        $this->db->createCommand('CREATE SEQUENCE "' . $tableSchema->sequenceName . '" START WITH ' . $value
-            . ' INCREMENT BY 1 NOMAXVALUE NOCACHE')->execute();
+        $sequenceName = $this->db->quoteTableName($tableSchema->sequenceName);
+
+        $this->db->createCommand("ALTER SEQUENCE {$sequenceName} RESTART START WITH {$value}")->execute();
     }
 
     /**
      * {@inheritdoc}
+     *
+     * @see https://docs.oracle.com/en/database/oracle/oracle-database/19/sqlrf/constraint.html#references_clause
      */
     public function addForeignKey($name, $table, $columns, $refTable, $refColumns, $delete = null, $update = null)
     {
@@ -177,9 +216,11 @@ class QueryBuilder extends \yii\db\QueryBuilder
             . ' FOREIGN KEY (' . $this->buildColumns($columns) . ')'
             . ' REFERENCES ' . $this->db->quoteTableName($refTable)
             . ' (' . $this->buildColumns($refColumns) . ')';
+
         if ($delete !== null) {
-            $sql .= ' ON DELETE ' . $delete;
+            $sql .= " ON DELETE {$delete}";
         }
+
         if ($update !== null) {
             throw new Exception('Oracle does not support ON UPDATE clause.');
         }
@@ -192,17 +233,23 @@ class QueryBuilder extends \yii\db\QueryBuilder
      */
     protected function prepareInsertValues($table, $columns, $params = [])
     {
-        list($names, $placeholders, $values, $params) = parent::prepareInsertValues($table, $columns, $params);
+        [$names, $placeholders, $values, $params] = parent::prepareInsertValues($table, $columns, $params);
+
         if (!$columns instanceof Query && empty($names)) {
             $tableSchema = $this->db->getSchema()->getTableSchema($table);
+
             if ($tableSchema !== null) {
-                $columns = !empty($tableSchema->primaryKey) ? $tableSchema->primaryKey : [reset($tableSchema->columns)->name];
+                $columns = !empty($tableSchema->primaryKey)
+                    ? $tableSchema->primaryKey
+                    : [reset($tableSchema->columns)->name];
+
                 foreach ($columns as $name) {
                     $names[] = $this->db->quoteColumnName($name);
                     $placeholders[] = 'DEFAULT';
                 }
             }
         }
+
         return [$names, $placeholders, $values, $params];
     }
 
@@ -210,6 +257,8 @@ class QueryBuilder extends \yii\db\QueryBuilder
      * {@inheritdoc}
      *
      * Oracle does not support the `RECURSIVE` keyword for CTEs. Recursion is implicit when a CTE references itself.
+     *
+     * @see https://docs.oracle.com/en/database/oracle/oracle-database/19/sqlrf/SELECT.html#subquery_factoring_clause
      */
     public function buildWithQueries($withs, &$params)
     {
@@ -237,66 +286,94 @@ class QueryBuilder extends \yii\db\QueryBuilder
      */
     public function upsert($table, $insertColumns, $updateColumns, &$params)
     {
-        list($uniqueNames, $insertNames, $updateNames) = $this->prepareUpsertColumns($table, $insertColumns, $updateColumns, $constraints);
+        [$uniqueNames, $insertNames, $updateNames] = $this->prepareUpsertColumns(
+            $table,
+            $insertColumns,
+            $updateColumns,
+            $constraints,
+        );
+
         if (empty($uniqueNames)) {
             return $this->insert($table, $insertColumns, $params);
         }
+
         if ($updateNames === []) {
             // there are no columns to update
             $updateColumns = false;
         }
 
         $onCondition = ['or'];
+
         $quotedTableName = $this->db->quoteTableName($table);
+
         foreach ($constraints as $constraint) {
             $constraintCondition = ['and'];
+
             foreach ($constraint->columnNames as $name) {
                 $quotedName = $this->db->quoteColumnName($name);
+
                 $constraintCondition[] = "$quotedTableName.$quotedName=\"EXCLUDED\".$quotedName";
             }
+
             $onCondition[] = $constraintCondition;
         }
+
         $on = $this->buildCondition($onCondition, $params);
-        list(, $placeholders, $values, $params) = $this->prepareInsertValues($table, $insertColumns, $params);
+        [$names, $placeholders, $values, $params] = $this->prepareInsertValues($table, $insertColumns, $params);
+
         if (!empty($placeholders)) {
             $usingSelectValues = [];
+
             foreach ($insertNames as $index => $name) {
                 $usingSelectValues[$name] = new Expression($placeholders[$index]);
             }
+
             $usingSubQuery = (new Query())
                 ->select($usingSelectValues)
                 ->from('DUAL');
-            list($usingValues, $params) = $this->build($usingSubQuery, $params);
+            [$usingValues, $params] = $this->build($usingSubQuery, $params);
         }
+
         $mergeSql = 'MERGE INTO ' . $this->db->quoteTableName($table) . ' '
-            . 'USING (' . (isset($usingValues) ? $usingValues : ltrim($values, ' ')) . ') "EXCLUDED" '
+            . 'USING (' . ($usingValues ?? ltrim($values, ' ')) . ') "EXCLUDED" '
             . "ON ($on)";
+
         $insertValues = [];
+
         foreach ($insertNames as $name) {
             $quotedName = $this->db->quoteColumnName($name);
+
             if (strrpos($quotedName, '.') === false) {
                 $quotedName = '"EXCLUDED".' . $quotedName;
             }
+
             $insertValues[] = $quotedName;
         }
+
         $insertSql = 'INSERT (' . implode(', ', $insertNames) . ')'
             . ' VALUES (' . implode(', ', $insertValues) . ')';
+
         if ($updateColumns === false) {
             return "$mergeSql WHEN NOT MATCHED THEN $insertSql";
         }
 
         if ($updateColumns === true) {
             $updateColumns = [];
+
             foreach ($updateNames as $name) {
                 $quotedName = $this->db->quoteColumnName($name);
                 if (strrpos($quotedName, '.') === false) {
                     $quotedName = '"EXCLUDED".' . $quotedName;
                 }
+
                 $updateColumns[$name] = new Expression($quotedName);
             }
         }
-        list($updates, $params) = $this->prepareUpdateSets($table, $updateColumns, $params);
+
+        [$updates, $params] = $this->prepareUpdateSets($table, $updateColumns, $params);
+
         $updateSql = 'UPDATE SET ' . implode(', ', $updates);
+
         return "$mergeSql WHEN MATCHED THEN $updateSql WHEN NOT MATCHED THEN $insertSql";
     }
 
@@ -319,6 +396,8 @@ class QueryBuilder extends \yii\db\QueryBuilder
      * @param array $columns the column names
      * @param array|\Generator $rows the rows to be batch inserted into the table
      * @return string the batch INSERT SQL statement
+     *
+     * @see https://docs.oracle.com/en/database/oracle/oracle-database/19/sqlrf/INSERT.html#multi_table_insert
      */
     public function batchInsert($table, $columns, $rows, &$params = [])
     {
@@ -327,19 +406,18 @@ class QueryBuilder extends \yii\db\QueryBuilder
         }
 
         $schema = $this->db->getSchema();
-        if (($tableSchema = $schema->getTableSchema($table)) !== null) {
-            $columnSchemas = $tableSchema->columns;
-        } else {
-            $columnSchemas = [];
-        }
+
+        $columnSchemas = (($tableSchema = $schema->getTableSchema($table)) !== null) ? $tableSchema->columns : [];
 
         $values = [];
         foreach ($rows as $row) {
             $vs = [];
+
             foreach ($row as $i => $value) {
                 if (isset($columns[$i], $columnSchemas[$columns[$i]])) {
                     $value = $columnSchemas[$columns[$i]]->dbTypecast($value);
                 }
+
                 if (is_string($value)) {
                     $value = $schema->quoteValue($value);
                 } elseif (is_float($value)) {
@@ -352,10 +430,13 @@ class QueryBuilder extends \yii\db\QueryBuilder
                 } elseif ($value instanceof ExpressionInterface) {
                     $value = $this->buildExpression($value, $params);
                 }
+
                 $vs[] = $value;
             }
+
             $values[] = '(' . implode(', ', $vs) . ')';
         }
+
         if (empty($values)) {
             return '';
         }
@@ -364,36 +445,55 @@ class QueryBuilder extends \yii\db\QueryBuilder
             $columns[$i] = $schema->quoteColumnName($name);
         }
 
-        $tableAndColumns = ' INTO ' . $schema->quoteTableName($table)
-        . ' (' . implode(', ', $columns) . ') VALUES ';
+        $tableAndColumns = ' INTO '
+            . $schema->quoteTableName($table)
+            . ' (' . implode(', ', $columns)
+            . ') VALUES ';
 
-        return 'INSERT ALL ' . $tableAndColumns . implode($tableAndColumns, $values) . ' SELECT 1 FROM SYS.DUAL';
+        return "INSERT ALL {$tableAndColumns}" . implode($tableAndColumns, $values) . ' SELECT 1 FROM DUAL';
     }
 
     /**
      * {@inheritdoc}
      * @since 2.0.8
+     *
+     * @see https://docs.oracle.com/en/database/oracle/oracle-database/19/sqlrf/SELECT.html
      */
     public function selectExists($rawSql)
     {
-        return 'SELECT CASE WHEN EXISTS(' . $rawSql . ') THEN 1 ELSE 0 END FROM DUAL';
+        return <<<SQL
+        SELECT CASE WHEN EXISTS({$rawSql}) THEN 1 ELSE 0 END FROM DUAL
+        SQL;
     }
 
     /**
      * {@inheritdoc}
      * @since 2.0.8
+     *
+     * @see https://docs.oracle.com/en/database/oracle/oracle-database/19/sqlrf/COMMENT.html
      */
     public function dropCommentFromColumn($table, $column)
     {
-        return 'COMMENT ON COLUMN ' . $this->db->quoteTableName($table) . '.' . $this->db->quoteColumnName($column) . " IS ''";
+        $quotedTable = $this->db->quoteTableName($table);
+        $quotedColumn = $this->db->quoteColumnName($column);
+
+        return <<<SQL
+        COMMENT ON COLUMN {$quotedTable}.{$quotedColumn} IS ''
+        SQL;
     }
 
     /**
      * {@inheritdoc}
      * @since 2.0.8
+     *
+     * @see https://docs.oracle.com/en/database/oracle/oracle-database/19/sqlrf/COMMENT.html
      */
     public function dropCommentFromTable($table)
     {
-        return 'COMMENT ON TABLE ' . $this->db->quoteTableName($table) . " IS ''";
+        $quotedTable = $this->db->quoteTableName($table);
+
+        return <<<SQL
+        COMMENT ON TABLE {$quotedTable} IS ''
+        SQL;
     }
 }

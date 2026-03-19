@@ -58,3 +58,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - refactor(db): modernize MySQL `QueryBuilder` add `declare(strict_types=1)`, heredoc SQL, `::class` constants, fix raw backtick quoting in `resetSequence()`, and `@see` doc links.
 - refactor(db): modernize Oracle `Schema` SQL queries remove `static $sql`, `PUSH_PRED` hints, `LTRIM()`, `DBA_USERS`, `SYS.` prefix; use `ALL_USERS`, specific views, `@see` doc links.
 - refactor(db): modernize Oracle `QueryBuilder` add `declare(strict_types=1)`, heredoc SQL, `::class` constants, `@see` doc links.
+- refactor(db): modernize PostgreSQL `Schema` SQL queries remove `static $sql`, parameterize queries, replace `generate_subscripts()` with `unnest() WITH ORDINALITY`, replace undocumented `information_schema._pg_*` functions, add `declare(strict_types=1)`, `@see` doc links.

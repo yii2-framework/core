@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 /**
  * @link https://www.yiiframework.com/
  * @copyright Copyright (c) 2008 Yii Software LLC
@@ -8,6 +10,7 @@
 
 namespace yii\db\pgsql;
 
+use PDO;
 use Yii;
 use yii\base\NotSupportedException;
 use yii\db\CheckConstraint;
@@ -16,10 +19,22 @@ use yii\db\ConstraintFinderInterface;
 use yii\db\ConstraintFinderTrait;
 use yii\db\ForeignKeyConstraint;
 use yii\db\IndexConstraint;
-use yii\db\pgsql\ColumnSchema;
 use yii\db\TableSchema;
 use yii\db\ViewFinderTrait;
 use yii\helpers\ArrayHelper;
+
+use function array_change_key_case;
+use function array_count_values;
+use function array_keys;
+use function array_merge;
+use function explode;
+use function implode;
+use function in_array;
+use function preg_match;
+use function preg_replace;
+use function str_replace;
+use function strncmp;
+use function substr;
 
 /**
  * Schema is the class for retrieving metadata from a PostgreSQL database
@@ -134,7 +149,6 @@ class Schema extends \yii\db\Schema implements ConstraintFinderInterface
      */
     protected $tableQuoteCharacter = '"';
 
-
     /**
      * {@inheritdoc}
      */
@@ -143,6 +157,7 @@ class Schema extends \yii\db\Schema implements ConstraintFinderInterface
         $parts = explode('.', str_replace('"', '', $name));
 
         $tableName = $parts[1] ?? $parts[0];
+
         $schemaName = isset($parts[1]) ? $parts[0] : $this->defaultSchema;
 
         $fullName = $schemaName !== $this->defaultSchema
@@ -150,6 +165,7 @@ class Schema extends \yii\db\Schema implements ConstraintFinderInterface
             : $tableName;
 
         $resolvedName = new TableSchema();
+
         $resolvedName->name = $tableName;
         $resolvedName->schemaName = $schemaName;
         $resolvedName->fullName = $fullName;
@@ -159,34 +175,44 @@ class Schema extends \yii\db\Schema implements ConstraintFinderInterface
 
     /**
      * {@inheritdoc}
+     *
+     * @see https://www.postgresql.org/docs/current/catalog-pg-namespace.html
      */
     protected function findSchemaNames()
     {
-        static $sql = <<<'SQL'
-SELECT "ns"."nspname"
-FROM "pg_namespace" AS "ns"
-WHERE "ns"."nspname" != 'information_schema' AND "ns"."nspname" NOT LIKE 'pg_%'
-ORDER BY "ns"."nspname" ASC
-SQL;
+        $sql = <<<SQL
+        SELECT "ns"."nspname"
+        FROM "pg_namespace" AS "ns"
+        WHERE "ns"."nspname" != 'information_schema'
+            AND "ns"."nspname" NOT LIKE 'pg_%'
+        ORDER BY "ns"."nspname" ASC
+        SQL;
 
         return $this->db->createCommand($sql)->queryColumn();
     }
 
     /**
      * {@inheritdoc}
+     *
+     * @see https://www.postgresql.org/docs/current/catalog-pg-class.html
+     * @see https://www.postgresql.org/docs/current/catalog-pg-namespace.html
      */
     protected function findTableNames($schema = '')
     {
         if ($schema === '') {
             $schema = $this->defaultSchema;
         }
-        $sql = <<<'SQL'
-SELECT c.relname AS table_name
-FROM pg_class c
-INNER JOIN pg_namespace ns ON ns.oid = c.relnamespace
-WHERE ns.nspname = :schemaName AND c.relkind IN ('r','v','m','f', 'p')
-ORDER BY c.relname
-SQL;
+
+        $sql = <<<SQL
+        SELECT "c"."relname" AS "table_name"
+        FROM "pg_class" AS "c"
+        INNER JOIN "pg_namespace" AS "ns"
+            ON "ns"."oid" = "c"."relnamespace"
+        WHERE "ns"."nspname" = :schemaName
+            AND "c"."relkind" IN ('r', 'v', 'm', 'f', 'p')
+        ORDER BY "c"."relname"
+        SQL;
+
         return $this->db->createCommand($sql, [':schemaName' => $schema])->queryColumn();
     }
 
@@ -199,6 +225,7 @@ SQL;
 
         if ($this->findColumns($table)) {
             $this->findConstraints($table);
+
             return $table;
         }
 
@@ -223,43 +250,56 @@ SQL;
 
     /**
      * {@inheritdoc}
+     *
+     * @see https://www.postgresql.org/docs/current/catalog-pg-class.html
+     * @see https://www.postgresql.org/docs/current/catalog-pg-index.html
+     * @see https://www.postgresql.org/docs/current/catalog-pg-attribute.html
+     * @see https://www.postgresql.org/docs/current/catalog-pg-namespace.html
      */
     protected function loadTableIndexes($tableName)
     {
-        static $sql = <<<'SQL'
-SELECT
-    "ic"."relname" AS "name",
-    "ia"."attname" AS "column_name",
-    "i"."indisunique" AS "index_is_unique",
-    "i"."indisprimary" AS "index_is_primary"
-FROM "pg_class" AS "tc"
-INNER JOIN "pg_namespace" AS "tcns"
-    ON "tcns"."oid" = "tc"."relnamespace"
-INNER JOIN "pg_index" AS "i"
-    ON "i"."indrelid" = "tc"."oid"
-INNER JOIN "pg_class" AS "ic"
-    ON "ic"."oid" = "i"."indexrelid"
-INNER JOIN "pg_attribute" AS "ia"
-    ON "ia"."attrelid" = "i"."indexrelid"
-WHERE "tcns"."nspname" = :schemaName AND "tc"."relname" = :tableName
-ORDER BY "ia"."attnum" ASC
-SQL;
+        $sql = <<<SQL
+        SELECT
+            "ic"."relname" AS "name",
+            "ia"."attname" AS "column_name",
+            "i"."indisunique" AS "index_is_unique",
+            "i"."indisprimary" AS "index_is_primary"
+        FROM "pg_class" AS "tc"
+        INNER JOIN "pg_namespace" AS "tcns"
+            ON "tcns"."oid" = "tc"."relnamespace"
+        INNER JOIN "pg_index" AS "i"
+            ON "i"."indrelid" = "tc"."oid"
+        INNER JOIN "pg_class" AS "ic"
+            ON "ic"."oid" = "i"."indexrelid"
+        INNER JOIN "pg_attribute" AS "ia"
+            ON "ia"."attrelid" = "i"."indexrelid"
+        WHERE "tcns"."nspname" = :schemaName
+            AND "tc"."relname" = :tableName
+        ORDER BY "ia"."attnum" ASC
+        SQL;
 
         $resolvedName = $this->resolveTableName($tableName);
-        $indexes = $this->db->createCommand($sql, [
-            ':schemaName' => $resolvedName->schemaName,
-            ':tableName' => $resolvedName->name,
-        ])->queryAll();
+        $indexes = $this->db->createCommand(
+            $sql,
+            [
+                ':schemaName' => $resolvedName->schemaName,
+                ':tableName' => $resolvedName->name,
+            ],
+        )->queryAll();
         $indexes = $this->normalizePdoRowKeyCase($indexes, true);
         $indexes = ArrayHelper::index($indexes, null, 'name');
+
         $result = [];
+
         foreach ($indexes as $name => $index) {
-            $result[] = new IndexConstraint([
-                'isPrimary' => (bool) $index[0]['index_is_primary'],
-                'isUnique' => (bool) $index[0]['index_is_unique'],
-                'name' => $name,
-                'columnNames' => ArrayHelper::getColumn($index, 'column_name'),
-            ]);
+            $result[] = new IndexConstraint(
+                [
+                    'isPrimary' => (bool) $index[0]['index_is_primary'],
+                    'isUnique' => (bool) $index[0]['index_is_unique'],
+                    'name' => $name,
+                    'columnNames' => ArrayHelper::getColumn($index, 'column_name'),
+                ],
+            );
         }
 
         return $result;
@@ -300,79 +340,107 @@ SQL;
     }
 
     /**
-     * {@inheritdoc]
+     * {@inheritdoc}
+     *
+     * @see https://www.postgresql.org/docs/current/catalog-pg-class.html
+     * @see https://www.postgresql.org/docs/current/catalog-pg-namespace.html
      */
     protected function findViewNames($schema = '')
     {
         if ($schema === '') {
             $schema = $this->defaultSchema;
         }
-        $sql = <<<'SQL'
-SELECT c.relname AS table_name
-FROM pg_class c
-INNER JOIN pg_namespace ns ON ns.oid = c.relnamespace
-WHERE ns.nspname = :schemaName AND (c.relkind = 'v' OR c.relkind = 'm')
-ORDER BY c.relname
-SQL;
+
+        $sql = <<<SQL
+        SELECT "c"."relname" AS "table_name"
+        FROM "pg_class" AS "c"
+        INNER JOIN "pg_namespace" AS "ns"
+            ON "ns"."oid" = "c"."relnamespace"
+        WHERE "ns"."nspname" = :schemaName
+            AND "c"."relkind" IN ('v', 'm')
+        ORDER BY "c"."relname"
+        SQL;
+
         return $this->db->createCommand($sql, [':schemaName' => $schema])->queryColumn();
     }
 
     /**
      * Collects the foreign key column details for the given table.
+     *
      * @param TableSchema $table the table metadata
+     *
+     * @see https://www.postgresql.org/docs/current/catalog-pg-constraint.html
+     * @see https://www.postgresql.org/docs/current/catalog-pg-class.html
+     * @see https://www.postgresql.org/docs/current/catalog-pg-namespace.html
+     * @see https://www.postgresql.org/docs/current/catalog-pg-attribute.html
      */
     protected function findConstraints($table)
     {
-        $tableName = $this->quoteValue($table->name);
-        $tableSchema = $this->quoteValue($table->schemaName);
-
-        //We need to extract the constraints de hard way since:
-        //https://www.postgresql.org/message-id/26677.1086673982@sss.pgh.pa.us
-
         $sql = <<<SQL
-select
-    ct.conname as constraint_name,
-    a.attname as column_name,
-    fc.relname as foreign_table_name,
-    fns.nspname as foreign_table_schema,
-    fa.attname as foreign_column_name
-from
-    (SELECT ct.conname, ct.conrelid, ct.confrelid, ct.conkey, ct.contype, ct.confkey, generate_subscripts(ct.conkey, 1) AS s
-       FROM pg_constraint ct
-    ) AS ct
-    inner join pg_class c on c.oid=ct.conrelid
-    inner join pg_namespace ns on c.relnamespace=ns.oid
-    inner join pg_attribute a on a.attrelid=ct.conrelid and a.attnum = ct.conkey[ct.s]
-    left join pg_class fc on fc.oid=ct.confrelid
-    left join pg_namespace fns on fc.relnamespace=fns.oid
-    left join pg_attribute fa on fa.attrelid=ct.confrelid and fa.attnum = ct.confkey[ct.s]
-where
-    ct.contype='f'
-    and c.relname={$tableName}
-    and ns.nspname={$tableSchema}
-order by
-    fns.nspname, fc.relname, a.attnum
-SQL;
+        SELECT
+            "c"."conname" AS "constraint_name",
+            "a"."attname" AS "column_name",
+            "fc"."relname" AS "foreign_table_name",
+            "fns"."nspname" AS "foreign_table_schema",
+            "fa"."attname" AS "foreign_column_name"
+        FROM "pg_constraint" AS "c"
+        INNER JOIN "pg_class" AS "cl"
+            ON "cl"."oid" = "c"."conrelid"
+        INNER JOIN "pg_namespace" AS "ns"
+            ON "ns"."oid" = "cl"."relnamespace"
+        INNER JOIN LATERAL unnest("c"."conkey") WITH ORDINALITY AS "ck"("key", "pos")
+            ON TRUE
+        INNER JOIN "pg_attribute" AS "a"
+            ON "a"."attrelid" = "c"."conrelid"
+            AND "a"."attnum" = "ck"."key"
+        LEFT JOIN "pg_class" AS "fc"
+            ON "fc"."oid" = "c"."confrelid"
+        LEFT JOIN "pg_namespace" AS "fns"
+            ON "fns"."oid" = "fc"."relnamespace"
+        LEFT JOIN LATERAL unnest("c"."confkey") WITH ORDINALITY AS "fk"("key", "pos")
+            ON "fk"."pos" = "ck"."pos"
+        LEFT JOIN "pg_attribute" AS "fa"
+            ON "fa"."attrelid" = "c"."confrelid"
+            AND "fa"."attnum" = "fk"."key"
+        WHERE "c"."contype" = 'f'
+            AND "cl"."relname" = :tableName
+            AND "ns"."nspname" = :schemaName
+        ORDER BY "fns"."nspname", "fc"."relname", "a"."attnum"
+        SQL;
 
         $constraints = [];
-        foreach ($this->db->createCommand($sql)->queryAll() as $constraint) {
-            if ($this->db->slavePdo->getAttribute(\PDO::ATTR_CASE) === \PDO::CASE_UPPER) {
+
+        $rows = $this->db->createCommand(
+            $sql,
+            [
+                ':tableName' => $table->name,
+                ':schemaName' => $table->schemaName,
+            ],
+        )->queryAll();
+
+        foreach ($rows as $constraint) {
+            if ($this->db->slavePdo->getAttribute(PDO::ATTR_CASE) === PDO::CASE_UPPER) {
                 $constraint = array_change_key_case($constraint, CASE_LOWER);
             }
+
             if ($constraint['foreign_table_schema'] !== $this->defaultSchema) {
                 $foreignTable = $constraint['foreign_table_schema'] . '.' . $constraint['foreign_table_name'];
             } else {
                 $foreignTable = $constraint['foreign_table_name'];
             }
+
             $name = $constraint['constraint_name'];
+
             if (!isset($constraints[$name])) {
                 $constraints[$name] = [
                     'tableName' => $foreignTable,
                     'columns' => [],
                 ];
             }
+
             $constraints[$name]['columns'][$constraint['column_name']] = $constraint['foreign_column_name'];
         }
+
         foreach ($constraints as $name => $constraint) {
             $table->foreignKeys[$name] = array_merge([$constraint['tableName']], $constraint['columns']);
         }
@@ -380,31 +448,43 @@ SQL;
 
     /**
      * Gets information about given table unique indexes.
+     *
      * @param TableSchema $table the table metadata
      * @return array with index and column names
+     *
+     * @see https://www.postgresql.org/docs/current/catalog-pg-index.html
+     * @see https://www.postgresql.org/docs/current/catalog-pg-class.html
+     * @see https://www.postgresql.org/docs/current/catalog-pg-namespace.html
+     * @see https://www.postgresql.org/docs/current/functions-info.html pg_get_indexdef
      */
     protected function getUniqueIndexInformation($table)
     {
-        $sql = <<<'SQL'
-SELECT
-    i.relname as indexname,
-    pg_get_indexdef(idx.indexrelid, k + 1, TRUE) AS columnname
-FROM (
-  SELECT *, generate_subscripts(indkey, 1) AS k
-  FROM pg_index
-) idx
-INNER JOIN pg_class i ON i.oid = idx.indexrelid
-INNER JOIN pg_class c ON c.oid = idx.indrelid
-INNER JOIN pg_namespace ns ON c.relnamespace = ns.oid
-WHERE idx.indisprimary = FALSE AND idx.indisunique = TRUE
-AND c.relname = :tableName AND ns.nspname = :schemaName
-ORDER BY i.relname, k
-SQL;
+        $sql = <<<SQL
+        SELECT
+            "i"."relname" AS "indexname",
+            pg_get_indexdef("idx"."indexrelid", "ik"."pos"::int, TRUE) AS "columnname"
+        FROM "pg_index" AS "idx"
+        CROSS JOIN LATERAL unnest("idx"."indkey") WITH ORDINALITY AS "ik"("key", "pos")
+        INNER JOIN "pg_class" AS "i"
+            ON "i"."oid" = "idx"."indexrelid"
+        INNER JOIN "pg_class" AS "c"
+            ON "c"."oid" = "idx"."indrelid"
+        INNER JOIN "pg_namespace" AS "ns"
+            ON "c"."relnamespace" = "ns"."oid"
+        WHERE "idx"."indisprimary" = FALSE
+            AND "idx"."indisunique" = TRUE
+            AND "c"."relname" = :tableName
+            AND "ns"."nspname" = :schemaName
+        ORDER BY "i"."relname", "ik"."pos"
+        SQL;
 
-        return $this->db->createCommand($sql, [
-            ':schemaName' => $table->schemaName,
-            ':tableName' => $table->name,
-        ])->queryAll();
+        return $this->db->createCommand(
+            $sql,
+            [
+                ':schemaName' => $table->schemaName,
+                ':tableName' => $table->name,
+            ],
+        )->queryAll();
     }
 
     /**
@@ -427,15 +507,18 @@ SQL;
         $uniqueIndexes = [];
 
         foreach ($this->getUniqueIndexInformation($table) as $row) {
-            if ($this->db->slavePdo->getAttribute(\PDO::ATTR_CASE) === \PDO::CASE_UPPER) {
+            if ($this->db->slavePdo->getAttribute(PDO::ATTR_CASE) === PDO::CASE_UPPER) {
                 $row = array_change_key_case($row, CASE_LOWER);
             }
+
             $column = $row['columnname'];
+
             if (strncmp($column, '"', 1) === 0) {
                 // postgres will quote names that are not lowercase-only
                 // https://github.com/yiisoft/yii2/issues/10613
                 $column = substr($column, 1, -1);
             }
+
             $uniqueIndexes[$row['indexname']][] = $column;
         }
 
@@ -444,92 +527,135 @@ SQL;
 
     /**
      * Collects the metadata of table columns.
+     *
      * @param TableSchema $table the table metadata
      * @return bool whether the table exists in the database
+     *
+     * @see https://www.postgresql.org/docs/current/catalog-pg-class.html
+     * @see https://www.postgresql.org/docs/current/catalog-pg-attribute.html
+     * @see https://www.postgresql.org/docs/current/catalog-pg-type.html
+     * @see https://www.postgresql.org/docs/current/catalog-pg-attrdef.html
+     * @see https://www.postgresql.org/docs/current/catalog-pg-enum.html
+     * @see https://www.postgresql.org/docs/current/catalog-pg-constraint.html
+     * @see https://www.postgresql.org/docs/current/catalog-pg-namespace.html
+     * @see https://www.postgresql.org/docs/current/functions-info.html pg_get_expr, col_description
+     * @see https://www.postgresql.org/docs/current/functions-sequence.html pg_get_serial_sequence
      */
     protected function findColumns($table)
     {
-        $tableName = $this->db->quoteValue($table->name);
-        $schemaName = $this->db->quoteValue($table->schemaName);
-
         $sql = <<<SQL
-SELECT
-    d.nspname AS table_schema,
-    c.relname AS table_name,
-    a.attname AS column_name,
-    COALESCE(td.typname, tb.typname, t.typname) AS data_type,
-    COALESCE(td.typtype, tb.typtype, t.typtype) AS type_type,
-    (SELECT nspname FROM pg_namespace WHERE oid = COALESCE(td.typnamespace, tb.typnamespace, t.typnamespace)) AS type_scheme,
-    a.attlen AS character_maximum_length,
-    pg_catalog.col_description(c.oid, a.attnum) AS column_comment,
-    a.atttypmod AS modifier,
-    a.attnotnull = false AS is_nullable,
-    CAST(pg_get_expr(ad.adbin, ad.adrelid) AS varchar) AS column_default,
-    coalesce(pg_get_expr(ad.adbin, ad.adrelid) ~ 'nextval',false) OR attidentity != '' AS is_autoinc,
-    pg_get_serial_sequence(quote_ident(d.nspname) || '.' || quote_ident(c.relname), a.attname) AS sequence_name,
-    CASE WHEN COALESCE(td.typtype, tb.typtype, t.typtype) = 'e'::char
-        THEN array_to_string((SELECT array_agg(enumlabel) FROM pg_enum WHERE enumtypid = COALESCE(td.oid, tb.oid, a.atttypid))::varchar[], ',')
-        ELSE NULL
-    END AS enum_values,
-    CASE atttypid
-         WHEN 21 /*int2*/ THEN 16
-         WHEN 23 /*int4*/ THEN 32
-         WHEN 20 /*int8*/ THEN 64
-         WHEN 1700 /*numeric*/ THEN
-              CASE WHEN atttypmod = -1
-               THEN null
-               ELSE ((atttypmod - 4) >> 16) & 65535
-               END
-         WHEN 700 /*float4*/ THEN 24 /*FLT_MANT_DIG*/
-         WHEN 701 /*float8*/ THEN 53 /*DBL_MANT_DIG*/
-         ELSE null
-      END   AS numeric_precision,
-      CASE
-        WHEN atttypid IN (21, 23, 20) THEN 0
-        WHEN atttypid IN (1700) THEN
-        CASE
-            WHEN atttypmod = -1 THEN null
-            ELSE (atttypmod - 4) & 65535
-        END
-           ELSE null
-      END AS numeric_scale,
-    CAST(
-             information_schema._pg_char_max_length(information_schema._pg_truetypid(a, t), information_schema._pg_truetypmod(a, t))
-             AS numeric
-    ) AS size,
-    a.attnum = any (ct.conkey) as is_pkey,
-    COALESCE(NULLIF(a.attndims, 0), NULLIF(t.typndims, 0), (t.typcategory='A')::int) AS dimension
-FROM
-    pg_class c
-    LEFT JOIN pg_attribute a ON a.attrelid = c.oid
-    LEFT JOIN pg_attrdef ad ON a.attrelid = ad.adrelid AND a.attnum = ad.adnum
-    LEFT JOIN pg_type t ON a.atttypid = t.oid
-    LEFT JOIN pg_type tb ON (a.attndims > 0 OR t.typcategory='A') AND t.typelem > 0 AND t.typelem = tb.oid OR t.typbasetype > 0 AND t.typbasetype = tb.oid
-    LEFT JOIN pg_type td ON t.typndims > 0 AND t.typbasetype > 0 AND tb.typelem = td.oid
-    LEFT JOIN pg_namespace d ON d.oid = c.relnamespace
-    LEFT JOIN pg_constraint ct ON ct.conrelid = c.oid AND ct.contype = 'p'
-WHERE
-    a.attnum > 0 AND t.typname != '' AND NOT a.attisdropped
-    AND c.relname = {$tableName}
-    AND d.nspname = {$schemaName}
-ORDER BY
-    a.attnum;
-SQL;
-        $columns = $this->db->createCommand($sql)->queryAll();
+        SELECT
+            "d"."nspname" AS "table_schema",
+            "c"."relname" AS "table_name",
+            "a"."attname" AS "column_name",
+            COALESCE("td"."typname", "tb"."typname", "t"."typname") AS "data_type",
+            COALESCE("td"."typtype", "tb"."typtype", "t"."typtype") AS "type_type",
+            (SELECT "nspname" FROM "pg_namespace" WHERE "oid" = COALESCE("td"."typnamespace", "tb"."typnamespace", "t"."typnamespace")) AS "type_scheme",
+            "a"."attlen" AS "character_maximum_length",
+            pg_catalog.col_description("c"."oid", "a"."attnum") AS "column_comment",
+            "a"."atttypmod" AS "modifier",
+            "a"."attnotnull" = FALSE AS "is_nullable",
+            CAST(pg_get_expr("ad"."adbin", "ad"."adrelid") AS VARCHAR) AS "column_default",
+            COALESCE(pg_get_expr("ad"."adbin", "ad"."adrelid") ~ 'nextval', FALSE) OR "a"."attidentity" != '' AS "is_autoinc",
+            pg_get_serial_sequence(quote_ident("d"."nspname") || '.' || quote_ident("c"."relname"), "a"."attname") AS "sequence_name",
+            CASE WHEN COALESCE("td"."typtype", "tb"."typtype", "t"."typtype") = 'e'::"char"
+                THEN array_to_string((SELECT array_agg("enumlabel") FROM "pg_enum" WHERE "enumtypid" = COALESCE("td"."oid", "tb"."oid", "a"."atttypid"))::VARCHAR[], ',')
+                ELSE NULL
+            END AS "enum_values",
+            CASE "a"."atttypid"
+                WHEN 21 /*int2*/ THEN 16
+                WHEN 23 /*int4*/ THEN 32
+                WHEN 20 /*int8*/ THEN 64
+                WHEN 1700 /*numeric*/ THEN
+                    CASE WHEN "a"."atttypmod" = -1
+                        THEN NULL
+                        ELSE (("a"."atttypmod" - 4) >> 16) & 65535
+                    END
+                WHEN 700 /*float4*/ THEN 24 /*FLT_MANT_DIG*/
+                WHEN 701 /*float8*/ THEN 53 /*DBL_MANT_DIG*/
+                ELSE NULL
+            END AS "numeric_precision",
+            CASE
+                WHEN "a"."atttypid" IN (21, 23, 20) THEN 0
+                WHEN "a"."atttypid" IN (1700) THEN
+                    CASE
+                        WHEN "a"."atttypmod" = -1 THEN NULL
+                        ELSE ("a"."atttypmod" - 4) & 65535
+                    END
+                ELSE NULL
+            END AS "numeric_scale",
+            CASE
+                WHEN COALESCE("td"."typname", "tb"."typname", "t"."typname") IN ('varchar', 'bpchar') THEN
+                    CASE WHEN "a"."atttypmod" = -1 THEN NULL
+                        ELSE "a"."atttypmod" - 4
+                    END
+                WHEN COALESCE("td"."typname", "tb"."typname", "t"."typname") IN ('bit', 'varbit') THEN
+                    CASE WHEN "a"."atttypmod" = -1 THEN NULL
+                        ELSE "a"."atttypmod"
+                    END
+                ELSE NULL
+            END AS "size",
+            "a"."attnum" = ANY ("ct"."conkey") AS "is_pkey",
+            COALESCE(NULLIF("a"."attndims", 0), NULLIF("t"."typndims", 0), ("t"."typcategory" = 'A')::int) AS "dimension"
+        FROM "pg_class" AS "c"
+        LEFT JOIN "pg_attribute" AS "a"
+            ON "a"."attrelid" = "c"."oid"
+        LEFT JOIN "pg_attrdef" AS "ad"
+            ON "a"."attrelid" = "ad"."adrelid"
+            AND "a"."attnum" = "ad"."adnum"
+        LEFT JOIN "pg_type" AS "t"
+            ON "a"."atttypid" = "t"."oid"
+        LEFT JOIN "pg_type" AS "tb"
+            ON ("a"."attndims" > 0 OR "t"."typcategory" = 'A')
+            AND "t"."typelem" > 0
+            AND "t"."typelem" = "tb"."oid"
+            OR "t"."typbasetype" > 0
+            AND "t"."typbasetype" = "tb"."oid"
+        LEFT JOIN "pg_type" AS "td"
+            ON "t"."typndims" > 0
+            AND "t"."typbasetype" > 0
+            AND "tb"."typelem" = "td"."oid"
+        LEFT JOIN "pg_namespace" AS "d"
+            ON "d"."oid" = "c"."relnamespace"
+        LEFT JOIN "pg_constraint" AS "ct"
+            ON "ct"."conrelid" = "c"."oid"
+            AND "ct"."contype" = 'p'
+        WHERE "a"."attnum" > 0
+            AND "t"."typname" != ''
+            AND NOT "a"."attisdropped"
+            AND "c"."relname" = :tableName
+            AND "d"."nspname" = :schemaName
+        ORDER BY "a"."attnum"
+        SQL;
+
+        $columns = $this->db->createCommand(
+            $sql,
+            [
+                ':tableName' => $table->name,
+                ':schemaName' => $table->schemaName,
+            ],
+        )->queryAll();
+
         if (empty($columns)) {
             return false;
         }
+
         foreach ($columns as $column) {
-            if ($this->db->slavePdo->getAttribute(\PDO::ATTR_CASE) === \PDO::CASE_UPPER) {
+            if ($this->db->slavePdo->getAttribute(PDO::ATTR_CASE) === PDO::CASE_UPPER) {
                 $column = array_change_key_case($column, CASE_LOWER);
             }
+
             $column = $this->loadColumnSchema($column);
+
             $table->columns[$column->name] = $column;
+
             if ($column->isPrimaryKey) {
                 $table->primaryKey[] = $column->name;
+
                 if ($table->sequenceName === null) {
                     $table->sequenceName = $column->sequenceName;
                 }
+
                 $column->defaultValue = null;
             } elseif ($column->defaultValue) {
                 $column->defaultValue = $column->defaultPhpTypecast($column->defaultValue);
@@ -548,14 +674,17 @@ SQL;
     {
         /** @var ColumnSchema $column */
         $column = $this->createColumnSchema();
+
         $column->allowNull = $info['is_nullable'];
         $column->autoIncrement = $info['is_autoinc'];
         $column->comment = $info['column_comment'];
+
         if ($info['type_scheme'] !== null && !in_array($info['type_scheme'], [$this->defaultSchema, 'pg_catalog'], true)) {
             $column->dbType = $info['type_scheme'] . '.' . $info['data_type'];
         } else {
             $column->dbType = $info['data_type'];
         }
+
         $column->defaultValue = $info['column_default'];
         $column->enumValues = ($info['enum_values'] !== null) ? explode(',', str_replace(["''"], ["'"], $info['enum_values'])) : null;
         $column->unsigned = false; // has no meaning in PG
@@ -565,6 +694,7 @@ SQL;
         $column->scale = $info['numeric_scale'];
         $column->size = $info['size'] === null ? null : (int) $info['size'];
         $column->dimension = (int) $info['dimension'];
+
         // pg_get_serial_sequence() doesn't track DEFAULT value change. GENERATED BY IDENTITY columns always have null default value
         if (isset($column->defaultValue) && preg_match("/nextval\\('\"?\\w+\"?\.?\"?\\w+\"?'(::regclass)?\\)/", $column->defaultValue) === 1) {
             $column->sequenceName = preg_replace(['/nextval/', '/::/', '/regclass/', '/\'\)/', '/\(\'/'], '', $column->defaultValue);
@@ -577,6 +707,7 @@ SQL;
         } else {
             $column->type = self::TYPE_STRING;
         }
+
         $column->phpType = $this->getColumnPhpType($column);
 
         return $column;
@@ -588,13 +719,18 @@ SQL;
     public function insert($table, $columns)
     {
         $params = [];
+
         $sql = $this->db->getQueryBuilder()->insert($table, $columns, $params);
+
         $returnColumns = $this->getTableSchema($table)->primaryKey;
+
         if (!empty($returnColumns)) {
             $returning = [];
+
             foreach ((array) $returnColumns as $name) {
                 $returning[] = $this->quoteColumnName($name);
             }
+
             $sql .= ' RETURNING ' . implode(', ', $returning);
         }
 
@@ -607,6 +743,7 @@ SQL;
 
     /**
      * Loads multiple types of constraints and returns the specified ones.
+     *
      * @param string $tableName table name.
      * @param string $returnType return type:
      * - primaryKey
@@ -614,37 +751,47 @@ SQL;
      * - uniques
      * - checks
      * @return mixed constraints.
+     *
+     * @see https://www.postgresql.org/docs/current/catalog-pg-class.html
+     * @see https://www.postgresql.org/docs/current/catalog-pg-constraint.html
+     * @see https://www.postgresql.org/docs/current/catalog-pg-attribute.html
+     * @see https://www.postgresql.org/docs/current/catalog-pg-namespace.html
+     * @see https://www.postgresql.org/docs/current/functions-info.html pg_get_constraintdef
      */
     private function loadTableConstraints($tableName, $returnType)
     {
-        static $sql = <<<'SQL'
-SELECT
-    "c"."conname" AS "name",
-    "a"."attname" AS "column_name",
-    "c"."contype" AS "type",
-    "ftcns"."nspname" AS "foreign_table_schema",
-    "ftc"."relname" AS "foreign_table_name",
-    "fa"."attname" AS "foreign_column_name",
-    "c"."confupdtype" AS "on_update",
-    "c"."confdeltype" AS "on_delete",
-    pg_get_constraintdef("c"."oid") AS "check_expr"
-FROM "pg_class" AS "tc"
-INNER JOIN "pg_namespace" AS "tcns"
-    ON "tcns"."oid" = "tc"."relnamespace"
-INNER JOIN "pg_constraint" AS "c"
-    ON "c"."conrelid" = "tc"."oid"
-INNER JOIN "pg_attribute" AS "a"
-    ON "a"."attrelid" = "c"."conrelid" AND "a"."attnum" = ANY ("c"."conkey")
-LEFT JOIN "pg_class" AS "ftc"
-    ON "ftc"."oid" = "c"."confrelid"
-LEFT JOIN "pg_namespace" AS "ftcns"
-    ON "ftcns"."oid" = "ftc"."relnamespace"
-LEFT JOIN "pg_attribute" "fa"
-    ON "fa"."attrelid" = "c"."confrelid" AND "fa"."attnum" = ANY ("c"."confkey")
-WHERE "tcns"."nspname" = :schemaName AND "tc"."relname" = :tableName
-ORDER BY "a"."attnum" ASC, "fa"."attnum" ASC
-SQL;
-        static $actionTypes = [
+        $sql = <<<SQL
+        SELECT
+            "c"."conname" AS "name",
+            "a"."attname" AS "column_name",
+            "c"."contype" AS "type",
+            "ftcns"."nspname" AS "foreign_table_schema",
+            "ftc"."relname" AS "foreign_table_name",
+            "fa"."attname" AS "foreign_column_name",
+            "c"."confupdtype" AS "on_update",
+            "c"."confdeltype" AS "on_delete",
+            pg_get_constraintdef("c"."oid") AS "check_expr"
+        FROM "pg_class" AS "tc"
+        INNER JOIN "pg_namespace" AS "tcns"
+            ON "tcns"."oid" = "tc"."relnamespace"
+        INNER JOIN "pg_constraint" AS "c"
+            ON "c"."conrelid" = "tc"."oid"
+        INNER JOIN "pg_attribute" AS "a"
+            ON "a"."attrelid" = "c"."conrelid"
+            AND "a"."attnum" = ANY ("c"."conkey")
+        LEFT JOIN "pg_class" AS "ftc"
+            ON "ftc"."oid" = "c"."confrelid"
+        LEFT JOIN "pg_namespace" AS "ftcns"
+            ON "ftcns"."oid" = "ftc"."relnamespace"
+        LEFT JOIN "pg_attribute" AS "fa"
+            ON "fa"."attrelid" = "c"."confrelid"
+            AND "fa"."attnum" = ANY ("c"."confkey")
+        WHERE "tcns"."nspname" = :schemaName
+            AND "tc"."relname" = :tableName
+        ORDER BY "a"."attnum" ASC, "fa"."attnum" ASC
+        SQL;
+
+        $actionTypes = [
             'a' => 'NO ACTION',
             'r' => 'RESTRICT',
             'c' => 'CASCADE',
@@ -653,37 +800,50 @@ SQL;
         ];
 
         $resolvedName = $this->resolveTableName($tableName);
-        $constraints = $this->db->createCommand($sql, [
-            ':schemaName' => $resolvedName->schemaName,
-            ':tableName' => $resolvedName->name,
-        ])->queryAll();
+        $constraints = $this->db->createCommand(
+            $sql,
+            [
+                ':schemaName' => $resolvedName->schemaName,
+                ':tableName' => $resolvedName->name,
+            ],
+        )->queryAll();
         $constraints = $this->normalizePdoRowKeyCase($constraints, true);
         $constraints = ArrayHelper::index($constraints, null, ['type', 'name']);
+
         $result = [
             'primaryKey' => null,
             'foreignKeys' => [],
             'uniques' => [],
             'checks' => [],
         ];
+
         foreach ($constraints as $type => $names) {
             foreach ($names as $name => $constraint) {
                 switch ($type) {
                     case 'p':
-                        $result['primaryKey'] = new Constraint([
-                            'name' => $name,
-                            'columnNames' => ArrayHelper::getColumn($constraint, 'column_name'),
-                        ]);
+                        $result['primaryKey'] = new Constraint(
+                            [
+                                'name' => $name,
+                                'columnNames' => ArrayHelper::getColumn($constraint, 'column_name'),
+                            ],
+                        );
                         break;
                     case 'f':
-                        $result['foreignKeys'][] = new ForeignKeyConstraint([
-                            'name' => $name,
-                            'columnNames' => array_keys(array_count_values(ArrayHelper::getColumn($constraint, 'column_name'))),
-                            'foreignSchemaName' => $constraint[0]['foreign_table_schema'],
-                            'foreignTableName' => $constraint[0]['foreign_table_name'],
-                            'foreignColumnNames' => array_keys(array_count_values(ArrayHelper::getColumn($constraint, 'foreign_column_name'))),
-                            'onDelete' => isset($actionTypes[$constraint[0]['on_delete']]) ? $actionTypes[$constraint[0]['on_delete']] : null,
-                            'onUpdate' => isset($actionTypes[$constraint[0]['on_update']]) ? $actionTypes[$constraint[0]['on_update']] : null,
-                        ]);
+                        $result['foreignKeys'][] = new ForeignKeyConstraint(
+                            [
+                                'name' => $name,
+                                'columnNames' => array_keys(
+                                    array_count_values(ArrayHelper::getColumn($constraint, 'column_name')),
+                                ),
+                                'foreignSchemaName' => $constraint[0]['foreign_table_schema'],
+                                'foreignTableName' => $constraint[0]['foreign_table_name'],
+                                'foreignColumnNames' => array_keys(
+                                    array_count_values(ArrayHelper::getColumn($constraint, 'foreign_column_name')),
+                                ),
+                                'onDelete' => $actionTypes[$constraint[0]['on_delete']] ?? null,
+                                'onUpdate' => $actionTypes[$constraint[0]['on_update']] ?? null,
+                            ],
+                        );
                         break;
                     case 'u':
                         $result['uniques'][] = new Constraint([

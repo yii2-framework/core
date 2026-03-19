@@ -68,5 +68,6 @@ jobs:
       database-versions: '["latest"]'
       extensions: curl, intl, pdo, pdo_pgsql
       os: '["ubuntu-22.04"]'
+      php-ini-values: date.timezone='UTC', opcache.jit=tracing, opcache.jit_buffer_size=64M
       php-version: '["8.2","8.3","8.4"]'
       phpunit-group: pgsql

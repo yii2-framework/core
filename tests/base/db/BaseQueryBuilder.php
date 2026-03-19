@@ -1970,14 +1970,10 @@ abstract class BaseQueryBuilder extends BaseDatabase
                         'email' => new Expression(':phEmail', [':phEmail' => 'dynamic@example.com']),
                         '[[time]]' => new Expression('now()'),
                     ]),
-                [
-                    'ts' => 0,
-                    '[[orders]]' => new Expression('T_upsert.orders + 1'),
-                ],
+                false,
                 null,
                 [
                     ':phEmail' => 'dynamic@example.com',
-                    ':qp1' => 0,
                 ],
             ],
             'no columns to update' => [

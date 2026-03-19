@@ -1903,6 +1903,12 @@ parameters:
 			path: src/db/pgsql/JsonExpressionBuilder.php
 
 		-
+			message: '#^Casting to string something that''s already string\.$#'
+			identifier: cast.useless
+			count: 1
+			path: src/db/pgsql/QueryBuilder.php
+
+		-
 			message: '#^Construct empty\(\) is not allowed\. Use more strict comparison\.$#'
 			identifier: empty.notAllowed
 			count: 3

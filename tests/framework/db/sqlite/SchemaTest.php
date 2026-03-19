@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 /**
  * @link https://www.yiiframework.com/
  * @copyright Copyright (c) 2008 Yii Software LLC
@@ -8,106 +10,167 @@
 
 namespace yiiunit\framework\db\sqlite;
 
+use PDO;
+use PHPUnit\Framework\Attributes\DataProviderExternal;
+use PHPUnit\Framework\Attributes\Group;
 use yii\base\NotSupportedException;
-use yii\db\Constraint;
+use yii\db\sqlite\Schema;
 use yiiunit\base\db\BaseSchema;
-use yiiunit\framework\db\AnyValue;
+use yiiunit\framework\db\sqlite\providers\SchemaProvider;
 
 /**
- * @group db
- * @group sqlite
+ * Unit test for {@see \yii\db\sqlite\Schema} with SQLite driver.
+ *
+ * {@see SchemaProvider} for test case data providers.
+ *
+ * @author Wilmer Arambula <terabytesoftw@gmail.com>
+ * @since 2.2
  */
-class SchemaTest extends BaseSchema
+#[Group('db')]
+#[Group('sqlite')]
+#[Group('schema')]
+final class SchemaTest extends BaseSchema
 {
     protected $driverName = 'sqlite';
 
-    public function testGetSchemaNames(): void
+    #[DataProviderExternal(SchemaProvider::class, 'expectedColumns')]
+    public function testColumnSchema(array $columns): void
     {
-        $this->markTestSkipped('Schemas are not supported in SQLite.');
+        parent::testColumnSchema($columns);
     }
 
-    public function getExpectedColumns()
+    public function testGetSchemaNames(): void
     {
-        $columns = parent::getExpectedColumns();
-        unset($columns['enum_col']);
-        unset($columns['bit_col']);
-        unset($columns['json_col']);
-        $columns['int_col']['dbType'] = 'integer';
-        $columns['int_col']['size'] = null;
-        $columns['int_col']['precision'] = null;
-        $columns['int_col2']['dbType'] = 'integer';
-        $columns['int_col2']['size'] = null;
-        $columns['int_col2']['precision'] = null;
-        $columns['bool_col']['type'] = 'boolean';
-        $columns['bool_col']['phpType'] = 'boolean';
-        $columns['bool_col2']['type'] = 'boolean';
-        $columns['bool_col2']['phpType'] = 'boolean';
-        $columns['bool_col2']['defaultValue'] = true;
-        return $columns;
+        $this->expectException(NotSupportedException::class);
+        $this->expectExceptionMessage(Schema::class . ' does not support fetching all schema names.');
+
+        parent::testGetSchemaNames();
+    }
+
+    public function testNegativeDefaultValues(): void
+    {
+        $schema = $this->getConnection(false, true)->schema;
+
+        $table = $schema->getTableSchema('negative_default_values');
+
+        self::assertSame(
+            -123,
+            $table->getColumn('tinyint_col')->defaultValue,
+            "'tinyint_col' default does not match.",
+        );
+        self::assertSame(
+            -123,
+            $table->getColumn('smallint_col')->defaultValue,
+            "'smallint_col' default does not match.",
+        );
+        self::assertSame(
+            -123,
+            $table->getColumn('int_col')->defaultValue,
+            "'int_col' default does not match.",
+        );
+        self::assertSame(
+            -123,
+            $table->getColumn('bigint_col')->defaultValue,
+            "'bigint_col' default does not match.",
+        );
+        self::assertSame(
+            -12345.6789,
+            $table->getColumn('float_col')->defaultValue,
+            "'float_col' default does not match.",
+        );
+        self::assertSame(
+            '-33.22',
+            $table->getColumn('numeric_col')->defaultValue,
+            "'numeric_col' default does not match.",
+        );
     }
 
     public function testCompositeFk(): void
     {
-        $schema = $this->getConnection()->schema;
+        $schema = $this->getConnection(false, true)->schema;
 
         $table = $schema->getTableSchema('composite_fk');
 
-        $this->assertCount(1, $table->foreignKeys);
-        $this->assertTrue(isset($table->foreignKeys[0]));
-        $this->assertEquals('order_item', $table->foreignKeys[0][0]);
-        $this->assertEquals('order_id', $table->foreignKeys[0]['order_id']);
-        $this->assertEquals('item_id', $table->foreignKeys[0]['item_id']);
+        self::assertCount(
+            1,
+            $table->foreignKeys, 'Composite FK table should have exactly one foreign key.',
+        );
+        self::assertTrue(
+            isset($table->foreignKeys[0]),
+            "Foreign key at index '0' should exist.",
+        );
+        self::assertEquals(
+            'order_item',
+            $table->foreignKeys[0][0],
+            "Foreign key should reference the 'order_item' table.",
+        );
+        self::assertEquals(
+            'order_id',
+            $table->foreignKeys[0]['order_id'],
+            "Foreign key column 'order_id' should map correctly.",
+        );
+        self::assertEquals(
+            'item_id',
+            $table->foreignKeys[0]['item_id'],
+            "Foreign key column 'item_id' should map correctly.",
+        );
     }
 
-    public static function constraintsProvider(): array
+    #[DataProviderExternal(SchemaProvider::class, 'constraints')]
+    public function testTableSchemaConstraints(string $tableName, string $type, mixed $expected): void
     {
-        $result = parent::constraintsProvider();
-        $result['1: primary key'][2]->name = null;
-        $result['1: check'][2][0]->columnNames = null;
-        $result['1: check'][2][0]->expression = '"C_check" <> \'\'';
-        $result['1: unique'][2][0]->name = AnyValue::getInstance();
-        $result['1: index'][2][1]->name = AnyValue::getInstance();
+        $db = $this->getConnection(false, true);
 
-        $result['2: primary key'][2]->name = null;
-        $result['2: unique'][2][0]->name = AnyValue::getInstance();
-        $result['2: index'][2][2]->name = AnyValue::getInstance();
+        $constraints = $db->schema->{'getTable' . ucfirst($type)}($tableName);
 
-        $result['3: foreign key'][2][0]->name = null;
-        $result['3: index'][2] = [];
-
-        $result['4: primary key'][2]->name = null;
-        $result['4: unique'][2][0]->name = AnyValue::getInstance();
-
-        $result['5: primary key'] = ['T_upsert', 'primaryKey', new Constraint([
-            'name' => AnyValue::getInstance(),
-            'columnNames' => ['id'],
-        ])];
-
-        return $result;
+        self::assertMetadataEquals($expected, $constraints);
     }
 
-    /**
-     * @dataProvider quoteTableNameDataProvider
-     * @param $name
-     * @param $expectedName
-     * @throws NotSupportedException
-     */
-    public function testQuoteTableName($name, $expectedName): void
+    #[DataProviderExternal(SchemaProvider::class, 'constraints')]
+    public function testTableSchemaConstraintsWithPdoUppercase(string $tableName, string $type, mixed $expected): void
     {
-        $schema = $this->getConnection()->getSchema();
-        $quotedName = $schema->quoteTableName($name);
-        $this->assertEquals($expectedName, $quotedName);
+        $db = $this->getConnection(false, true);
+
+        $db->getSlavePdo(true)->setAttribute(PDO::ATTR_CASE, PDO::CASE_UPPER);
+
+        $constraints = $db->schema->{'getTable' . ucfirst($type)}($tableName, true);
+
+        self::assertMetadataEquals($expected, $constraints);
     }
 
-    public static function quoteTableNameDataProvider(): array
+    #[DataProviderExternal(SchemaProvider::class, 'constraints')]
+    public function testTableSchemaConstraintsWithPdoLowercase(string $tableName, string $type, mixed $expected): void
     {
-        return [
-            ['test', '`test`'],
-            ['test.test', '`test`.`test`'],
-            ['test.test.test', '`test`.`test`.`test`'],
-            ['`test`', '`test`'],
-            ['`test`.`test`', '`test`.`test`'],
-            ['test.`test`.test', '`test`.`test`.`test`'],
-        ];
+        $db = $this->getConnection(false, true);
+
+        $db->getSlavePdo(true)->setAttribute(PDO::ATTR_CASE, PDO::CASE_LOWER);
+
+        $constraints = $db->schema->{'getTable' . ucfirst($type)}($tableName, true);
+
+        self::assertMetadataEquals($expected, $constraints);
+    }
+
+    #[DataProviderExternal(SchemaProvider::class, 'quoteTableName')]
+    public function testQuoteTableName(string $name, string $expectedName): void
+    {
+        $db = $this->getConnection(false, true);
+
+        $quotedName = $db->schema->quoteTableName($name);
+
+        self::assertEquals(
+            $expectedName,
+            $quotedName,
+            "Quoting table name '$name' does not match expected.",
+        );
+    }
+
+    public function testThrowNotSupportedExceptionWhenTableSchemaConstraintsDefaultValues(): void
+    {
+        $db = $this->getConnection(false, true);
+
+        $this->expectException(NotSupportedException::class);
+        $this->expectExceptionMessage('SQLite does not support default value constraints.');
+
+        $db->schema->getTableDefaultValues('T_constraints_1');
     }
 }

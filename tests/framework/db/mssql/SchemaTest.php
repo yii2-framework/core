@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 /**
  * @link https://www.yiiframework.com/
  * @copyright Copyright (c) 2008 Yii Software LLC
@@ -8,19 +10,25 @@
 
 namespace yiiunit\framework\db\mssql;
 
-use yii\base\NotSupportedException;
-use yii\db\DefaultValueConstraint;
+use PDO;
+use PHPUnit\Framework\Attributes\DataProviderExternal;
+use PHPUnit\Framework\Attributes\Group;
 use yii\db\mssql\Schema;
 use yiiunit\base\db\BaseSchema;
-use yiiunit\framework\db\AnyValue;
-
-use function in_array;
+use yiiunit\framework\db\mssql\providers\SchemaProvider;
 
 /**
- * @group db
- * @group mssql
+ * Unit test for {@see \yii\db\mssql\Schema} with MSSQL driver.
+ *
+ * {@see SchemaProvider} for test case data providers.
+ *
+ * @author Wilmer Arambula <terabytesoftw@gmail.com>
+ * @since 2.2
  */
-class SchemaTest extends BaseSchema
+#[Group('db')]
+#[Group('mssql')]
+#[Group('schema')]
+final class SchemaTest extends BaseSchema
 {
     public $driverName = 'sqlsrv';
 
@@ -28,36 +36,85 @@ class SchemaTest extends BaseSchema
         'dbo',
     ];
 
-    public static function constraintsProvider(): array
+    #[DataProviderExternal(SchemaProvider::class, 'expectedColumns')]
+    public function testColumnSchema(array $columns): void
     {
-        $result = parent::constraintsProvider();
-        $result['1: check'][2][0]->expression = '([C_check]<>\'\')';
-        $result['1: default'][2] = [];
-        $result['1: default'][2][] = new DefaultValueConstraint([
-            'name' => AnyValue::getInstance(),
-            'columnNames' => ['C_default'],
-            'value' => '((0))',
-        ]);
+        parent::testColumnSchema($columns);
+    }
 
-        $result['2: default'][2] = [];
+    /**
+     * MSSQL `findUniqueIndexes()` only returns UNIQUE CONSTRAINTS (`sys.key_constraints` type `'UQ'`), not UNIQUE
+     * INDEXES created via `CREATE UNIQUE INDEX`. This is a known limitation.
+     *
+     * @see \yii\db\mssql\Schema::findUniqueIndexes()
+     */
+    public function testFindUniqueIndexes(): void
+    {
+        $db = $this->getConnection(false, true);
 
-        $result['3: foreign key'][2][0]->foreignSchemaName = 'dbo';
-        $result['3: index'][2] = [];
-        $result['3: default'][2] = [];
+        if ($db->getSchema()->getTableSchema('testUniqueConstraint') !== null) {
+            $db->createCommand()->dropTable('testUniqueConstraint')->execute();
+        }
 
-        $result['4: default'][2] = [];
-        return $result;
+        $db->createCommand()->setSql(
+            <<<SQL
+            CREATE TABLE [testUniqueConstraint] (
+                [id] INT IDENTITY PRIMARY KEY,
+                [col1] VARCHAR(50),
+                [col2] VARCHAR(50),
+                CONSTRAINT [UQ_col1] UNIQUE ([col1])
+            )
+            SQL,
+        )->execute();
+
+        $db->getSchema()->refreshTableSchema('testUniqueConstraint');
+        $tableSchema = $db->getSchema()->getTableSchema('testUniqueConstraint');
+        $uniqueIndexes = $db->getSchema()->findUniqueIndexes($tableSchema);
+
+        self::assertSame(
+            ['UQ_col1' => ['col1']],
+            $uniqueIndexes,
+            'MSSQL should find UNIQUE CONSTRAINTS.',
+        );
+    }
+
+    #[DataProviderExternal(SchemaProvider::class, 'constraints')]
+    public function testTableSchemaConstraints(string $tableName, string $type, mixed $expected): void
+    {
+        $db = $this->getConnection(false, true);
+
+        $constraints = $db->schema->{'getTable' . ucfirst($type)}($tableName);
+
+        self::assertMetadataEquals($expected, $constraints);
+    }
+
+    #[DataProviderExternal(SchemaProvider::class, 'constraints')]
+    public function testTableSchemaConstraintsWithPdoUppercase(string $tableName, string $type, mixed $expected): void
+    {
+        $db = $this->getConnection(false, true);
+
+        $db->getSlavePdo(true)->setAttribute(PDO::ATTR_CASE, PDO::CASE_UPPER);
+        $constraints = $db->schema->{'getTable' . ucfirst($type)}($tableName, true);
+
+        self::assertMetadataEquals($expected, $constraints);
+    }
+
+    #[DataProviderExternal(SchemaProvider::class, 'constraints')]
+    public function testTableSchemaConstraintsWithPdoLowercase(string $tableName, string $type, mixed $expected): void
+    {
+        $db = $this->getConnection(false, true);
+
+        $db->getSlavePdo(true)->setAttribute(PDO::ATTR_CASE, PDO::CASE_LOWER);
+        $constraints = $db->schema->{'getTable' . ucfirst($type)}($tableName, true);
+
+        self::assertMetadataEquals($expected, $constraints);
     }
 
     public function testGetStringFieldsSize(): void
     {
-        /** @var Connection $db */
-        $db = $this->getConnection();
+        $db = $this->getConnection(false, true);
 
-        /** @var Schema $schema */
-        $schema = $db->schema;
-
-        $columns = $schema->getTableSchema('type', false)->columns;
+        $columns = $db->schema->getTableSchema('type', false)->columns;
 
         foreach ($columns as $name => $column) {
             $type = $column->type;
@@ -83,122 +140,62 @@ class SchemaTest extends BaseSchema
                         break;
                 }
 
-                $this->assertEquals($expectedType, $type);
-                $this->assertEquals($expectedSize, $size);
-                $this->assertEquals($expectedDbType, $dbType);
+                self::assertSame(
+                    $expectedType,
+                    $type,
+                    "'type' of column '$name' does not match.",
+                );
+                self::assertSame(
+                    $expectedSize,
+                    $size,
+                    "'size' of column '$name' does not match.",
+                );
+                self::assertSame(
+                    $expectedDbType,
+                    $dbType,
+                    "'dbType' of column '$name' does not match.",
+                );
             }
         }
     }
 
-    /**
-     * @dataProvider quoteTableNameDataProvider
-     * @param $name
-     * @param $expectedName
-     * @throws NotSupportedException
-     */
-    public function testQuoteTableName($name, $expectedName): void
+    #[DataProviderExternal(SchemaProvider::class, 'quoteTableName')]
+    public function testQuoteTableName(string $name, string $expectedName): void
     {
-        $schema = $this->getConnection()->getSchema();
-        $quotedName = $schema->quoteTableName($name);
-        $this->assertEquals($expectedName, $quotedName);
-    }
+        $db = $this->getConnection(false, true);
 
-    public static function quoteTableNameDataProvider(): array
-    {
-        return [
-            ['test', '[test]'],
-            ['test.test', '[test].[test]'],
-            ['test.test.test', '[test].[test].[test]'],
-            ['[test]', '[test]'],
-            ['[test].[test]', '[test].[test]'],
-            ['test.[test.test]', '[test].[test.test]'],
-            ['test.test.[test.test]', '[test].[test].[test.test]'],
-            ['[test].[test.test]', '[test].[test.test]'],
-        ];
-    }
+        $quotedName = $db->schema->quoteTableName($name);
 
-    /**
-     * @dataProvider getTableSchemaDataProvider
-     * @param $name
-     * @param $expectedName
-     * @throws NotSupportedException
-     */
-    public function testGetTableSchema($name, $expectedName): void
-    {
-        $schema = $this->getConnection()->getSchema();
-        $tableSchema = $schema->getTableSchema($name);
-        $this->assertEquals($expectedName, $tableSchema->name);
-    }
-
-    public static function getTableSchemaDataProvider(): array
-    {
-        return [
-            ['[dbo].[profile]', 'profile'],
-            ['dbo.profile', 'profile'],
-            ['profile', 'profile'],
-            ['dbo.[table.with.special.characters]', 'table.with.special.characters'],
-        ];
-    }
-
-    public function getExpectedColumns()
-    {
-        $columns = parent::getExpectedColumns();
-
-        unset($columns['enum_col']);
-        unset($columns['ts_default']);
-        unset($columns['bit_col']);
-        unset($columns['json_col']);
-
-        $columns['int_col']['dbType'] = 'int';
-        $columns['int_col2']['dbType'] = 'int';
-        $columns['tinyint_col']['dbType'] = 'tinyint';
-        $columns['smallint_col']['dbType'] = 'smallint';
-        $columns['float_col']['dbType'] = 'decimal(4,3)';
-        $columns['float_col']['phpType'] = 'string';
-        $columns['float_col']['type'] = 'decimal';
-        $columns['float_col2']['dbType'] = 'float';
-        $columns['float_col2']['phpType'] = 'double';
-        $columns['float_col2']['type'] = 'float';
-        $columns['float_col2']['scale'] = null;
-        $columns['blob_col']['dbType'] = 'varbinary(max)';
-        $columns['time']['dbType'] = 'datetime';
-        $columns['time']['type'] = 'datetime';
-        $columns['bool_col']['dbType'] = 'tinyint';
-        $columns['bool_col2']['dbType'] = 'tinyint';
-
-        array_walk(
-            $columns,
-            static function (&$item) {
-                $item['enumValues'] = [];
-            },
+        self::assertSame(
+            $expectedName,
+            $quotedName,
+            "Quoting table name '$name' does not match expected.",
         );
+    }
 
-        array_walk(
-            $columns,
-            static function (&$item, $name) {
-                if (!in_array($name, ['char_col', 'char_col2', 'float_col', 'numeric_col'])) {
-                    $item['size'] = null;
-                }
-            },
+    #[DataProviderExternal(SchemaProvider::class, 'getTableSchema')]
+    public function testGetTableSchema(string $name, string $expectedName): void
+    {
+        $db = $this->getConnection(false, true);
+
+        $tableSchema = $db->schema->getTableSchema($name);
+
+        self::assertSame(
+            $expectedName,
+            $tableSchema->name,
+            "Table schema name for '$name' does not match expected.",
         );
-
-        array_walk(
-            $columns,
-            static function (&$item, $name) {
-                if (!in_array($name, ['char_col', 'char_col2', 'float_col', 'numeric_col'])) {
-                    $item['precision'] = null;
-                }
-            },
-        );
-
-        return $columns;
     }
 
     public function testFindColumnsWithCatalogName(): void
     {
         $db = $this->getConnection(false);
-        $dbName = $db->createCommand('SELECT DB_NAME()')->queryScalar();
-        $tableSchema = $db->getSchema()->getTableSchema("{$dbName}.dbo.profile");
+
+        $dbName = $db->createCommand(<<<SQL
+            SELECT DB_NAME()
+            SQL,
+        )->queryScalar();
+        $tableSchema = $db->schema->getTableSchema("{$dbName}.dbo.profile");
 
         self::assertNotNull(
             $tableSchema,
@@ -220,11 +217,11 @@ class SchemaTest extends BaseSchema
     {
         $db = $this->getConnection(false);
 
-        $tableSchema = $db->getSchema()->getTableSchema('non_existent_table_xyz');
+        $tableSchema = $db->schema->getTableSchema('non_existent_table_xyz');
 
         self::assertNull(
             $tableSchema,
-            'Non-existent table should return null.',
+            'Non-existent table should return `null`.',
         );
     }
 
@@ -252,7 +249,11 @@ class SchemaTest extends BaseSchema
         $tableSchema = $db->getSchema()->getTableSchema('test_composite_pk');
 
         self::assertSame(
-            ['col_b', 'col_a', 'col_c'],
+            [
+                'col_b',
+                'col_a',
+                'col_c',
+            ],
             $tableSchema->primaryKey,
             "Composite PK columns should follow 'key_ordinal' order, not alphabetical.",
         );
@@ -304,12 +305,16 @@ class SchemaTest extends BaseSchema
 
         $db->createCommand()->createTable(
             'testPKTable',
-            ['id' => Schema::TYPE_PK, 'bar' => Schema::TYPE_INTEGER]
+            ['id' => Schema::TYPE_PK, 'bar' => Schema::TYPE_INTEGER],
         )->execute();
 
         $insertResult = $db->getSchema()->insert('testPKTable', ['bar' => 1]);
         $selectResult = $db->createCommand('select [id] from [testPKTable] where [bar]=1')->queryOne();
 
-        $this->assertEquals($selectResult['id'], $insertResult['id']);
+        self::assertSame(
+            $selectResult['id'],
+            $insertResult['id'],
+            'Inserted primary key should match selected.',
+        );
     }
 }

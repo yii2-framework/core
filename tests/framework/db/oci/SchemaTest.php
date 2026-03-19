@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 /**
  * @link https://www.yiiframework.com/
  * @copyright Copyright (c) 2008 Yii Software LLC
@@ -9,95 +11,34 @@
 namespace yiiunit\framework\db\oci;
 
 use Exception;
-use yii\db\CheckConstraint;
-use yiiunit\framework\db\AnyValue;
+use PDO;
+use PHPUnit\Framework\Attributes\DataProviderExternal;
+use PHPUnit\Framework\Attributes\Group;
+use yii\base\NotSupportedException;
 use yiiunit\base\db\BaseSchema;
+use yiiunit\framework\db\oci\providers\SchemaProvider;
 
 /**
- * @group db
- * @group oci
+ * Unit test for {@see \yii\db\oci\Schema} with Oracle driver.
+ *
+ * {@see SchemaProvider} for test case data providers.
+ *
+ * @author Wilmer Arambula <terabytesoftw@gmail.com>
+ * @since 2.2
  */
-class SchemaTest extends BaseSchema
+#[Group('db')]
+#[Group('oci')]
+#[Group('schema')]
+final class SchemaTest extends BaseSchema
 {
     public $driverName = 'oci';
 
     protected $expectedSchemas = [];
 
-    public function getExpectedColumns()
+    #[DataProviderExternal(SchemaProvider::class, 'expectedColumns')]
+    public function testColumnSchema(array $columns): void
     {
-        $columns = parent::getExpectedColumns();
-        unset($columns['enum_col']);
-        unset($columns['json_col']);
-        $columns['int_col']['dbType'] = 'NUMBER';
-        $columns['int_col']['size'] = 22;
-        $columns['int_col']['precision'] = null;
-        $columns['int_col']['scale'] = 0;
-        $columns['int_col2']['dbType'] = 'NUMBER';
-        $columns['int_col2']['size'] = 22;
-        $columns['int_col2']['precision'] = null;
-        $columns['int_col2']['scale'] = 0;
-        $columns['tinyint_col']['dbType'] = 'NUMBER';
-        $columns['tinyint_col']['type'] = 'integer';
-        $columns['tinyint_col']['size'] = 22;
-        $columns['tinyint_col']['precision'] = 3;
-        $columns['tinyint_col']['scale'] = 0;
-        $columns['smallint_col']['dbType'] = 'NUMBER';
-        $columns['smallint_col']['type'] = 'integer';
-        $columns['smallint_col']['size'] = 22;
-        $columns['smallint_col']['precision'] = null;
-        $columns['smallint_col']['scale'] = 0;
-        $columns['char_col']['type'] = 'string';
-        $columns['char_col']['dbType'] = 'CHAR';
-        $columns['char_col']['precision'] = null;
-        $columns['char_col']['size'] = 100;
-        $columns['char_col2']['dbType'] = 'VARCHAR2';
-        $columns['char_col2']['precision'] = null;
-        $columns['char_col2']['size'] = 100;
-        $columns['char_col3']['type'] = 'string';
-        $columns['char_col3']['dbType'] = 'VARCHAR2';
-        $columns['char_col3']['precision'] = null;
-        $columns['char_col3']['size'] = 4000;
-        $columns['float_col']['dbType'] = 'FLOAT';
-        $columns['float_col']['precision'] = 126;
-        $columns['float_col']['scale'] = null;
-        $columns['float_col']['size'] = 22;
-        $columns['float_col2']['dbType'] = 'FLOAT';
-        $columns['float_col2']['precision'] = 126;
-        $columns['float_col2']['scale'] = null;
-        $columns['float_col2']['size'] = 22;
-        $columns['blob_col']['dbType'] = 'BLOB';
-        $columns['blob_col']['phpType'] = 'resource';
-        $columns['blob_col']['type'] = 'binary';
-        $columns['blob_col']['size'] = 4000;
-        $columns['numeric_col']['dbType'] = 'NUMBER';
-        $columns['numeric_col']['size'] = 22;
-        $columns['time']['dbType'] = 'TIMESTAMP(6)';
-        $columns['time']['size'] = 11;
-        $columns['time']['scale'] = 6;
-        $columns['time']['defaultValue'] = null;
-        $columns['bool_col']['type'] = 'string';
-        $columns['bool_col']['phpType'] = 'string';
-        $columns['bool_col']['dbType'] = 'CHAR';
-        $columns['bool_col']['size'] = 1;
-        $columns['bool_col']['precision'] = null;
-        $columns['bool_col2']['type'] = 'string';
-        $columns['bool_col2']['phpType'] = 'string';
-        $columns['bool_col2']['dbType'] = 'CHAR';
-        $columns['bool_col2']['size'] = 1;
-        $columns['bool_col2']['precision'] = null;
-        $columns['bool_col2']['defaultValue'] = '1';
-        $columns['ts_default']['type'] = 'timestamp';
-        $columns['ts_default']['phpType'] = 'string';
-        $columns['ts_default']['dbType'] = 'TIMESTAMP(6)';
-        $columns['ts_default']['scale'] = 6;
-        $columns['ts_default']['size'] = 11;
-        $columns['bit_col']['type'] = 'string';
-        $columns['bit_col']['phpType'] = 'string';
-        $columns['bit_col']['dbType'] = 'CHAR';
-        $columns['bit_col']['size'] = 3;
-        $columns['bit_col']['precision'] = null;
-        $columns['bit_col']['defaultValue'] = '130';
-        return $columns;
+        parent::testColumnSchema($columns);
     }
 
     /**
@@ -106,128 +47,147 @@ class SchemaTest extends BaseSchema
      */
     public function testAutoincrementDisabled(): void
     {
-        $table = $this->getConnection(false)->schema->getTableSchema('order', true);
-        $this->assertFalse($table->columns['id']->autoIncrement);
+        $db = $this->getConnection(false, true);
+
+        $table = $db->schema->getTableSchema('order', true);
+
+        self::assertFalse(
+            $table->columns['id']->autoIncrement,
+            "'autoIncrement' should be disabled for Oracle.",
+        );
     }
 
-    public static function constraintsProvider(): array
+    #[DataProviderExternal(SchemaProvider::class, 'constraints')]
+    public function testTableSchemaConstraints(string $tableName, string $type, mixed $expected): void
     {
-        $result = parent::constraintsProvider();
-        $result['1: check'][2][0]->expression = '"C_check" <> \'\'';
-        $result['1: check'][2][] = new CheckConstraint([
-            'name' => AnyValue::getInstance(),
-            'columnNames' => ['C_id'],
-            'expression' => '"C_id" IS NOT NULL',
-        ]);
-        $result['1: check'][2][] = new CheckConstraint([
-            'name' => AnyValue::getInstance(),
-            'columnNames' => ['C_not_null'],
-            'expression' => '"C_not_null" IS NOT NULL',
-        ]);
-        $result['1: check'][2][] = new CheckConstraint([
-            'name' => AnyValue::getInstance(),
-            'columnNames' => ['C_unique'],
-            'expression' => '"C_unique" IS NOT NULL',
-        ]);
-        $result['1: check'][2][] = new CheckConstraint([
-            'name' => AnyValue::getInstance(),
-            'columnNames' => ['C_default'],
-            'expression' => '"C_default" IS NOT NULL',
-        ]);
+        $db = $this->getConnection(false, true);
 
-        $result['2: check'][2][] = new CheckConstraint([
-            'name' => AnyValue::getInstance(),
-            'columnNames' => ['C_id_1'],
-            'expression' => '"C_id_1" IS NOT NULL',
-        ]);
-        $result['2: check'][2][] = new CheckConstraint([
-            'name' => AnyValue::getInstance(),
-            'columnNames' => ['C_id_2'],
-            'expression' => '"C_id_2" IS NOT NULL',
-        ]);
+        $constraints = $db->schema->{'getTable' . ucfirst($type)}($tableName);
 
-        $result['3: foreign key'][2][0]->foreignSchemaName = AnyValue::getInstance();
-        $result['3: foreign key'][2][0]->onUpdate = null;
-        $result['3: index'][2] = [];
-        $result['3: check'][2][] = new CheckConstraint([
-            'name' => AnyValue::getInstance(),
-            'columnNames' => ['C_fk_id_1'],
-            'expression' => '"C_fk_id_1" IS NOT NULL',
-        ]);
-        $result['3: check'][2][] = new CheckConstraint([
-            'name' => AnyValue::getInstance(),
-            'columnNames' => ['C_fk_id_2'],
-            'expression' => '"C_fk_id_2" IS NOT NULL',
-        ]);
-        $result['3: check'][2][] = new CheckConstraint([
-            'name' => AnyValue::getInstance(),
-            'columnNames' => ['C_id'],
-            'expression' => '"C_id" IS NOT NULL',
-        ]);
+        self::assertMetadataEquals($expected, $constraints);
+    }
 
-        $result['4: check'][2][] = new CheckConstraint([
-            'name' => AnyValue::getInstance(),
-            'columnNames' => ['C_id'],
-            'expression' => '"C_id" IS NOT NULL',
-        ]);
-        $result['4: check'][2][] = new CheckConstraint([
-            'name' => AnyValue::getInstance(),
-            'columnNames' => ['C_col_2'],
-            'expression' => '"C_col_2" IS NOT NULL',
-        ]);
-        return $result;
+    #[DataProviderExternal(SchemaProvider::class, 'constraints')]
+    public function testTableSchemaConstraintsWithPdoUppercase(string $tableName, string $type, mixed $expected): void
+    {
+        $db = $this->getConnection(false, true);
+
+        $db->getSlavePdo(true)->setAttribute(PDO::ATTR_CASE, PDO::CASE_UPPER);
+        $constraints = $db->schema->{'getTable' . ucfirst($type)}($tableName, true);
+
+        self::assertMetadataEquals($expected, $constraints);
+    }
+
+    #[DataProviderExternal(SchemaProvider::class, 'constraints')]
+    public function testTableSchemaConstraintsWithPdoLowercase(string $tableName, string $type, mixed $expected): void
+    {
+        $db = $this->getConnection(false, true);
+
+        $db->getSlavePdo(true)->setAttribute(PDO::ATTR_CASE, PDO::CASE_LOWER);
+        $constraints = $db->schema->{'getTable' . ucfirst($type)}($tableName, true);
+
+        self::assertMetadataEquals($expected, $constraints);
+    }
+
+    public function testCompositeFk(): void
+    {
+        $db = $this->getConnection(false, true);
+
+        $table = $db->schema->getTableSchema('composite_fk');
+
+        self::assertCount(
+            1,
+            $table->foreignKeys,
+            'Composite FK table should have exactly one foreign key.',
+        );
+        self::assertTrue(
+            isset($table->foreignKeys['FK_COMPOSITE_FK_ORDER_ITEM']),
+            "Foreign key 'FK_COMPOSITE_FK_ORDER_ITEM' should exist.",
+        );
+        self::assertSame(
+            'order_item',
+            $table->foreignKeys['FK_COMPOSITE_FK_ORDER_ITEM'][0],
+            "Foreign key should reference the 'order_item' table.",
+        );
+        self::assertSame(
+            'order_id',
+            $table->foreignKeys['FK_COMPOSITE_FK_ORDER_ITEM']['order_id'],
+            "Foreign key column 'order_id' should map correctly.",
+        );
+        self::assertSame(
+            'item_id',
+            $table->foreignKeys['FK_COMPOSITE_FK_ORDER_ITEM']['item_id'],
+            "Foreign key column 'item_id' should map correctly.",
+        );
     }
 
     public function testFindUniqueIndexes(): void
     {
-        if ($this->driverName === 'sqlsrv') {
-            $this->markTestSkipped('`\yii\db\mssql\Schema::findUniqueIndexes()` returns only unique constraints not unique indexes.');
-        }
-
         $db = $this->getConnection();
 
         try {
             $db->createCommand()->dropTable('uniqueIndex')->execute();
         } catch (Exception $e) {
         }
-        $db->createCommand()->createTable('uniqueIndex', [
-            'somecol' => 'string',
-            'someCol2' => 'string',
-            'someCol3' => 'string',
-        ])->execute();
 
-        /** @var Schema $schema */
-        $schema = $db->schema;
+        $db->createCommand()->createTable(
+            'uniqueIndex',
+            [
+                'somecol' => 'string',
+                'someCol2' => 'string',
+                'someCol3' => 'string',
+            ],
+        )->execute();
 
-        $uniqueIndexes = $schema->findUniqueIndexes($schema->getTableSchema('uniqueIndex', true));
-        $this->assertEquals([], $uniqueIndexes);
+        $uniqueIndexes = $db->schema->findUniqueIndexes($db->schema->getTableSchema('uniqueIndex', true));
 
-        $db->createCommand()->createIndex('somecolUnique', 'uniqueIndex', 'somecol', true)->execute();
+        self::assertEmpty(
+            $uniqueIndexes,
+            'New table should have no unique indexes.',
+        );
 
-        $uniqueIndexes = $schema->findUniqueIndexes($schema->getTableSchema('uniqueIndex', true));
-        $this->assertEquals([
-            'somecolUnique' => ['somecol'],
-        ], $uniqueIndexes);
+        $db->createCommand()->createIndex(
+            'somecolUnique',
+            'uniqueIndex',
+            'somecol',
+            true,
+        )->execute();
+
+        $uniqueIndexes = $db->schema->findUniqueIndexes($db->schema->getTableSchema('uniqueIndex', true));
+
+        self::assertEquals(
+            ['somecolUnique' => ['somecol']],
+            $uniqueIndexes,
+            'Table should have one unique index after creation.',
+        );
 
         // create another column with upper case letter that fails postgres
         // see https://github.com/yiisoft/yii2/issues/10613
         $db->createCommand()->createIndex('someCol2Unique', 'uniqueIndex', 'someCol2', true)->execute();
+        $uniqueIndexes = $db->schema->findUniqueIndexes($db->schema->getTableSchema('uniqueIndex', true));
 
-        $uniqueIndexes = $schema->findUniqueIndexes($schema->getTableSchema('uniqueIndex', true));
-        $this->assertEquals([
-            'somecolUnique' => ['somecol'],
-            'someCol2Unique' => ['someCol2'],
-        ], $uniqueIndexes);
+        self::assertEquals(
+            [
+                'somecolUnique' => ['somecol'],
+                'someCol2Unique' => ['someCol2'],
+            ],
+            $uniqueIndexes,
+            'Table should have two unique indexes.',
+        );
 
         // see https://github.com/yiisoft/yii2/issues/13814
         $db->createCommand()->createIndex('another unique index', 'uniqueIndex', 'someCol3', true)->execute();
+        $uniqueIndexes = $db->schema->findUniqueIndexes($db->schema->getTableSchema('uniqueIndex', true));
 
-        $uniqueIndexes = $schema->findUniqueIndexes($schema->getTableSchema('uniqueIndex', true));
-        $this->assertEquals([
-            'somecolUnique' => ['somecol'],
-            'someCol2Unique' => ['someCol2'],
-            'another unique index' => ['someCol3'],
-        ], $uniqueIndexes);
+        self::assertEquals(
+            [
+                'somecolUnique' => ['somecol'],
+                'someCol2Unique' => ['someCol2'],
+                'another unique index' => ['someCol3'],
+            ],
+            $uniqueIndexes,
+            'Table should have three unique indexes.',
+        );
     }
 
     /**
@@ -241,17 +201,23 @@ class SchemaTest extends BaseSchema
     {
         $db = $this->getConnection();
 
-        if ($db->getSchema()->getTableSchema('lob_test') !== null) {
+        if ($db->schema->getTableSchema('lob_test') !== null) {
             $db->createCommand()->dropTable('lob_test')->execute();
         }
 
         $db->createCommand()->setSql(
-            'CREATE TABLE "lob_test" ("id" NUMBER(10) NOT NULL, "content" CLOB, "data" BLOB, PRIMARY KEY ("id"))'
+            <<<SQL
+            CREATE TABLE "lob_test" (
+                "id" NUMBER(10) NOT NULL,
+                "content" CLOB,
+                "data" BLOB,
+                PRIMARY KEY ("id")
+            )
+            SQL
         )->execute();
+        $indexes = $db->schema->getTableIndexes('lob_test', true);
 
-        $indexes = $db->getSchema()->getTableIndexes('lob_test', true);
-
-        $this->assertCount(
+        self::assertCount(
             1,
             $indexes,
             'Only the PRIMARY KEY index should remain after filtering LOB indexes.',
@@ -261,12 +227,12 @@ class SchemaTest extends BaseSchema
             array_filter($indexes, static fn ($index): bool => $index->isPrimary),
         );
 
-        $this->assertCount(
+        self::assertCount(
             1,
             $primaryIndexes,
             'Exactly one PRIMARY KEY index should exist.',
         );
-        $this->assertSame(
+        self::assertSame(
             ['id'],
             $primaryIndexes[0]->columnNames,
             "PRIMARY KEY index should contain only the 'id' column.",
@@ -274,11 +240,11 @@ class SchemaTest extends BaseSchema
 
         foreach ($indexes as $index) {
             foreach ($index->columnNames as $columnName) {
-                $this->assertNotNull(
+                self::assertNotNull(
                     $columnName,
                     "LOB index with 'NULL' column name should be excluded.",
                 );
-                $this->assertIsString(
+                self::assertIsString(
                     $columnName,
                     'Index column name must be a string.',
                 );
@@ -288,8 +254,13 @@ class SchemaTest extends BaseSchema
         $db->createCommand()->dropTable('lob_test')->execute();
     }
 
-    public function testCompositeFk(): void
+    public function testThrowNotSupportedExceptionWhenTableSchemaConstraintsDefaultValues(): void
     {
-        $this->markTestSkipped('Should be fixed.');
+        $db = $this->getConnection(false, true);
+
+        $this->expectException(NotSupportedException::class);
+        $this->expectExceptionMessage('Oracle does not support default value constraints.');
+
+        $db->schema->getTableDefaultValues('T_constraints_1');
     }
 }

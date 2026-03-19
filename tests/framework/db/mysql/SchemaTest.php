@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 /**
  * @link https://www.yiiframework.com/
  * @copyright Copyright (c) 2008 Yii Software LLC
@@ -9,164 +11,178 @@
 namespace yiiunit\framework\db\mysql;
 
 use PDO;
+use PHPUnit\Framework\Attributes\DataProviderExternal;
+use PHPUnit\Framework\Attributes\Group;
+use yii\base\NotSupportedException;
 use yii\db\Expression;
 use yii\db\mysql\ColumnSchema;
 use yii\db\mysql\Schema;
 use yiiunit\base\db\BaseSchema;
-use yiiunit\framework\db\AnyCaseValue;
+use yiiunit\framework\db\mysql\providers\SchemaProvider;
+
+use function stripos;
 
 /**
- * @group db
- * @group mysql
+ * Unit test for {@see \yii\db\mysql\Schema} with MySQL driver.
+ *
+ * {@see SchemaProvider} for test case data providers.
+ *
+ * @author Wilmer Arambula <terabytesoftw@gmail.com>
+ * @since 2.2
  */
-class SchemaTest extends BaseSchema
+#[Group('db')]
+#[Group('mysql')]
+#[Group('schema')]
+final class SchemaTest extends BaseSchema
 {
     public $driverName = 'mysql';
 
     public function testLoadDefaultDatetimeColumn(): void
     {
+        $db = $this->getConnection(false, true);
+
         $sql = <<<SQL
-CREATE TABLE  IF NOT EXISTS `datetime_test`  (
-  `id` int(11) NOT NULL AUTO_INCREMENT,
-  `dt` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  `ts` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  PRIMARY KEY (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8
-SQL;
+        CREATE TABLE  IF NOT EXISTS `datetime_test`  (
+            `id` int(11) NOT NULL AUTO_INCREMENT,
+            `dt` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            `ts` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+            PRIMARY KEY (`id`)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8
+        SQL;
 
-        $this->getConnection()->createCommand($sql)->execute();
+        $db->createCommand($sql)->execute();
 
-        $schema = $this->getConnection()->getTableSchema('datetime_test');
+        $schema = $db->getTableSchema('datetime_test');
 
         $dt = $schema->columns['dt'];
 
-        $this->assertInstanceOf(Expression::class, $dt->defaultValue);
-        $this->assertEquals('CURRENT_TIMESTAMP', (string)$dt->defaultValue);
+        self::assertInstanceOf(
+            Expression::class,
+            $dt->defaultValue,
+            "'defaultValue' should be an Expression instance.",
+        );
+        self::assertEquals(
+            'CURRENT_TIMESTAMP',
+            (string) $dt->defaultValue,
+            "'defaultValue' should be CURRENT_TIMESTAMP.",
+        );
     }
 
     public function testDefaultDatetimeColumnWithMicrosecs(): void
     {
+        $db = $this->getConnection(false, true);
+
         $sql = <<<SQL
-CREATE TABLE  IF NOT EXISTS `current_timestamp_test`  (
-  `dt` datetime(2) NOT NULL DEFAULT CURRENT_TIMESTAMP(2),
-  `ts` timestamp(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8
-SQL;
+        CREATE TABLE  IF NOT EXISTS `current_timestamp_test`  (
+            `dt` datetime(2) NOT NULL DEFAULT CURRENT_TIMESTAMP(2),
+            `ts` timestamp(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8
+        SQL;
 
-        $this->getConnection()->createCommand($sql)->execute();
+        $db->createCommand($sql)->execute();
 
-        $schema = $this->getConnection()->getTableSchema('current_timestamp_test');
+        $schema = $db->getTableSchema('current_timestamp_test');
 
         $dt = $schema->columns['dt'];
-        $this->assertInstanceOf(Expression::class, $dt->defaultValue);
-        $this->assertEquals('CURRENT_TIMESTAMP(2)', (string)$dt->defaultValue);
+
+        self::assertInstanceOf(
+            Expression::class,
+            $dt->defaultValue,
+            "'defaultValue' should be an Expression instance.",
+        );
+        self::assertEquals(
+            'CURRENT_TIMESTAMP(2)',
+            (string) $dt->defaultValue,
+            "'defaultValue' should be 'CURRENT_TIMESTAMP(2)'.",
+        );
 
         $ts = $schema->columns['ts'];
-        $this->assertInstanceOf(Expression::class, $ts->defaultValue);
-        $this->assertEquals('CURRENT_TIMESTAMP(3)', (string)$ts->defaultValue);
+
+        self::assertInstanceOf(
+            Expression::class,
+            $ts->defaultValue,
+            "'defaultValue' should be an Expression instance.",
+        );
+        self::assertEquals(
+            'CURRENT_TIMESTAMP(3)',
+            (string) $ts->defaultValue,
+            "'defaultValue' should be 'CURRENT_TIMESTAMP(3)'.",
+        );
     }
 
     public function testGetSchemaNames(): void
     {
-        $this->markTestSkipped('Schemas are not supported in MySQL.');
+        $this->expectException(NotSupportedException::class);
+        $this->expectExceptionMessage(Schema::class . ' does not support fetching all schema names.');
+
+        parent::testGetSchemaNames();
     }
 
-    public static function constraintsProvider(): array
+    #[DataProviderExternal(SchemaProvider::class, 'constraints')]
+    public function testTableSchemaConstraints(string $tableName, string $type, mixed $expected): void
     {
-        $result = parent::constraintsProvider();
+        $db = $this->getConnection(false, true);
 
-        $result['1: check'][2][0]->columnNames = null;
-        $result['1: check'][2][0]->expression = "`C_check` <> ''";
-        $result['2: primary key'][2]->name = null;
-
-        $result['3: foreign key'][2][0]->foreignTableName = new AnyCaseValue('T_constraints_2');
-
-        return $result;
-    }
-
-    /**
-     * @dataProvider constraintsProvider
-     * @param string $tableName
-     * @param string $type
-     * @param mixed $expected
-     */
-    public function testTableSchemaConstraints($tableName, $type, $expected): void
-    {
-        $version = $this->getConnection(false)->getServerVersion();
-
-        if ($expected === false) {
-            $this->expectException('yii\base\NotSupportedException');
-        }
+        $version = $db->getServerVersion();
 
         if (
             $this->driverName === 'mysql' &&
-            \stripos($version, 'MariaDb') === false &&
+            stripos($version, 'MariaDb') === false &&
             $tableName === 'T_constraints_1' &&
             $type === 'checks'
         ) {
             $expected[0]->expression = "(`C_check` <> _utf8mb4\\'\\')";
         }
 
-        $constraints = $this->getConnection(false)->getSchema()->{'getTable' . ucfirst($type)}($tableName);
-        $this->assertMetadataEquals($expected, $constraints);
+        $constraints = $db->schema->{'getTable' . ucfirst($type)}($tableName);
+
+        self::assertMetadataEquals($expected, $constraints);
     }
 
-    /**
-     * @dataProvider uppercaseConstraintsProvider
-     * @param string $tableName
-     * @param string $type
-     * @param mixed $expected
-     */
-    public function testTableSchemaConstraintsWithPdoUppercase($tableName, $type, $expected): void
+    #[DataProviderExternal(SchemaProvider::class, 'constraints')]
+    public function testTableSchemaConstraintsWithPdoUppercase(string $tableName, string $type, mixed $expected): void
     {
-        $version = $this->getConnection(false)->getServerVersion();
+        $db = $this->getConnection(false, true);
 
-        if ($expected === false) {
-            $this->expectException('yii\base\NotSupportedException');
-        }
+        $version = $db->getServerVersion();
 
         if (
             $this->driverName === 'mysql' &&
-            \stripos($version, 'MariaDb') === false &&
+            stripos($version, 'MariaDb') === false &&
             $tableName === 'T_constraints_1' &&
             $type === 'checks'
         ) {
             $expected[0]->expression = "(`C_check` <> _utf8mb4\\'\\')";
         }
 
-        $connection = $this->getConnection(false);
-        $connection->getSlavePdo(true)->setAttribute(PDO::ATTR_CASE, PDO::CASE_UPPER);
-        $constraints = $connection->getSchema()->{'getTable' . ucfirst($type)}($tableName, true);
-        $this->assertMetadataEquals($expected, $constraints);
+        $db->getSlavePdo(true)->setAttribute(PDO::ATTR_CASE, PDO::CASE_UPPER);
+
+        $constraints = $db->schema->{'getTable' . ucfirst($type)}($tableName, true);
+
+        self::assertMetadataEquals($expected, $constraints);
     }
 
-    /**
-     * @dataProvider lowercaseConstraintsProvider
-     * @param string $tableName
-     * @param string $type
-     * @param mixed $expected
-     */
-    public function testTableSchemaConstraintsWithPdoLowercase($tableName, $type, $expected): void
+    #[DataProviderExternal(SchemaProvider::class, 'constraints')]
+    public function testTableSchemaConstraintsWithPdoLowercase(string $tableName, string $type, mixed $expected): void
     {
-        $version = $this->getConnection(false)->getServerVersion();
+        $db = $this->getConnection(false, true);
 
-        if ($expected === false) {
-            $this->expectException('yii\base\NotSupportedException');
-        }
+        $version = $db->getServerVersion();
 
         if (
             $this->driverName === 'mysql' &&
-            \stripos($version, 'MariaDb') === false &&
+            stripos($version, 'MariaDb') === false &&
             $tableName === 'T_constraints_1' &&
             $type === 'checks'
         ) {
             $expected[0]->expression = "(`C_check` <> _utf8mb4\\'\\')";
         }
 
-        $connection = $this->getConnection(false);
-        $connection->getSlavePdo(true)->setAttribute(PDO::ATTR_CASE, PDO::CASE_LOWER);
-        $constraints = $connection->getSchema()->{'getTable' . ucfirst($type)}($tableName, true);
-        $this->assertMetadataEquals($expected, $constraints);
+        $db->getSlavePdo(true)->setAttribute(PDO::ATTR_CASE, PDO::CASE_LOWER);
+
+        $constraints = $db->schema->{'getTable' . ucfirst($type)}($tableName, true);
+
+        self::assertMetadataEquals($expected, $constraints);
     }
 
     /**
@@ -183,22 +199,42 @@ SQL;
          * returns in response to the query `SHOW FULL COLUMNS FROM ...`
          */
         $schema = new Schema();
-        $column = $this->invokeMethod($schema, 'loadColumnSchema', [[
-            'field' => 'emulated_MariaDB_field',
-            'type' => 'timestamp',
-            'collation' => null,
-            'null' => 'NO',
-            'key' => '',
-            'default' => 'current_timestamp()',
-            'extra' => '',
-            'privileges' => 'select,insert,update,references',
-            'comment' => '',
-        ]]);
+
+        $column = $this->invokeMethod(
+            $schema,
+            'loadColumnSchema',
+            [
+                [
+                    'field' => 'emulated_MariaDB_field',
+                    'type' => 'timestamp',
+                    'collation' => null,
+                    'null' => 'NO',
+                    'key' => '',
+                    'default' => 'current_timestamp()',
+                    'extra' => '',
+                    'privileges' => 'select,insert,update,references',
+                    'comment' => '',
+                ],
+            ],
+        );
+
         $column->defaultValue = $column->defaultPhpTypecast($column->defaultValue);
 
-        $this->assertInstanceOf(ColumnSchema::class, $column);
-        $this->assertInstanceOf(Expression::class, $column->defaultValue);
-        $this->assertEquals('CURRENT_TIMESTAMP', $column->defaultValue);
+        self::assertInstanceOf(
+            ColumnSchema::class,
+            $column,
+            "'column' should be a ColumnSchema instance.",
+        );
+        self::assertInstanceOf(
+            Expression::class,
+            $column->defaultValue,
+            "'defaultValue' should be an Expression instance.",
+        );
+        self::assertEquals(
+            'CURRENT_TIMESTAMP',
+            $column->defaultValue,
+            "'defaultValue' should be 'CURRENT_TIMESTAMP'.",
+        );
     }
 
     /**
@@ -210,106 +246,46 @@ SQL;
     public function testAlternativeDisplayOfDefaultCurrentTimestampAsNullInMariaDB(): void
     {
         $schema = new Schema();
-        $column = $this->invokeMethod($schema, 'loadColumnSchema', [[
-            'field' => 'emulated_MariaDB_field',
-            'type' => 'timestamp',
-            'collation' => null,
-            'null' => 'NO',
-            'key' => '',
-            'default' => null,
-            'extra' => '',
-            'privileges' => 'select,insert,update,references',
-            'comment' => '',
-        ]]);
-        $column->defaultValue = $column->defaultPhpTypecast($column->defaultValue);
 
-        $this->assertInstanceOf(ColumnSchema::class, $column);
-        $this->assertEquals(null, $column->defaultValue);
-    }
-
-    public function getExpectedColumns()
-    {
-        $version = $this->getConnection(false)->getServerVersion();
-
-        $columns = array_merge(
-            parent::getExpectedColumns(),
+        $column = $this->invokeMethod(
+            $schema,
+            'loadColumnSchema',
             [
-                'int_col' => [
-                    'type' => 'integer',
-                    'dbType' => 'int',
-                    'phpType' => 'integer',
-                    'allowNull' => false,
-                    'autoIncrement' => false,
-                    'enumValues' => null,
-                    'size' => null,
-                    'precision' => null,
-                    'scale' => null,
-                    'defaultValue' => null,
+                [
+                    'field' => 'emulated_MariaDB_field',
+                    'type' => 'timestamp',
+                    'collation' => null,
+                    'null' => 'NO',
+                    'key' => '',
+                    'default' => null,
+                    'extra' => '',
+                    'privileges' => 'select,insert,update,references',
+                    'comment' => '',
                 ],
-                'int_col2' => [
-                    'type' => 'integer',
-                    'dbType' => 'int',
-                    'phpType' => 'integer',
-                    'allowNull' => true,
-                    'autoIncrement' => false,
-                    'enumValues' => null,
-                    'size' => null,
-                    'precision' => null,
-                    'scale' => null,
-                    'defaultValue' => 1,
-                ],
-                'int_col3' => [
-                    'type' => 'integer',
-                    'dbType' => 'int unsigned',
-                    'phpType' => 'integer',
-                    'allowNull' => true,
-                    'autoIncrement' => false,
-                    'enumValues' => null,
-                    'size' => null,
-                    'precision' => null,
-                    'scale' => null,
-                    'defaultValue' => 1,
-                ],
-                'tinyint_col' => [
-                    'type' => 'tinyint',
-                    'dbType' => 'tinyint',
-                    'phpType' => 'integer',
-                    'allowNull' => true,
-                    'autoIncrement' => false,
-                    'enumValues' => null,
-                    'size' => null,
-                    'precision' => null,
-                    'scale' => null,
-                    'defaultValue' => 1,
-                ],
-                'smallint_col' => [
-                    'type' => 'smallint',
-                    'dbType' => 'smallint',
-                    'phpType' => 'integer',
-                    'allowNull' => true,
-                    'autoIncrement' => false,
-                    'enumValues' => null,
-                    'size' => null,
-                    'precision' => null,
-                    'scale' => null,
-                    'defaultValue' => 1,
-                ],
-                'bigint_col' => [
-                    'type' => 'bigint',
-                    'dbType' => 'bigint unsigned',
-                    'phpType' => 'string',
-                    'allowNull' => true,
-                    'autoIncrement' => false,
-                    'enumValues' => null,
-                    'size' => null,
-                    'precision' => null,
-                    'scale' => null,
-                    'defaultValue' => null,
-                ],
-            ]
+            ],
         );
 
-        if (\stripos($version, 'MariaDb') !== false) {
+        $column->defaultValue = $column->defaultPhpTypecast($column->defaultValue);
+
+        self::assertInstanceOf(
+            ColumnSchema::class,
+            $column,
+            "'column' should be a ColumnSchema instance.",
+        );
+        self::assertNull(
+            $column->defaultValue,
+            "'defaultValue' should be 'null'.",
+        );
+    }
+
+    #[DataProviderExternal(SchemaProvider::class, 'expectedColumns')]
+    public function testColumnSchema(array $columns): void
+    {
+        $db = $this->getConnection(false, true);
+
+        $version = $db->getServerVersion();
+
+        if (stripos($version, 'MariaDb') !== false) {
             $columns['int_col']['dbType'] = 'int(11)';
             $columns['int_col']['size'] = 11;
             $columns['int_col']['precision'] = 11;
@@ -330,6 +306,16 @@ SQL;
             $columns['bigint_col']['precision'] = 20;
         }
 
-        return $columns;
+        parent::testColumnSchema($columns);
+    }
+
+    public function testThrowNotSupportedExceptionWhenTableSchemaConstraintsDefaultValues(): void
+    {
+        $db = $this->getConnection(false, true);
+
+        $this->expectException(NotSupportedException::class);
+        $this->expectExceptionMessage('MySQL does not support default value constraints.');
+
+        $db->schema->getTableDefaultValues('T_constraints_1');
     }
 }

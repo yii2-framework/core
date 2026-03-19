@@ -62,3 +62,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - refactor(db): modernize PostgreSQL `QueryBuilder` add `declare(strict_types=1)`, heredoc SQL, `::class` constants, spread operator, `str_contains()`, fix `resetSequence()` error message typo, `@see` doc links.
 - refactor(db): modernize SQLite `Schema` add `declare(strict_types=1)`, `sqlite_schema`, `::class`, `match`, `str_contains()`, `??`, lowercase PRAGMAs, `@see` doc links.
 - refactor(db): modernize SQLite `QueryBuilder` native `ON CONFLICT` upsert, fix `resetSequence()` SQL injection, `declare(strict_types=1)`, heredoc SQL, `::class`, spread operator, `@see` doc links.
+- test(db): normalize Schema tests with external providers, PHPUnit 10 attributes, `self::assert*()`, explicit exception tests, `final` driver classes; fix Oracle/MSSQL skipped tests.

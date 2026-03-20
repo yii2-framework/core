@@ -14,7 +14,7 @@ use yii\db\ColumnSchemaBuilder;
 use yii\db\Schema;
 
 /**
- * Data provider for {@see \yiiunit\framework\db\sqlite\QueryBuilderTest} column type test cases.
+ * Data provider for {@see \yiiunit\framework\db\sqlite\ColumnTypeTest} column type test cases.
  *
  * Provides SQLite-specific input/output pairs for column type operations.
  *

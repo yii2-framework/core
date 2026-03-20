@@ -83,21 +83,6 @@ final class LikeConditionTest extends TestCase
         );
     }
 
-    public function testThrowInvalidArgumentExceptionWhenFromArrayDefinitionHasMissingOperands(): void
-    {
-        $this->expectException(InvalidArgumentException::class);
-        $this->expectExceptionMessage("Operator 'LIKE' requires two operands.");
-
-        LikeCondition::fromArrayDefinition('LIKE', []);
-    }
-
-    public function testThrowInvalidArgumentExceptionWhenFromArrayDefinitionHasOneOperand(): void
-    {
-        $this->expectException(InvalidArgumentException::class);
-        $this->expectExceptionMessage("Operator 'NOT LIKE' requires two operands.");
-
-        LikeCondition::fromArrayDefinition('NOT LIKE', ['name']);
-    }
 
     public function testSetEscapingReplacements(): void
     {
@@ -142,5 +127,33 @@ final class LikeConditionTest extends TestCase
             $condition->getEscapingReplacements(),
             "Setting escaping replacements to 'null' should delegate escaping to the builder.",
         );
+    }
+
+    public function testSetEscapingReplacementsToEmptyArray(): void
+    {
+        $condition = new LikeCondition('name', 'LIKE', 'foo%');
+
+        $condition->setEscapingReplacements([]);
+
+        self::assertEmpty(
+            $condition->getEscapingReplacements(),
+            "Setting escaping replacements to an empty array should keep builder-managed escaping semantics.",
+        );
+    }
+
+   public function testThrowInvalidArgumentExceptionWhenFromArrayDefinitionHasMissingOperands(): void
+    {
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage("Operator 'LIKE' requires two operands.");
+
+        LikeCondition::fromArrayDefinition('LIKE', []);
+    }
+
+    public function testThrowInvalidArgumentExceptionWhenFromArrayDefinitionHasOneOperand(): void
+    {
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage("Operator 'NOT LIKE' requires two operands.");
+
+        LikeCondition::fromArrayDefinition('NOT LIKE', ['name']);
     }
 }

@@ -38,9 +38,11 @@ final class InConditionBuilderTest extends BaseDatabase
     #[DataProviderExternal(InConditionBuilderProvider::class, 'buildCondition')]
     public function testBuildCondition(array|object $condition, string $expected, array $expectedParams): void
     {
-        $query = (new Query())->where($condition);
-
         $db = $this->getConnection(false, false);
+
+        $query = new Query();
+
+        $query->where($condition);
 
         $queryBuilder = $db->queryBuilder;
 

@@ -36,7 +36,7 @@ final class SimpleConditionTest extends TestCase
         self::assertSame(
             '=',
             $condition->getOperator(),
-            'Operator should match the provided operator.',
+            'Operator should match.',
         );
         self::assertSame(
             'b',

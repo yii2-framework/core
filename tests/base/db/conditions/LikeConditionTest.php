@@ -36,7 +36,7 @@ final class LikeConditionTest extends TestCase
         self::assertSame(
             'LIKE',
             $condition->getOperator(),
-            'Operator should match the provided operator.',
+            'Operator should match.',
         );
         self::assertSame(
             'foo%',

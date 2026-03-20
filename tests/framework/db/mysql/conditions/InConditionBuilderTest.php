@@ -38,7 +38,9 @@ final class InConditionBuilderTest extends BaseDatabase
     {
         $db = $this->getConnection(false, false);
 
-        $query = (new Query())->where($condition);
+        $query = new Query();
+
+        $query->where($condition);
 
         [$sql, $params] = $db->queryBuilder->build($query);
 

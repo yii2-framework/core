@@ -55,7 +55,9 @@ final class LikeConditionBuilderTest extends BaseDatabase
             $this->markTestSkipped('Could not execute Connection::quoteValue() method: ' . $e->getMessage());
         }
 
-        $query = (new Query())->where($condition);
+        $query = new Query();
+
+        $query->where($condition);
 
         [$sql, $params] = $db->queryBuilder->build($query);
 

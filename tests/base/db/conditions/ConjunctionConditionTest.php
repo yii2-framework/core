@@ -41,7 +41,7 @@ final class ConjunctionConditionTest extends TestCase
         self::assertSame(
             'AND',
             $condition->getOperator(),
-            "Operator should be 'AND'.",
+            'Operator should match.',
         );
     }
 

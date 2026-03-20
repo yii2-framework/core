@@ -34,9 +34,11 @@ final class LikeConditionBuilderTest extends BaseDatabase
     #[DataProviderExternal(LikeConditionBuilderProvider::class, 'buildCondition')]
     public function testBuildCondition(array|object $condition, string $expected, array $expectedParams): void
     {
-        $query = (new Query())->where($condition);
-
         $db = $this->getConnection(false, false);
+
+        $query = new Query();
+
+        $query->where($condition);
 
         [$sql, $params] = $db->queryBuilder->build($query);
 

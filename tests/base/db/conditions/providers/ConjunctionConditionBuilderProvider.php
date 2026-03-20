@@ -94,6 +94,13 @@ class ConjunctionConditionBuilderProvider
                 SQL,
                 [':qp0' => 1],
             ],
+            'or with hash and subquery' => [
+                ['or', ['expired' => false], (new Query())->select('count(*) > 1')->from('queue')],
+                <<<SQL
+                ([[expired]]=:qp0) OR ((SELECT count(*) > 1 FROM [[queue]]))
+                SQL,
+                [':qp0' => false],
+            ],
             'or with nested or' => [
                 ['or', 'type=1', ['or', 'id=1', 'id=2']],
                 <<<SQL

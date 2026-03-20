@@ -12,6 +12,8 @@ namespace yiiunit\framework\db\sqlite\conditions;
 
 use PHPUnit\Framework\Attributes\DataProviderExternal;
 use PHPUnit\Framework\Attributes\Group;
+use yii\base\InvalidArgumentException;
+use yii\db\conditions\LikeCondition;
 use yii\db\Query;
 use yiiunit\base\db\BaseDatabase;
 use yiiunit\framework\db\sqlite\conditions\providers\LikeConditionBuilderProvider;
@@ -25,8 +27,8 @@ use yiiunit\framework\db\sqlite\conditions\providers\LikeConditionBuilderProvide
  * @since 2.2
  */
 #[Group('db')]
-#[Group('condition')]
 #[Group('sqlite')]
+#[Group('condition')]
 final class LikeConditionBuilderTest extends BaseDatabase
 {
     protected $driverName = 'sqlite';
@@ -50,5 +52,24 @@ final class LikeConditionBuilderTest extends BaseDatabase
             $params,
             'Bound parameters do not match expected parameters.',
         );
+    }
+
+    public function testThrowInvalidArgumentExceptionWhenFromArrayDefinitionHasMissingOperands(): void
+    {
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage("Operator 'LIKE' requires two operands.");
+
+        LikeCondition::fromArrayDefinition('LIKE', []);
+    }
+
+    public function testThrowInvalidArgumentExceptionWhenParseOperatorReceivesInvalidOperator(): void
+    {
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage("Invalid operator 'INVALID'.");
+
+        $condition = new LikeCondition('name', 'INVALID', 'value');
+
+        $db = $this->getConnection(false, false);
+        $db->getQueryBuilder()->buildExpression($condition);
     }
 }

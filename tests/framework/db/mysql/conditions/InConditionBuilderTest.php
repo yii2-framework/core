@@ -27,8 +27,8 @@ use yiiunit\framework\db\mysql\conditions\providers\InConditionBuilderProvider;
  * @since 2.2
  */
 #[Group('db')]
-#[Group('condition')]
 #[Group('mysql')]
+#[Group('condition')]
 final class InConditionBuilderTest extends BaseDatabase
 {
     protected $driverName = 'mysql';

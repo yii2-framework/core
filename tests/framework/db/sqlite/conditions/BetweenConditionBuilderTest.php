@@ -8,30 +8,30 @@ declare(strict_types=1);
  * @license https://www.yiiframework.com/license/
  */
 
-namespace yiiunit\framework\db\pgsql\conditions;
+namespace yiiunit\framework\db\sqlite\conditions;
 
 use PHPUnit\Framework\Attributes\DataProviderExternal;
 use PHPUnit\Framework\Attributes\Group;
 use yii\db\Query;
 use yiiunit\base\db\BaseDatabase;
-use yiiunit\framework\db\pgsql\conditions\providers\LikeConditionBuilderProvider;
+use yiiunit\base\db\conditions\providers\BetweenConditionBuilderProvider;
 
 /**
- * Unit test for {@see \yii\db\conditions\LikeConditionBuilder} with PostgreSQL driver.
+ * Unit test for {@see \yii\db\conditions\BetweenConditionBuilder} with SQLite driver.
  *
- * {@see LikeConditionBuilderProvider} for test case data providers.
+ * {@see BetweenConditionBuilderProvider} for test case data providers.
  *
  * @author Wilmer Arambula <terabytesoftw@gmail.com>
  * @since 2.2
  */
 #[Group('db')]
-#[Group('pgsql')]
+#[Group('sqlite')]
 #[Group('condition')]
-final class LikeConditionBuilderTest extends BaseDatabase
+final class BetweenConditionBuilderTest extends BaseDatabase
 {
-    protected $driverName = 'pgsql';
+    protected $driverName = 'sqlite';
 
-    #[DataProviderExternal(LikeConditionBuilderProvider::class, 'buildCondition')]
+    #[DataProviderExternal(BetweenConditionBuilderProvider::class, 'buildCondition')]
     public function testBuildCondition(array|object $condition, string $expected, array $expectedParams): void
     {
         $query = (new Query())->where($condition);

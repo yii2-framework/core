@@ -25,8 +25,8 @@ use yiiunit\base\db\conditions\providers\LikeConditionBuilderProvider;
  * @since 2.2
  */
 #[Group('db')]
-#[Group('condition')]
 #[Group('mysql')]
+#[Group('condition')]
 final class LikeConditionBuilderTest extends BaseDatabase
 {
     protected $driverName = 'mysql';

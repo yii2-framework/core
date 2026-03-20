@@ -27,8 +27,8 @@ use yiiunit\framework\db\pgsql\conditions\providers\InConditionBuilderProvider;
  * @since 2.2
  */
 #[Group('db')]
-#[Group('condition')]
 #[Group('pgsql')]
+#[Group('condition')]
 final class InConditionBuilderTest extends BaseDatabase
 {
     protected $driverName = 'pgsql';

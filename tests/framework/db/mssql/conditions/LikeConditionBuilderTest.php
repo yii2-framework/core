@@ -25,8 +25,8 @@ use yiiunit\framework\db\mssql\conditions\providers\LikeConditionBuilderProvider
  * @since 2.2
  */
 #[Group('db')]
-#[Group('condition')]
 #[Group('mssql')]
+#[Group('condition')]
 final class LikeConditionBuilderTest extends BaseDatabase
 {
     protected $driverName = 'sqlsrv';

@@ -29,8 +29,8 @@ use yiiunit\framework\db\mssql\conditions\providers\InConditionBuilderProvider;
  * @since 2.2
  */
 #[Group('db')]
-#[Group('condition')]
 #[Group('mssql')]
+#[Group('condition')]
 final class InConditionBuilderTest extends BaseDatabase
 {
     protected $driverName = 'sqlsrv';

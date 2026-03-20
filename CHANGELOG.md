@@ -64,3 +64,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - refactor(db): modernize SQLite `QueryBuilder` native `ON CONFLICT` upsert, fix `resetSequence()` SQL injection, `declare(strict_types=1)`, heredoc SQL, `::class`, spread operator, `@see` doc links.
 - test(db): normalize Schema tests with external providers, PHPUnit 10 attributes, `self::assert*()`, explicit exception tests, `final` driver classes; fix Oracle/MSSQL skipped tests.
 - test(db): extract `LikeConditionBuilder` tests into dedicated classes with external providers and driver-specific escape transformations.
+- test(db): extract `BetweenConditionBuilder` tests into dedicated classes with external providers.

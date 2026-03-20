@@ -10,19 +10,16 @@ declare(strict_types=1);
 
 namespace yiiunit\framework\db\oci\conditions;
 
-use Exception;
 use PHPUnit\Framework\Attributes\DataProviderExternal;
 use PHPUnit\Framework\Attributes\Group;
 use yii\db\Query;
 use yiiunit\base\db\BaseDatabase;
-use yiiunit\framework\db\oci\conditions\providers\LikeConditionBuilderProvider;
-
-use function is_string;
+use yiiunit\base\db\conditions\providers\BetweenConditionBuilderProvider;
 
 /**
- * Unit test for {@see \yii\db\oci\conditions\LikeConditionBuilder} with Oracle driver.
+ * Unit test for {@see \yii\db\conditions\BetweenConditionBuilder} with Oracle driver.
  *
- * {@see LikeConditionBuilderProvider} for test case data providers.
+ * {@see BetweenConditionBuilderProvider} for test case data providers.
  *
  * @author Wilmer Arambula <terabytesoftw@gmail.com>
  * @since 2.2
@@ -30,32 +27,16 @@ use function is_string;
 #[Group('db')]
 #[Group('oci')]
 #[Group('condition')]
-final class LikeConditionBuilderTest extends BaseDatabase
+final class BetweenConditionBuilderTest extends BaseDatabase
 {
     protected $driverName = 'oci';
 
-    #[DataProviderExternal(LikeConditionBuilderProvider::class, 'buildCondition')]
+    #[DataProviderExternal(BetweenConditionBuilderProvider::class, 'buildCondition')]
     public function testBuildCondition(array|object $condition, string $expected, array $expectedParams): void
     {
-        $db = $this->getConnection(false, false);
-
-        /**
-         * Different `pdo_oci8` versions may or may not implement `PDO::quote()`, so `yii\db\Schema::quoteValue()` may
-         * or may not quote `\`.
-         */
-        try {
-            $encodedBackslash = substr($db->quoteValue('\\\\'), 1, -1);
-
-            foreach ($expectedParams as $name => $value) {
-                if (is_string($value)) {
-                    $expectedParams[$name] = strtr($value, [$encodedBackslash => '\\']);
-                }
-            }
-        } catch (Exception $e) {
-            $this->markTestSkipped('Could not execute Connection::quoteValue() method: ' . $e->getMessage());
-        }
-
         $query = (new Query())->where($condition);
+
+        $db = $this->getConnection(false, false);
 
         [$sql, $params] = $db->getQueryBuilder()->build($query);
 

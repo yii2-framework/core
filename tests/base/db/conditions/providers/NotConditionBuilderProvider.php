@@ -27,6 +27,11 @@ class NotConditionBuilderProvider
     public static function buildCondition(): array
     {
         return [
+            'not empty string returns empty' => [
+                ['not', ''],
+                '',
+                [],
+            ],
             'not expression with params' => [
                 ['not', new Expression('any_expression(:a)', [':a' => 1])],
                 <<<SQL

@@ -57,6 +57,28 @@ class ConjunctionConditionBuilderProvider
                 [],
             ],
 
+            // empty and single expression
+            'and empty returns empty' => [
+                ['and', '', ''],
+                '',
+                [],
+            ],
+            'and single expression returns unwrapped' => [
+                ['and', 'id=1', ''],
+                'id=1',
+                [],
+            ],
+            'or empty returns empty' => [
+                ['or', '', ''],
+                '',
+                [],
+            ],
+            'or single expression returns unwrapped' => [
+                ['or', '', 'id=1'],
+                'id=1',
+                [],
+            ],
+
             // or
             'or basic' => [
                 ['or', 'id=1', 'id=2'],

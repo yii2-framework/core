@@ -25,8 +25,8 @@ use yiiunit\framework\db\sqlite\conditions\providers\LikeConditionBuilderProvide
  * @since 2.2
  */
 #[Group('db')]
-#[Group('condition')]
 #[Group('sqlite')]
+#[Group('condition')]
 final class LikeConditionBuilderTest extends BaseDatabase
 {
     protected $driverName = 'sqlite';

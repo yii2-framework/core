@@ -29,8 +29,8 @@ use yiiunit\framework\db\sqlite\conditions\providers\InConditionBuilderProvider;
  * @since 2.2
  */
 #[Group('db')]
-#[Group('condition')]
 #[Group('sqlite')]
+#[Group('condition')]
 final class InConditionBuilderTest extends BaseDatabase
 {
     protected $driverName = 'sqlite';

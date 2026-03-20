@@ -12,16 +12,14 @@ namespace yiiunit\framework\db\mysql\conditions;
 
 use PHPUnit\Framework\Attributes\DataProviderExternal;
 use PHPUnit\Framework\Attributes\Group;
-use yii\base\InvalidArgumentException;
-use yii\db\conditions\InCondition;
 use yii\db\Query;
 use yiiunit\base\db\BaseDatabase;
-use yiiunit\framework\db\mysql\conditions\providers\InConditionBuilderProvider;
+use yiiunit\base\db\conditions\providers\LikeConditionBuilderProvider;
 
 /**
- * Unit test for {@see \yii\db\conditions\InConditionBuilder} with MySQL driver.
+ * Unit test for {@see \yii\db\conditions\LikeConditionBuilder} with MySQL driver.
  *
- * {@see InConditionBuilderProvider} for test case data providers.
+ * {@see LikeConditionBuilderProvider} for test case data providers.
  *
  * @author Wilmer Arambula <terabytesoftw@gmail.com>
  * @since 2.2
@@ -29,16 +27,16 @@ use yiiunit\framework\db\mysql\conditions\providers\InConditionBuilderProvider;
 #[Group('db')]
 #[Group('condition')]
 #[Group('mysql')]
-final class InConditionBuilderTest extends BaseDatabase
+final class LikeConditionBuilderTest extends BaseDatabase
 {
     protected $driverName = 'mysql';
 
-    #[DataProviderExternal(InConditionBuilderProvider::class, 'buildCondition')]
+    #[DataProviderExternal(LikeConditionBuilderProvider::class, 'buildCondition')]
     public function testBuildCondition(array|object $condition, string $expected, array $expectedParams): void
     {
-        $db = $this->getConnection(false, false);
-
         $query = (new Query())->where($condition);
+
+        $db = $this->getConnection(false, false);
 
         [$sql, $params] = $db->getQueryBuilder()->build($query);
 
@@ -52,13 +50,5 @@ final class InConditionBuilderTest extends BaseDatabase
             $params,
             'Bound parameters do not match expected parameters.',
         );
-    }
-
-    public function testThrowInvalidArgumentExceptionWhenFromArrayDefinitionHasMissingOperands(): void
-    {
-        $this->expectException(InvalidArgumentException::class);
-        $this->expectExceptionMessage("Operator 'IN' requires two operands.");
-
-        InCondition::fromArrayDefinition('IN', []);
     }
 }

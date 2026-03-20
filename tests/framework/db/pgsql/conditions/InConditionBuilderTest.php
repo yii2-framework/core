@@ -38,7 +38,7 @@ final class InConditionBuilderTest extends BaseDatabase
     {
         $query = (new Query())->where($condition);
 
-        $db = $this->getConnection(true, false);
+        $db = $this->getConnection(false, false);
 
         [$sql, $params] = $db->getQueryBuilder()->build($query);
 
@@ -56,12 +56,8 @@ final class InConditionBuilderTest extends BaseDatabase
 
     public function testThrowInvalidArgumentExceptionWhenFromArrayDefinitionHasMissingOperands(): void
     {
-        $this->expectException(
-            InvalidArgumentException::class,
-        );
-        $this->expectExceptionMessage(
-            "Operator 'IN' requires two operands.",
-        );
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage("Operator 'IN' requires two operands.");
 
         InCondition::fromArrayDefinition('IN', []);
     }

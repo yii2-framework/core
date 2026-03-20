@@ -38,7 +38,7 @@ final class InConditionBuilderTest extends BaseDatabase
     #[DataProviderExternal(InConditionBuilderProvider::class, 'buildCondition')]
     public function testBuildCondition(array|object $condition, string $expected, array $expectedParams): void
     {
-        $db = $this->getConnection(true, false);
+        $db = $this->getConnection(false, false);
 
         $query = (new Query())->where($condition);
 
@@ -58,7 +58,7 @@ final class InConditionBuilderTest extends BaseDatabase
 
     public function testThrowNotSupportedExceptionWhenBuildSubqueryInConditionIsCompositeColumns(): void
     {
-        $db = $this->getConnection(true, false);
+        $db = $this->getConnection(false, false);
 
         $inConditionBuilder = new InConditionBuilder($db->getQueryBuilder());
 
@@ -81,9 +81,7 @@ final class InConditionBuilderTest extends BaseDatabase
 
     public function testThrowInvalidArgumentExceptionWhenFromArrayDefinitionHasMissingOperands(): void
     {
-        $this->expectException(
-            InvalidArgumentException::class,
-        );
+        $this->expectException(InvalidArgumentException::class);
         $this->expectExceptionMessage(
             "Operator 'IN' requires two operands.",
         );

@@ -40,7 +40,7 @@ final class InConditionBuilderTest extends BaseDatabase
     {
         $query = (new Query())->where($condition);
 
-        $db = $this->getConnection(true, false);
+        $db = $this->getConnection(false, false);
         $queryBuilder = $db->getQueryBuilder();
 
         [$sql, $params] = $queryBuilder->build($query);
@@ -61,7 +61,7 @@ final class InConditionBuilderTest extends BaseDatabase
     {
         $query = new Query();
 
-        $db = $this->getConnection(true, false);
+        $db = $this->getConnection(false, false);
         $inConditionBuilder = new InConditionBuilder($db->getQueryBuilder());
 
         $inCondition = new InCondition(
@@ -73,9 +73,7 @@ final class InConditionBuilderTest extends BaseDatabase
                 ->where(['active' => 1]),
         );
 
-        $this->expectException(
-            NotSupportedException::class,
-        );
+        $this->expectException(NotSupportedException::class);
         $this->expectExceptionMessage(
             'yii\db\sqlite\conditions\InConditionBuilder::buildSubqueryInCondition is not supported by SQLite.',
         );
@@ -85,9 +83,7 @@ final class InConditionBuilderTest extends BaseDatabase
 
     public function testThrowInvalidArgumentExceptionWhenFromArrayDefinitionHasMissingOperands(): void
     {
-        $this->expectException(
-            InvalidArgumentException::class,
-        );
+        $this->expectException(InvalidArgumentException::class);
         $this->expectExceptionMessage(
             "Operator 'IN' requires two operands.",
         );

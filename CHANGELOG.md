@@ -66,3 +66,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - test(db): extract `LikeConditionBuilder` tests into dedicated classes with external providers and driver-specific escape transformations.
 - test(db): extract `BetweenConditionBuilder` tests into dedicated classes with external providers.
 - test(db): extract `SimpleConditionBuilder` and `HashConditionBuilder` tests into dedicated classes with external providers.
+- test(db): extract `NotConditionBuilder` and `ConjunctionConditionBuilder` tests into dedicated classes with external providers.

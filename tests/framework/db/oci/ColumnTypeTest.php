@@ -27,7 +27,7 @@ use yiiunit\framework\db\oci\providers\ColumnTypeProvider;
 #[Group('column-type')]
 final class ColumnTypeTest extends BaseColumnType
 {
-    public $driverName = 'oci';
+    protected $driverName = 'oci';
 
     public function columnTypes(): array
     {

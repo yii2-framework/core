@@ -14,7 +14,7 @@ use yii\db\ColumnSchemaBuilder;
 use yii\db\oci\Schema;
 
 /**
- * Data provider for {@see \yiiunit\framework\db\oci\QueryBuilderTest} column type test cases.
+ * Data provider for {@see \yiiunit\framework\db\oci\ColumnTypeTest} column type test cases.
  *
  * Provides Oracle-specific input/output pairs for column type operations.
  *

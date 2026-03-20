@@ -27,7 +27,7 @@ use yiiunit\framework\db\pgsql\providers\ColumnTypeProvider;
 #[Group('column-type')]
 final class ColumnTypeTest extends BaseColumnType
 {
-    public $driverName = 'pgsql';
+    protected $driverName = 'pgsql';
 
     public function columnTypes(): array
     {

@@ -475,7 +475,7 @@ class QueryBuilderProvider
     }
 
     /**
-     * @phpstan-return array<string, array{string, mixed[]|Query, mixed[]|bool, string, mixed[]}>
+     * @phpstan-return array<string, array{0: string, 1: mixed[]|Query, 2: mixed[], 3: string, 4: mixed[], 5?: bool}>
      */
     public static function insertProvider(): array
     {

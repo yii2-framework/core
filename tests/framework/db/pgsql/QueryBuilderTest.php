@@ -64,140 +64,19 @@ final class QueryBuilderTest extends BaseQueryBuilder
         parent::testUpdate($table, $columns, $condition, $expectedSQL, $expectedParams);
     }
 
-    public function testAlterColumn(): void
+    #[DataProviderExternal(QueryBuilderProvider::class, 'alterColumnProvider')]
+    public function testAlterColumn(string $table, string $column, string|\Closure $type, string $expected): void
     {
         $qb = $this->getConnection()->queryBuilder;
 
-        $expected = <<<SQL
-        ALTER TABLE "foo1" ALTER COLUMN "bar" TYPE varchar(255), ALTER COLUMN "bar" DROP DEFAULT, ALTER COLUMN "bar" DROP NOT NULL
-        SQL;
-
-        $sql = $qb->alterColumn('foo1', 'bar', 'varchar(255)');
+        if ($type instanceof Closure) {
+            $type = $type($this);
+        }
 
         self::assertSame(
             $expected,
-            $sql,
-            "ALTER COLUMN to 'varchar(255)' should generate correct SQL.",
-        );
-
-        $expected = <<<SQL
-        ALTER TABLE "foo1" ALTER COLUMN "bar" SET NOT null
-        SQL;
-
-        $sql = $qb->alterColumn('foo1', 'bar', 'SET NOT null');
-
-        self::assertSame(
-            $expected,
-            $sql,
-            "SET 'NOT NULL' should generate correct SQL.",
-        );
-
-        $expected = <<<SQL
-        ALTER TABLE "foo1" ALTER COLUMN "bar" DROP DEFAULT
-        SQL;
-
-        $sql = $qb->alterColumn('foo1', 'bar', 'DROP DEFAULT');
-
-        self::assertSame(
-            $expected,
-            $sql,
-            "DROP 'DEFAULT' should generate correct SQL.",
-        );
-
-        $expected = <<<SQL
-        ALTER TABLE "foo1" ALTER COLUMN "bar" reset xyz
-        SQL;
-
-        $sql = $qb->alterColumn('foo1', 'bar', 'reset xyz');
-
-        self::assertSame(
-            $expected,
-            $sql,
-            "RESET should generate correct SQL.",
-        );
-
-        $expected = <<<SQL
-        ALTER TABLE "foo1" ALTER COLUMN "bar" TYPE varchar(255), ALTER COLUMN "bar" DROP DEFAULT, ALTER COLUMN "bar" DROP NOT NULL
-        SQL;
-
-        $sql = $qb->alterColumn('foo1', 'bar', $this->string(255));
-
-        self::assertSame(
-            $expected,
-            $sql,
-            'ALTER COLUMN with ColumnSchemaBuilder should generate correct SQL.',
-        );
-
-        $expected = <<<SQL
-        ALTER TABLE "foo1" ALTER COLUMN "bar" TYPE varchar(255), ALTER COLUMN "bar" DROP DEFAULT, ALTER COLUMN "bar" SET NOT NULL
-        SQL;
-
-        $sql = $qb->alterColumn('foo1', 'bar', $this->string(255)->notNull());
-
-        self::assertSame(
-            $expected,
-            $sql,
-            "ALTER COLUMN 'NOT NULL' with ColumnSchemaBuilder should generate correct SQL.",
-        );
-
-        $expected = <<<SQL
-        ALTER TABLE "foo1" ALTER COLUMN "bar" TYPE varchar(255), ALTER COLUMN "bar" DROP DEFAULT, ALTER COLUMN "bar" DROP NOT NULL, ADD CONSTRAINT foo1_bar_check CHECK (char_length(bar) > 5)
-        SQL;
-
-        $sql = $qb->alterColumn('foo1', 'bar', $this->string(255)->check('char_length(bar) > 5'));
-
-        self::assertSame(
-            $expected,
-            $sql,
-            "ALTER COLUMN with 'CHECK' should generate correct SQL.",
-        );
-
-        $expected = <<<SQL
-        ALTER TABLE "foo1" ALTER COLUMN "bar" TYPE varchar(255), ALTER COLUMN "bar" SET DEFAULT '', ALTER COLUMN "bar" DROP NOT NULL
-        SQL;
-
-        $sql = $qb->alterColumn('foo1', 'bar', $this->string(255)->defaultValue(''));
-
-        self::assertSame(
-            $expected,
-            $sql,
-            "ALTER COLUMN with empty 'DEFAULT' should generate correct SQL.",
-        );
-
-        $expected = <<<SQL
-        ALTER TABLE "foo1" ALTER COLUMN "bar" TYPE varchar(255), ALTER COLUMN "bar" SET DEFAULT 'AbCdE', ALTER COLUMN "bar" DROP NOT NULL
-        SQL;
-
-        $sql = $qb->alterColumn('foo1', 'bar', $this->string(255)->defaultValue('AbCdE'));
-
-        self::assertSame(
-            $expected,
-            $sql,
-            "ALTER COLUMN with 'DEFAULT' value should generate correct SQL.",
-        );
-
-        $expected = <<<SQL
-        ALTER TABLE "foo1" ALTER COLUMN "bar" TYPE timestamp(0), ALTER COLUMN "bar" SET DEFAULT CURRENT_TIMESTAMP, ALTER COLUMN "bar" DROP NOT NULL
-        SQL;
-
-        $sql = $qb->alterColumn('foo1', 'bar', $this->timestamp()->defaultExpression('CURRENT_TIMESTAMP'));
-
-        self::assertSame(
-            $expected,
-            $sql,
-            "ALTER COLUMN with 'DEFAULT' expression should generate correct SQL.",
-        );
-
-        $expected = <<<SQL
-        ALTER TABLE "foo1" ALTER COLUMN "bar" TYPE varchar(30), ALTER COLUMN "bar" DROP DEFAULT, ALTER COLUMN "bar" DROP NOT NULL, ADD UNIQUE ("bar")
-        SQL;
-
-        $sql = $qb->alterColumn('foo1', 'bar', $this->string(30)->unique());
-
-        self::assertSame(
-            $expected,
-            $sql,
-            "ALTER COLUMN with 'UNIQUE' should generate correct SQL.",
+            $qb->alterColumn($table, $column, $type),
+            'ALTER COLUMN SQL does not match expected output.',
         );
     }
 

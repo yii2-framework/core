@@ -162,7 +162,9 @@ final class QueryBuilderProvider extends \yiiunit\base\db\providers\QueryBuilder
                         'jsoncol',
                         new JsonExpression(['lang' => 'uk', 'country' => 'UA']),
                     ],
-                    '[[jsoncol]] = :qp0',
+                    <<<SQL
+                    [[jsoncol]] = :qp0
+                    SQL,
                     [':qp0' => '{"lang":"uk","country":"UA"}'],
                 ],
                 [
@@ -171,7 +173,9 @@ final class QueryBuilderProvider extends \yiiunit\base\db\providers\QueryBuilder
                         'jsoncol',
                         new JsonExpression([false]),
                     ],
-                    '[[jsoncol]] = :qp0',
+                    <<<SQL
+                    [[jsoncol]] = :qp0
+                    SQL,
                     [':qp0' => '[false]'],
                 ],
                 'nested json' => [
@@ -188,7 +192,9 @@ final class QueryBuilderProvider extends \yiiunit\base\db\providers\QueryBuilder
                             ],
                         ),
                     ],
-                    '[[data]] = :qp0',
+                    <<<SQL
+                    [[data]] = :qp0
+                    SQL,
                     [':qp0' => '{"user":{"login":"silverfire","password":"c4ny0ur34d17?"},"props":{"mood":"good"}}'],
                 ],
                 'null as array value' => [
@@ -197,7 +203,9 @@ final class QueryBuilderProvider extends \yiiunit\base\db\providers\QueryBuilder
                         'jsoncol',
                         new JsonExpression([null]),
                     ],
-                    '[[jsoncol]] = :qp0',
+                    <<<SQL
+                    [[jsoncol]] = :qp0
+                    SQL,
                     [':qp0' => '[null]'],
                 ],
                 'null as object value' => [
@@ -206,7 +214,9 @@ final class QueryBuilderProvider extends \yiiunit\base\db\providers\QueryBuilder
                         'jsoncol',
                         new JsonExpression(['nil' => null]),
                     ],
-                    '[[jsoncol]] = :qp0',
+                    <<<SQL
+                    [[jsoncol]] = :qp0
+                    SQL,
                     [':qp0' => '{"nil":null}'],
                 ],
                 'null value' => [
@@ -215,7 +225,9 @@ final class QueryBuilderProvider extends \yiiunit\base\db\providers\QueryBuilder
                         'jsoncol',
                         new JsonExpression(null),
                     ],
-                    '[[jsoncol]] = :qp0',
+                    <<<SQL
+                    [[jsoncol]] = :qp0
+                    SQL,
                     [':qp0' => 'null'],
                 ],
                 'object with type. Type is ignored for MySQL' => [
@@ -224,7 +236,9 @@ final class QueryBuilderProvider extends \yiiunit\base\db\providers\QueryBuilder
                         'prices',
                         new JsonExpression(['seeds' => 15, 'apples' => 25], 'jsonb'),
                     ],
-                    '[[prices]] = :qp0',
+                    <<<SQL
+                    [[prices]] = :qp0
+                    SQL,
                     [':qp0' => '{"seeds":15,"apples":25}'],
                 ],
                 'query' => [
@@ -233,7 +247,9 @@ final class QueryBuilderProvider extends \yiiunit\base\db\providers\QueryBuilder
                         'jsoncol',
                         new JsonExpression((new Query())->select('params')->from('user')->where(['id' => 1])),
                     ],
-                    '[[jsoncol]] = (SELECT [[params]] FROM [[user]] WHERE [[id]]=:qp0)',
+                    <<<SQL
+                    [[jsoncol]] = (SELECT [[params]] FROM [[user]] WHERE [[id]]=:qp0)
+                    SQL,
                     [':qp0' => 1],
                 ],
                 'query with type, that is ignored in MySQL' => [
@@ -244,7 +260,9 @@ final class QueryBuilderProvider extends \yiiunit\base\db\providers\QueryBuilder
                             (new Query())->select('params')->from('user')->where(['id' => 1]), 'jsonb',
                         ),
                     ],
-                    '[[jsoncol]] = (SELECT [[params]] FROM [[user]] WHERE [[id]]=:qp0)',
+                    <<<SQL
+                    [[jsoncol]] = (SELECT [[params]] FROM [[user]] WHERE [[id]]=:qp0)
+                    SQL,
                     [':qp0' => 1],
                 ],
                 'nested and combined json expression' => [
@@ -255,7 +273,9 @@ final class QueryBuilderProvider extends \yiiunit\base\db\providers\QueryBuilder
                             new JsonExpression(['a' => 1, 'b' => 2, 'd' => new JsonExpression(['e' => 3])]),
                         ),
                     ],
-                    '[[jsoncol]] = :qp0',
+                    <<<SQL
+                    [[jsoncol]] = :qp0
+                    SQL,
                     [':qp0' => '{"a":1,"b":2,"d":{"e":3}}'],
                 ],
                 'search by property in JSON column (issue #15838)' => [
@@ -264,7 +284,9 @@ final class QueryBuilderProvider extends \yiiunit\base\db\providers\QueryBuilder
                         new Expression("(jsoncol->>'$.someKey')"),
                         '42',
                     ],
-                    "(jsoncol->>'$.someKey') = :qp0",
+                    <<<SQL
+                    (jsoncol->>'$.someKey') = :qp0
+                    SQL,
                     [':qp0' => '42'],
                 ],
                 'with object as value' => [
@@ -273,7 +295,9 @@ final class QueryBuilderProvider extends \yiiunit\base\db\providers\QueryBuilder
                         'jsoncol',
                         new JsonExpression(new DynamicModel(['a' => 1, 'b' => 2])),
                     ],
-                    '[[jsoncol]] = :qp0',
+                    <<<SQL
+                    [[jsoncol]] = :qp0
+                    SQL,
                     [':qp0' => '{"a":1,"b":2}'],
                 ],
         ];
@@ -288,9 +312,7 @@ final class QueryBuilderProvider extends \yiiunit\base\db\providers\QueryBuilder
             [
                 'description' => new JsonExpression(['abc' => 'def', 123, null]),
             ],
-            [
-                'id' => 1,
-            ],
+            ['id' => 1],
             <<<SQL
             UPDATE [[profile]] SET [[description]]=:qp0 WHERE [[id]]=:qp1
             SQL,

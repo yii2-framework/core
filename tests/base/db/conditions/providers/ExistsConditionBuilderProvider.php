@@ -23,6 +23,9 @@ use yii\db\Query;
  */
 class ExistsConditionBuilderProvider
 {
+    /**
+     * @phpstan-return array<string, array{mixed[], string, mixed[]}>
+     */
     public static function buildCondition(): array
     {
         return [
@@ -43,6 +46,9 @@ class ExistsConditionBuilderProvider
         ];
     }
 
+    /**
+     * @phpstan-return array<string, array{string, string}>
+     */
     public static function existsWithFullQuery(): array
     {
         return [
@@ -61,6 +67,9 @@ class ExistsConditionBuilderProvider
         ];
     }
 
+    /**
+     * @phpstan-return array<string, array{string, mixed[]}>
+     */
     public static function existsWithParameters(): array
     {
         return [
@@ -73,6 +82,9 @@ class ExistsConditionBuilderProvider
         ];
     }
 
+    /**
+     * @phpstan-return array<string, array{string, mixed[]}>
+     */
     public static function existsWithArrayParameters(): array
     {
         return [

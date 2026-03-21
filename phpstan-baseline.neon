@@ -5535,43 +5535,7 @@ parameters:
 		-
 			message: '#^Construct empty\(\) is not allowed\. Use more strict comparison\.$#'
 			identifier: empty.notAllowed
-			count: 4
-			path: tests/base/db/BaseQueryBuilder.php
-
-		-
-			message: '#^Dynamic call to static method PHPUnit\\Framework\\Assert\:\:assertContains\(\)\.$#'
-			identifier: staticMethod.dynamicCall
-			count: 1
-			path: tests/base/db/BaseQueryBuilder.php
-
-		-
-			message: '#^Dynamic call to static method PHPUnit\\Framework\\Assert\:\:assertEmpty\(\)\.$#'
-			identifier: staticMethod.dynamicCall
-			count: 14
-			path: tests/base/db/BaseQueryBuilder.php
-
-		-
-			message: '#^Dynamic call to static method PHPUnit\\Framework\\Assert\:\:assertEquals\(\)\.$#'
-			identifier: staticMethod.dynamicCall
-			count: 44
-			path: tests/base/db/BaseQueryBuilder.php
-
-		-
-			message: '#^Dynamic call to static method PHPUnit\\Framework\\Assert\:\:assertInstanceOf\(\)\.$#'
-			identifier: staticMethod.dynamicCall
-			count: 1
-			path: tests/base/db/BaseQueryBuilder.php
-
-		-
-			message: '#^Dynamic call to static method PHPUnit\\Framework\\Assert\:\:assertNotEmpty\(\)\.$#'
-			identifier: staticMethod.dynamicCall
-			count: 1
-			path: tests/base/db/BaseQueryBuilder.php
-
-		-
-			message: '#^Dynamic call to static method PHPUnit\\Framework\\Assert\:\:assertSame\(\)\.$#'
-			identifier: staticMethod.dynamicCall
-			count: 16
+			count: 2
 			path: tests/base/db/BaseQueryBuilder.php
 
 		-

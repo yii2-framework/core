@@ -27,6 +27,9 @@ use yiiunit\data\base\TraversableObject;
  */
 class InConditionBuilderProvider
 {
+    /**
+     * @phpstan-return array<string, array{mixed[]|object, string, mixed[]}>
+     */
     public static function buildCondition(): array
     {
         return [

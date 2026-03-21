@@ -21,8 +21,8 @@ use yiiunit\base\db\BaseQueryBuilderUnion;
  */
 #[Group('db')]
 #[Group('pgsql')]
-#[Group('querybuilder')]
-class QueryBuilderUnionTest extends BaseQueryBuilderUnion
+#[Group('query-builder')]
+final class QueryBuilderUnionTest extends BaseQueryBuilderUnion
 {
     protected $driverName = 'pgsql';
 }

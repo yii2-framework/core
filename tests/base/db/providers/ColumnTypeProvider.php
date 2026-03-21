@@ -10,6 +10,7 @@ declare(strict_types=1);
 
 namespace yiiunit\base\db\providers;
 
+use Closure;
 use yii\db\ColumnSchemaBuilder;
 use yii\db\Schema;
 
@@ -24,6 +25,9 @@ use yii\db\Schema;
  */
 class ColumnTypeProvider
 {
+    /**
+     * @phpstan-return array<string, array{string, Closure, array<string, string>}>
+     */
     public static function columnTypes(): array
     {
         return [
@@ -871,5 +875,4 @@ class ColumnTypeProvider
             ],
         ];
     }
-
 }

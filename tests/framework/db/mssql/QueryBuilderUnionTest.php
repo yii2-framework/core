@@ -1,12 +1,12 @@
 <?php
 
+declare(strict_types=1);
+
 /**
  * @link https://www.yiiframework.com/
  * @copyright Copyright (c) 2008 Yii Software LLC
  * @license https://www.yiiframework.com/license/
  */
-
-declare(strict_types=1);
 
 namespace yiiunit\framework\db\mssql;
 
@@ -22,8 +22,8 @@ use yiiunit\base\db\BaseQueryBuilderUnion;
  */
 #[Group('db')]
 #[Group('mssql')]
-#[Group('querybuilder')]
-class QueryBuilderUnionTest extends BaseQueryBuilderUnion
+#[Group('query-builder')]
+final class QueryBuilderUnionTest extends BaseQueryBuilderUnion
 {
     protected $driverName = 'sqlsrv';
 
@@ -32,7 +32,7 @@ class QueryBuilderUnionTest extends BaseQueryBuilderUnion
      */
     public function testBuildWithQueryMultiple(): void
     {
-        $db = $this->getConnection(true, false);
+        $db = $this->getConnection(false, false);
 
         $with1Query = (new Query())
             ->select('id')
@@ -53,7 +53,7 @@ class QueryBuilderUnionTest extends BaseQueryBuilderUnion
             SQL
         );
 
-        [$actualQuerySql, $queryParams] = $db->getQueryBuilder()->build($query);
+        [$actualQuerySql, $queryParams] = $db->queryBuilder->build($query);
 
         self::assertSame(
             $expectedQuerySql,
@@ -71,7 +71,7 @@ class QueryBuilderUnionTest extends BaseQueryBuilderUnion
      */
     public function testBuildWithQueryRecursive(): void
     {
-        $db = $this->getConnection(true, false);
+        $db = $this->getConnection(false, false);
 
         $with1Query = (new Query())
             ->select('id')
@@ -87,7 +87,7 @@ class QueryBuilderUnionTest extends BaseQueryBuilderUnion
             SQL
         );
 
-        [$actualQuerySql, $queryParams] = $db->getQueryBuilder()->build($query);
+        [$actualQuerySql, $queryParams] = $db->queryBuilder->build($query);
 
         self::assertSame(
             $expectedQuerySql,

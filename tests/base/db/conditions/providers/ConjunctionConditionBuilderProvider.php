@@ -24,6 +24,9 @@ use yii\db\Query;
  */
 class ConjunctionConditionBuilderProvider
 {
+    /**
+     * @phpstan-return array<string, array{mixed[], string, mixed[]}>
+     */
     public static function buildCondition(): array
     {
         return [

@@ -22,6 +22,9 @@ use yii\db\Expression;
  */
 class HashConditionBuilderProvider
 {
+    /**
+     * @phpstan-return array<string, array{mixed[], string, mixed[]}>
+     */
     public static function buildCondition(): array
     {
         return [

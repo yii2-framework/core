@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 /**
  * @link https://www.yiiframework.com/
  * @copyright Copyright (c) 2008 Yii Software LLC
@@ -9,76 +11,39 @@
 namespace yiiunit\framework\db\oci;
 
 use Closure;
-use Exception;
+use PHPUnit\Framework\Attributes\DataProviderExternal;
+use PHPUnit\Framework\Attributes\Depends;
+use PHPUnit\Framework\Attributes\Group;
 use yii\base\NotSupportedException;
-use yii\db\oci\QueryBuilder;
-use yii\db\oci\Schema;
 use yii\db\Query;
 use yiiunit\base\db\BaseQueryBuilder;
-use yiiunit\data\base\TraversableObject;
+use yiiunit\framework\db\oci\providers\QueryBuilderProvider;
 
 /**
- * @group db
- * @group oci
+ * Unit test for {@see \yii\db\oci\QueryBuilder} with Oracle driver.
+ *
+ * {@see QueryBuilderProvider} for test case data providers.
+ *
+ * @author Wilmer Arambula <terabytesoftw@gmail.com>
+ * @since 2.2
  */
-class QueryBuilderTest extends BaseQueryBuilder
+#[Group('db')]
+#[Group('oci')]
+#[Group('query-builder')]
+final class QueryBuilderTest extends BaseQueryBuilder
 {
     public $driverName = 'oci';
 
-    protected $likeEscapeCharSql = " ESCAPE '!'";
-    protected $likeParameterReplacements = [
-        '\%' => '!%',
-        '\_' => '!_',
-        '!' => '!!',
-    ];
-
-    /**
-     * This is not used as a dataprovider for testGetColumnType to speed up the test
-     * when used as dataprovider every single line will cause a reconnect with the database which is not needed here.
-     */
-    public function columnTypes()
+    #[DataProviderExternal(QueryBuilderProvider::class, 'foreignKeysProvider')]
+    public function testAddDropForeignKey(string $sql, Closure $builder): void
     {
-        return array_merge(parent::columnTypes(), [
-            [
-                Schema::TYPE_BOOLEAN . ' DEFAULT 1 NOT NULL',
-                $this->boolean()->notNull()->defaultValue(1),
-                'NUMBER(1) DEFAULT 1 NOT NULL',
-            ],
-        ]);
+        parent::testAddDropForeignKey($sql, $builder);
     }
 
-    public static function foreignKeysProvider(): array
+    #[DataProviderExternal(QueryBuilderProvider::class, 'indexesProvider')]
+    public function testCreateDropIndex(string $sql, Closure $builder): void
     {
-        $tableName = 'T_constraints_3';
-        $name = 'CN_constraints_3';
-        $pkTableName = 'T_constraints_2';
-        return [
-            'drop' => [
-                "ALTER TABLE {{{$tableName}}} DROP CONSTRAINT [[$name]]",
-                function (QueryBuilder $qb) use ($tableName, $name) {
-                    return $qb->dropForeignKey($name, $tableName);
-                },
-            ],
-            'add' => [
-                "ALTER TABLE {{{$tableName}}} ADD CONSTRAINT [[$name]] FOREIGN KEY ([[C_fk_id_1]]) REFERENCES {{{$pkTableName}}} ([[C_id_1]]) ON DELETE CASCADE",
-                function (QueryBuilder $qb) use ($tableName, $name, $pkTableName) {
-                    return $qb->addForeignKey($name, $tableName, 'C_fk_id_1', $pkTableName, 'C_id_1', 'CASCADE');
-                },
-            ],
-            'add (2 columns)' => [
-                "ALTER TABLE {{{$tableName}}} ADD CONSTRAINT [[$name]] FOREIGN KEY ([[C_fk_id_1]], [[C_fk_id_2]]) REFERENCES {{{$pkTableName}}} ([[C_id_1]], [[C_id_2]]) ON DELETE CASCADE",
-                function (QueryBuilder $qb) use ($tableName, $name, $pkTableName) {
-                    return $qb->addForeignKey($name, $tableName, 'C_fk_id_1, C_fk_id_2', $pkTableName, 'C_id_1, C_id_2', 'CASCADE');
-                },
-            ],
-        ];
-    }
-
-    public static function indexesProvider(): array
-    {
-        $result = parent::indexesProvider();
-        $result['drop'][0] = 'DROP INDEX [[CN_constraints_2_single]]';
-        return $result;
+        parent::testCreateDropIndex($sql, $builder);
     }
 
     public function testBuildOrderByAndLimitWithOffsetAndLimit(): void
@@ -87,7 +52,7 @@ class QueryBuilderTest extends BaseQueryBuilder
 
         $query->select('id')->from('example')->limit(10)->offset(5);
 
-        [$actualQuerySql, $actualQueryParams] = $this->getQueryBuilder()->build($query);
+        [$actualQuerySql, $actualQueryParams] = $this->getDb()->getQueryBuilder()->build($query);
 
         self::assertSame(
             <<<SQL
@@ -108,7 +73,7 @@ class QueryBuilderTest extends BaseQueryBuilder
 
         $query->select('id')->from('example')->limit(10);
 
-        [$actualQuerySql, $actualQueryParams] = $this->getQueryBuilder()->build($query);
+        [$actualQuerySql, $actualQueryParams] = $this->getDb()->getQueryBuilder()->build($query);
 
         self::assertSame(
             <<<SQL
@@ -129,7 +94,7 @@ class QueryBuilderTest extends BaseQueryBuilder
 
         $query->select('id')->from('example')->offset(10);
 
-        [$actualQuerySql, $actualQueryParams] = $this->getQueryBuilder()->build($query);
+        [$actualQuerySql, $actualQueryParams] = $this->getDb()->getQueryBuilder()->build($query);
 
         self::assertSame(
             <<<SQL
@@ -150,7 +115,7 @@ class QueryBuilderTest extends BaseQueryBuilder
 
         $query->select('id')->from('example');
 
-        [$actualQuerySql, $actualQueryParams] = $this->getQueryBuilder()->build($query);
+        [$actualQuerySql, $actualQueryParams] = $this->getDb()->getQueryBuilder()->build($query);
 
         self::assertSame(
             <<<SQL
@@ -171,7 +136,7 @@ class QueryBuilderTest extends BaseQueryBuilder
 
         $query->select('id')->from('example')->orderBy('id')->limit(10)->offset(5);
 
-        [$actualQuerySql, $actualQueryParams] = $this->getQueryBuilder()->build($query);
+        [$actualQuerySql, $actualQueryParams] = $this->getDb()->getQueryBuilder()->build($query);
 
         self::assertSame(
             <<<SQL
@@ -192,7 +157,7 @@ class QueryBuilderTest extends BaseQueryBuilder
 
         $query->select('id')->from('example')->orderBy('id');
 
-        [$actualQuerySql, $actualQueryParams] = $this->getQueryBuilder()->build($query);
+        [$actualQuerySql, $actualQueryParams] = $this->getDb()->getQueryBuilder()->build($query);
 
         self::assertSame(
             <<<SQL
@@ -209,169 +174,95 @@ class QueryBuilderTest extends BaseQueryBuilder
 
     public function testCommentColumn(): void
     {
-        $qb = $this->getQueryBuilder();
+        $qb = $this->getDb()->getQueryBuilder();
 
-        $expected = "COMMENT ON COLUMN [[comment]].[[text]] IS 'This is my column.'";
+        $expected = <<<SQL
+        COMMENT ON COLUMN [[comment]].[[text]] IS 'This is my column.'
+        SQL;
+
         $sql = $qb->addCommentOnColumn('comment', 'text', 'This is my column.');
-        $this->assertEquals($this->replaceQuotes($expected), $sql);
 
-        $expected = "COMMENT ON COLUMN [[comment]].[[text]] IS ''";
+        self::assertSame(
+            $this->replaceQuotes($expected),
+            $sql,
+            'Add column comment should generate correct SQL.',
+        );
+
+        $expected = <<<SQL
+        COMMENT ON COLUMN [[comment]].[[text]] IS ''
+        SQL;
+
         $sql = $qb->dropCommentFromColumn('comment', 'text');
-        $this->assertEquals($this->replaceQuotes($expected), $sql);
+
+        self::assertSame(
+            $this->replaceQuotes($expected),
+            $sql,
+            'Drop column comment should generate correct SQL.',
+        );
     }
 
     public function testCommentTable(): void
     {
-        $qb = $this->getQueryBuilder();
+        $qb = $this->getDb()->getQueryBuilder();
 
-        $expected = "COMMENT ON TABLE [[comment]] IS 'This is my table.'";
+        $expected = <<<SQL
+        COMMENT ON TABLE [[comment]] IS 'This is my table.'
+        SQL;
+
         $sql = $qb->addCommentOnTable('comment', 'This is my table.');
-        $this->assertEquals($this->replaceQuotes($expected), $sql);
 
-        $expected = "COMMENT ON TABLE [[comment]] IS ''";
+        self::assertSame(
+            $this->replaceQuotes($expected),
+            $sql,
+            'Add table comment should generate correct SQL.',
+        );
+
+        $expected = <<<SQL
+        COMMENT ON TABLE [[comment]] IS ''
+        SQL;
+
         $sql = $qb->dropCommentFromTable('comment');
-        $this->assertEquals($this->replaceQuotes($expected), $sql);
+
+        self::assertSame(
+            $this->replaceQuotes($expected),
+            $sql,
+            'Drop table comment should generate correct SQL.',
+        );
     }
 
     public function testExecuteResetSequence(): void
     {
-        $db = $this->getConnection();
-        $qb = $this->getQueryBuilder();
-        $sqlResult = "SELECT last_number FROM user_sequences WHERE sequence_name = 'item_SEQ'";
+        $db = $this->getDb();
+
+        $qb = $db->getQueryBuilder();
+
+        $sqlResult = <<<SQL
+        SELECT last_number FROM user_sequences WHERE sequence_name = 'item_SEQ'
+        SQL;
 
         $qb->executeResetSequence('item');
         $result = $db->createCommand($sqlResult)->queryScalar();
-        $this->assertEquals(6, $result);
+
+        self::assertSame(
+            '6',
+            $result,
+            'Reset sequence without value should set to next auto-increment value.',
+        );
 
         $qb->executeResetSequence('item', 4);
         $result = $db->createCommand($sqlResult)->queryScalar();
-        $this->assertEquals(4, $result);
+
+        self::assertSame(
+            '4',
+            $result,
+            'Reset sequence with explicit value should set to provided value.',
+        );
     }
 
-
-    public function conditionProvidertmp()
+    #[DataProviderExternal(QueryBuilderProvider::class, 'batchInsertProvider')]
+    public function testBatchInsert($table, $columns, $value, $expected, $replaceQuotes = true): void
     {
-        // test bc with commit
-        // {@see https://github.com/yiisoft/yii2/commit/d16586334d7bea226a67aa8db28982848b5c92dd#diff-ae95e8cbf4e036860dd6b41011f9f8035a616a8f45d3c3167b3705d39879c95c}
-        // should be fixed.
-        return array_merge([], [
-            [
-                ['in', '[[id]]', range(0, 2500)],
-
-                ' ('
-                . '([[id]] IN (' . implode(', ', $this->generateSprintfSeries(':qp%d', 0, 999)) . '))'
-                . ' OR ([[id]] IN (' . implode(', ', $this->generateSprintfSeries(':qp%d', 1000, 1999)) . '))'
-                . ' OR ([[id]] IN (' . implode(', ', $this->generateSprintfSeries(':qp%d', 2000, 2500)) . '))'
-                . ')',
-
-                array_flip($this->generateSprintfSeries(':qp%d', 0, 2500)),
-            ],
-            [
-                ['not in', '[[id]]', range(0, 2500)],
-
-                '('
-                . '([[id]] NOT IN (' . implode(', ', $this->generateSprintfSeries(':qp%d', 0, 999)) . '))'
-                . ' AND ([[id]] NOT IN (' . implode(', ', $this->generateSprintfSeries(':qp%d', 1000, 1999)) . '))'
-                . ' AND ([[id]] NOT IN (' . implode(', ', $this->generateSprintfSeries(':qp%d', 2000, 2500)) . '))'
-                . ')',
-
-                array_flip($this->generateSprintfSeries(':qp%d', 0, 2500)),
-            ],
-            [
-                ['not in', '[[id]]', new TraversableObject(range(0, 2500))],
-
-                '('
-                . '([[id]] NOT IN (' . implode(', ', $this->generateSprintfSeries(':qp%d', 0, 999)) . '))'
-                . ' AND ([[id]] NOT IN (' . implode(', ', $this->generateSprintfSeries(':qp%d', 1000, 1999)) . '))'
-                . ' AND ([[id]] NOT IN (' . implode(', ', $this->generateSprintfSeries(':qp%d', 2000, 2500)) . '))'
-                . ')',
-
-                array_flip($this->generateSprintfSeries(':qp%d', 0, 2500)),
-            ],
-        ]);
-    }
-
-    protected function generateSprintfSeries($pattern, $from, $to)
-    {
-        $items = [];
-        for ($i = $from; $i <= $to; $i++) {
-            $items[] = sprintf($pattern, $i);
-        }
-
-        return $items;
-    }
-
-    public static function upsertProvider(): array
-    {
-        $concreteData = [
-            'regular values' => [
-                3 => 'MERGE INTO "T_upsert" USING (SELECT :qp0 AS "email", :qp1 AS "address", :qp2 AS "status", :qp3 AS "profile_id" FROM "DUAL") "EXCLUDED" ON ("T_upsert"."email"="EXCLUDED"."email") WHEN MATCHED THEN UPDATE SET "address"="EXCLUDED"."address", "status"="EXCLUDED"."status", "profile_id"="EXCLUDED"."profile_id" WHEN NOT MATCHED THEN INSERT ("email", "address", "status", "profile_id") VALUES ("EXCLUDED"."email", "EXCLUDED"."address", "EXCLUDED"."status", "EXCLUDED"."profile_id")',
-            ],
-            'regular values with update part' => [
-                3 => 'MERGE INTO "T_upsert" USING (SELECT :qp0 AS "email", :qp1 AS "address", :qp2 AS "status", :qp3 AS "profile_id" FROM "DUAL") "EXCLUDED" ON ("T_upsert"."email"="EXCLUDED"."email") WHEN MATCHED THEN UPDATE SET "address"=:qp4, "status"=:qp5, "orders"=T_upsert.orders + 1 WHEN NOT MATCHED THEN INSERT ("email", "address", "status", "profile_id") VALUES ("EXCLUDED"."email", "EXCLUDED"."address", "EXCLUDED"."status", "EXCLUDED"."profile_id")',
-            ],
-            'regular values without update part' => [
-                3 => 'MERGE INTO "T_upsert" USING (SELECT :qp0 AS "email", :qp1 AS "address", :qp2 AS "status", :qp3 AS "profile_id" FROM "DUAL") "EXCLUDED" ON ("T_upsert"."email"="EXCLUDED"."email") WHEN NOT MATCHED THEN INSERT ("email", "address", "status", "profile_id") VALUES ("EXCLUDED"."email", "EXCLUDED"."address", "EXCLUDED"."status", "EXCLUDED"."profile_id")',
-            ],
-            'query' => [
-                3 => 'MERGE INTO "T_upsert" USING (SELECT "email", 2 AS "status" FROM "customer" WHERE "name"=:qp0 ORDER BY (SELECT NULL) OFFSET 0 ROWS FETCH NEXT 1 ROWS ONLY) "EXCLUDED" ON ("T_upsert"."email"="EXCLUDED"."email") WHEN MATCHED THEN UPDATE SET "status"="EXCLUDED"."status" WHEN NOT MATCHED THEN INSERT ("email", "status") VALUES ("EXCLUDED"."email", "EXCLUDED"."status")'
-            ],
-            'query with update part' => [
-                3 => 'MERGE INTO "T_upsert" USING (SELECT "email", 2 AS "status" FROM "customer" WHERE "name"=:qp0 ORDER BY (SELECT NULL) OFFSET 0 ROWS FETCH NEXT 1 ROWS ONLY) "EXCLUDED" ON ("T_upsert"."email"="EXCLUDED"."email") WHEN MATCHED THEN UPDATE SET "address"=:qp1, "status"=:qp2, "orders"=T_upsert.orders + 1 WHEN NOT MATCHED THEN INSERT ("email", "status") VALUES ("EXCLUDED"."email", "EXCLUDED"."status")'
-            ],
-            'query without update part' => [
-                3 => 'MERGE INTO "T_upsert" USING (SELECT "email", 2 AS "status" FROM "customer" WHERE "name"=:qp0 ORDER BY (SELECT NULL) OFFSET 0 ROWS FETCH NEXT 1 ROWS ONLY) "EXCLUDED" ON ("T_upsert"."email"="EXCLUDED"."email") WHEN NOT MATCHED THEN INSERT ("email", "status") VALUES ("EXCLUDED"."email", "EXCLUDED"."status")'
-            ],
-            'values and expressions' => [
-                3 => 'INSERT INTO {{%T_upsert}} ({{%T_upsert}}.[[email]], [[ts]]) VALUES (:qp0, now())',
-            ],
-            'values and expressions with update part' => [
-                3 => 'INSERT INTO {{%T_upsert}} ({{%T_upsert}}.[[email]], [[ts]]) VALUES (:qp0, now())',
-            ],
-            'values and expressions without update part' => [
-                3 => 'INSERT INTO {{%T_upsert}} ({{%T_upsert}}.[[email]], [[ts]]) VALUES (:qp0, now())',
-            ],
-            'query, values and expressions with update part' => [
-                3 => 'MERGE INTO {{%T_upsert}} USING (SELECT :phEmail AS "email", now() AS [[time]]) "EXCLUDED" ON ({{%T_upsert}}."email"="EXCLUDED"."email") WHEN MATCHED THEN UPDATE SET "ts"=:qp1, [[orders]]=T_upsert.orders + 1 WHEN NOT MATCHED THEN INSERT ("email", [[time]]) VALUES ("EXCLUDED"."email", "EXCLUDED".[[time]])',
-            ],
-            'query, values and expressions without update part' => [
-                3 => 'MERGE INTO {{%T_upsert}} USING (SELECT :phEmail AS "email", now() AS [[time]]) "EXCLUDED" ON ({{%T_upsert}}."email"="EXCLUDED"."email") WHEN NOT MATCHED THEN INSERT ("email", [[time]]) VALUES ("EXCLUDED"."email", "EXCLUDED".[[time]])',
-            ],
-        ];
-        $newData = parent::upsertProvider();
-        foreach ($concreteData as $testName => $data) {
-            $newData[$testName] = array_replace($newData[$testName], $data);
-        }
-
-        // skip test
-        unset($newData['no columns to update']);
-
-        return $newData;
-    }
-
-    public static function batchInsertProvider(): array
-    {
-        $data = parent::batchInsertProvider();
-
-        $data[0][3] = 'INSERT ALL  INTO "customer" ("email", "name", "address") ' .
-            "VALUES ('test@example.com', 'silverfire', 'Kyiv {{city}}, Ukraine') SELECT 1 FROM DUAL";
-
-        $data['escape-danger-chars']['expected'] = 'INSERT ALL  INTO "customer" ("address") ' .
-            "VALUES ('SQL-danger chars are escaped: ''); --') SELECT 1 FROM DUAL";
-
-        $data[2][3] = 'INSERT ALL  INTO "customer" () ' .
-            "VALUES ('no columns passed') SELECT 1 FROM DUAL";
-
-        $data['bool-false, bool2-null']['expected'] = 'INSERT ALL  INTO "type" ("bool_col", "bool_col2") ' .
-            "VALUES ('', NULL) SELECT 1 FROM DUAL";
-
-        $data[3][3] = 'INSERT ALL  INTO {{%type}} ({{%type}}.[[float_col]], [[time]]) ' .
-            'VALUES (NULL, now()) SELECT 1 FROM DUAL';
-
-        $data['bool-false, time-now()']['expected'] = 'INSERT ALL  INTO {{%type}} ({{%type}}.[[bool_col]], [[time]]) ' .
-            'VALUES (0, now()) SELECT 1 FROM DUAL';
-
-        return $data;
+        parent::testBatchInsert($table, $columns, $value, $expected, $replaceQuotes);
     }
 
     /**
@@ -379,30 +270,18 @@ class QueryBuilderTest extends BaseQueryBuilder
      */
     public function testInitFixtures(): void
     {
-        $this->assertInstanceOf('yii\db\QueryBuilder', $this->getQueryBuilder(true, true));
+        self::assertInstanceOf('yii\db\QueryBuilder', $this->getConnection(true, true)->getQueryBuilder());
     }
 
-    /**
-     * @depends      testInitFixtures
-     * @dataProvider upsertProvider
-     * @param string $table
-     * @param array $insertColumns
-     * @param array|null $updateColumns
-     * @param string|string[] $expectedSQL
-     * @param array $expectedParams
-     * @throws NotSupportedException
-     * @throws Exception
-     */
+    #[Depends('testInitFixtures')]
+    #[DataProviderExternal(QueryBuilderProvider::class, 'upsertProvider')]
     public function testUpsert($table, $insertColumns, $updateColumns, $expectedSQL, $expectedParams): void
     {
         parent::testUpsert($table, $insertColumns, $updateColumns, $expectedSQL, $expectedParams);
     }
 
-    /**
-     * @dataProvider defaultValuesProvider
-     * @param string $sql
-     */
-    public function testAddDropDefaultValue($sql, Closure $builder): void
+    #[DataProviderExternal(QueryBuilderProvider::class, 'defaultValuesProvider')]
+    public function testAddDropDefaultValue(string $sql, Closure $builder): void
     {
         $this->expectException(NotSupportedException::class);
         $this->expectExceptionMessageMatches(
@@ -410,27 +289,5 @@ class QueryBuilderTest extends BaseQueryBuilder
         );
 
         parent::testAddDropDefaultValue($sql, $builder);
-    }
-
-    /**
-     * @dataProvider likeConditionProvider
-     * @param array $condition
-     * @param string $expected
-     * @param array $expectedParams
-     */
-    public function testBuildLikeCondition($condition, $expected, $expectedParams): void
-    {
-        /**
-         * Different pdo_oci8 versions may or may not implement PDO::quote(), so
-         * yii\db\Schema::quoteValue() may or may not quote \.
-         */
-        try {
-            $encodedBackslash = substr($this->getDb()->quoteValue('\\\\'), 1, -1);
-            $this->likeParameterReplacements[$encodedBackslash] = '\\';
-        } catch (Exception $e) {
-            $this->markTestSkipped('Could not execute Connection::quoteValue() method: ' . $e->getMessage());
-        }
-
-        parent::testBuildLikeCondition($condition, $expected, $expectedParams);
     }
 }

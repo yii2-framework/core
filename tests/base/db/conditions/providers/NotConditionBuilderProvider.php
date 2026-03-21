@@ -24,6 +24,9 @@ use yii\db\Query;
  */
 class NotConditionBuilderProvider
 {
+    /**
+     * @phpstan-return array<string, array{mixed[]|object, string, mixed[]}>
+     */
     public static function buildCondition(): array
     {
         return [

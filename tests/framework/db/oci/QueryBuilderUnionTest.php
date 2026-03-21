@@ -22,8 +22,8 @@ use yiiunit\base\db\BaseQueryBuilderUnion;
  */
 #[Group('db')]
 #[Group('oci')]
-#[Group('querybuilder')]
-class QueryBuilderUnionTest extends BaseQueryBuilderUnion
+#[Group('query-builder')]
+final class QueryBuilderUnionTest extends BaseQueryBuilderUnion
 {
     protected $driverName = 'oci';
 

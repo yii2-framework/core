@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 /**
  * @link https://www.yiiframework.com/
  * @copyright Copyright (c) 2008 Yii Software LLC
@@ -9,51 +11,45 @@
 namespace yiiunit\framework\db\sqlite;
 
 use Closure;
-
+use PHPUnit\Framework\Attributes\DataProviderExternal;
+use PHPUnit\Framework\Attributes\Depends;
+use PHPUnit\Framework\Attributes\Group;
 use yii\base\NotSupportedException;
-use yii\db\Schema;
-use yii\db\sqlite\QueryBuilder;
 use yiiunit\base\db\BaseQueryBuilder;
+use yiiunit\framework\db\sqlite\providers\QueryBuilderProvider;
 
 /**
- * @group db
- * @group sqlite
+ * Unit test for {@see \yii\db\sqlite\QueryBuilder} with SQLite driver.
+ *
+ * {@see QueryBuilderProvider} for test case data providers.
+ *
+ * @author Wilmer Arambula <terabytesoftw@gmail.com>
+ * @since 2.2
  */
-class QueryBuilderTest extends BaseQueryBuilder
+#[Group('db')]
+#[Group('sqlite')]
+#[Group('query-builder')]
+final class QueryBuilderTest extends BaseQueryBuilder
 {
     protected $driverName = 'sqlite';
 
-    protected $likeEscapeCharSql = " ESCAPE '\\'";
-
-    public function columnTypes()
+    #[DataProviderExternal(QueryBuilderProvider::class, 'indexesProvider')]
+    public function testCreateDropIndex(string $sql, Closure $builder): void
     {
-        return array_merge(parent::columnTypes(), [
-            [
-                Schema::TYPE_PK,
-                $this->primaryKey()->first()->after('col_before'),
-                'integer PRIMARY KEY AUTOINCREMENT NOT NULL',
-            ],
-        ]);
+        parent::testCreateDropIndex($sql, $builder);
     }
 
-
-    public static function indexesProvider(): array
+    #[DataProviderExternal(QueryBuilderProvider::class, 'batchInsertProvider')]
+    public function testBatchInsert($table, $columns, $value, $expected, $replaceQuotes = true): void
     {
-        $result = parent::indexesProvider();
-        $result['drop'][0] = 'DROP INDEX [[CN_constraints_2_single]]';
+        parent::testBatchInsert($table, $columns, $value, $expected, $replaceQuotes);
+    }
 
-        $indexName = 'myindex';
-        $schemaName = 'myschema';
-        $tableName = 'mytable';
-
-        $result['with schema'] = [
-            "CREATE INDEX {{{$schemaName}}}.[[$indexName]] ON {{{$tableName}}} ([[C_index_1]])",
-            function (QueryBuilder $qb) use ($tableName, $indexName, $schemaName) {
-                return $qb->createIndex($indexName, $schemaName . '.' . $tableName, 'C_index_1');
-            },
-        ];
-
-        return $result;
+    #[Depends('testInitFixtures')]
+    #[DataProviderExternal(QueryBuilderProvider::class, 'upsertProvider')]
+    public function testUpsert($table, $insertColumns, $updateColumns, $expectedSQL, $expectedParams): void
+    {
+        parent::testUpsert($table, $insertColumns, $updateColumns, $expectedSQL, $expectedParams);
     }
 
     public function testCommentColumn(): void
@@ -76,84 +72,50 @@ class QueryBuilderTest extends BaseQueryBuilder
         parent::testCommentTable();
     }
 
-    public static function batchInsertProvider(): array
-    {
-        $data = parent::batchInsertProvider();
-        $data['escape-danger-chars']['expected'] = "INSERT INTO `customer` (`address`) VALUES ('SQL-danger chars are escaped: ''); --')";
-        return $data;
-    }
-
     public function testRenameTable(): void
     {
-        $sql = $this->getQueryBuilder()->renameTable('table_from', 'table_to');
-        $this->assertEquals('ALTER TABLE `table_from` RENAME TO `table_to`', $sql);
+        $sql = $this->getDb()->getQueryBuilder()->renameTable('table_from', 'table_to');
+
+        self::assertSame(
+            <<<SQL
+            ALTER TABLE `table_from` RENAME TO `table_to`
+            SQL,
+            $sql,
+            'RENAME TABLE should generate correct SQL.',
+        );
     }
 
     public function testResetSequence(): void
     {
-        $qb = $this->getQueryBuilder(true, true);
+        $qb = $this->getConnection()->getQueryBuilder();
 
-        $expected = "UPDATE sqlite_sequence SET seq='5' WHERE name='item'";
+        $expected = <<<SQL
+        UPDATE sqlite_sequence SET seq='5' WHERE name='item'
+        SQL;
+
         $sql = $qb->resetSequence('item');
-        $this->assertEquals($expected, $sql);
 
-        $expected = "UPDATE sqlite_sequence SET seq='3' WHERE name='item'";
+        self::assertSame(
+            $expected,
+            $sql,
+            'Reset sequence without value should use current max value.',
+        );
+
+        $expected = <<<SQL
+        UPDATE sqlite_sequence SET seq='3' WHERE name='item'
+        SQL;
+
         $sql = $qb->resetSequence('item', 4);
-        $this->assertEquals($expected, $sql);
+
+        self::assertSame(
+            $expected,
+            $sql,
+            "Reset sequence with explicit value should use 'value - 1'.",
+        );
     }
 
-    public static function upsertProvider(): array
-    {
-        $concreteData = [
-            'regular values' => [
-                3 => 'INSERT INTO `T_upsert` (`email`, `address`, `status`, `profile_id`) VALUES (:qp0, :qp1, :qp2, :qp3) ON CONFLICT (`email`) DO UPDATE SET `address`=EXCLUDED.`address`, `status`=EXCLUDED.`status`, `profile_id`=EXCLUDED.`profile_id`',
-            ],
-            'regular values with update part' => [
-                3 => 'INSERT INTO `T_upsert` (`email`, `address`, `status`, `profile_id`) VALUES (:qp0, :qp1, :qp2, :qp3) ON CONFLICT (`email`) DO UPDATE SET `address`=:qp4, `status`=:qp5, `orders`=T_upsert.orders + 1',
-            ],
-            'regular values without update part' => [
-                3 => 'INSERT INTO `T_upsert` (`email`, `address`, `status`, `profile_id`) VALUES (:qp0, :qp1, :qp2, :qp3) ON CONFLICT DO NOTHING',
-            ],
-            'query' => [
-                3 => 'INSERT INTO `T_upsert` (`email`, `status`) SELECT `email`, 2 AS `status` FROM `customer` WHERE `name`=:qp0 LIMIT 1 ON CONFLICT (`email`) DO UPDATE SET `status`=EXCLUDED.`status`',
-            ],
-            'query with update part' => [
-                3 => 'INSERT INTO `T_upsert` (`email`, `status`) SELECT `email`, 2 AS `status` FROM `customer` WHERE `name`=:qp0 LIMIT 1 ON CONFLICT (`email`) DO UPDATE SET `address`=:qp1, `status`=:qp2, `orders`=T_upsert.orders + 1',
-            ],
-            'query without update part' => [
-                3 => 'INSERT INTO `T_upsert` (`email`, `status`) SELECT `email`, 2 AS `status` FROM `customer` WHERE `name`=:qp0 LIMIT 1 ON CONFLICT DO NOTHING',
-            ],
-            'values and expressions' => [
-                3 => 'INSERT INTO {{%T_upsert}} ({{%T_upsert}}.[[email]], [[ts]]) VALUES (:qp0, now())',
-            ],
-            'values and expressions with update part' => [
-                3 => 'INSERT INTO {{%T_upsert}} ({{%T_upsert}}.[[email]], [[ts]]) VALUES (:qp0, now())',
-            ],
-            'values and expressions without update part' => [
-                3 => 'INSERT INTO {{%T_upsert}} ({{%T_upsert}}.[[email]], [[ts]]) VALUES (:qp0, now())',
-            ],
-            'query, values and expressions with update part' => [
-                3 => 'INSERT INTO {{%T_upsert}} (`email`, [[time]]) SELECT :phEmail AS `email`, now() AS [[time]] ON CONFLICT (`email`) DO UPDATE SET `ts`=:qp1, [[orders]]=T_upsert.orders + 1',
-            ],
-            'query, values and expressions without update part' => [
-                3 => 'INSERT INTO {{%T_upsert}} (`email`, [[time]]) SELECT :phEmail AS `email`, now() AS [[time]] ON CONFLICT DO NOTHING',
-            ],
-            'no columns to update' => [
-                3 => 'INSERT INTO `T_upsert_1` (`a`) VALUES (:qp0) ON CONFLICT DO NOTHING',
-            ],
-        ];
-        $newData = parent::upsertProvider();
-        foreach ($concreteData as $testName => $data) {
-            $newData[$testName] = array_replace($newData[$testName], $data);
-        }
-        return $newData;
-    }
-
-    /**
-     * @dataProvider primaryKeysProvider
-     * @param string $sql
-     */
-    public function testAddDropPrimaryKey($sql, Closure $builder): void
+    #[DataProviderExternal(QueryBuilderProvider::class, 'primaryKeysProvider')]
+    public function testAddDropPrimaryKey(string $sql, Closure $builder): void
     {
         $this->expectException(NotSupportedException::class);
         $this->expectExceptionMessageMatches(
@@ -163,11 +125,8 @@ class QueryBuilderTest extends BaseQueryBuilder
         parent::testAddDropPrimaryKey($sql, $builder);
     }
 
-    /**
-     * @dataProvider foreignKeysProvider
-     * @param string $sql
-     */
-    public function testAddDropForeignKey($sql, Closure $builder): void
+    #[DataProviderExternal(QueryBuilderProvider::class, 'foreignKeysProvider')]
+    public function testAddDropForeignKey(string $sql, Closure $builder): void
     {
         $this->expectException(NotSupportedException::class);
         $this->expectExceptionMessageMatches(
@@ -177,11 +136,8 @@ class QueryBuilderTest extends BaseQueryBuilder
         parent::testAddDropForeignKey($sql, $builder);
     }
 
-    /**
-     * @dataProvider uniquesProvider
-     * @param string $sql
-     */
-    public function testAddDropUnique($sql, Closure $builder): void
+    #[DataProviderExternal(QueryBuilderProvider::class, 'uniquesProvider')]
+    public function testAddDropUnique(string $sql, Closure $builder): void
     {
         $this->expectException(NotSupportedException::class);
         $this->expectExceptionMessageMatches(
@@ -191,11 +147,8 @@ class QueryBuilderTest extends BaseQueryBuilder
         parent::testAddDropUnique($sql, $builder);
     }
 
-    /**
-     * @dataProvider checksProvider
-     * @param string $sql
-     */
-    public function testAddDropCheck($sql, Closure $builder): void
+    #[DataProviderExternal(QueryBuilderProvider::class, 'checksProvider')]
+    public function testAddDropCheck(string $sql, Closure $builder): void
     {
         $this->expectException(NotSupportedException::class);
         $this->expectExceptionMessageMatches(
@@ -205,11 +158,8 @@ class QueryBuilderTest extends BaseQueryBuilder
         parent::testAddDropCheck($sql, $builder);
     }
 
-    /**
-     * @dataProvider defaultValuesProvider
-     * @param string $sql
-     */
-    public function testAddDropDefaultValue($sql, Closure $builder): void
+    #[DataProviderExternal(QueryBuilderProvider::class, 'defaultValuesProvider')]
+    public function testAddDropDefaultValue(string $sql, Closure $builder): void
     {
         $this->expectException(NotSupportedException::class);
         $this->expectExceptionMessageMatches(

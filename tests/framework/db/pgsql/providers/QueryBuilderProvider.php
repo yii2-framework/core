@@ -108,9 +108,9 @@ final class QueryBuilderProvider extends \yiiunit\base\db\providers\QueryBuilder
     {
         $data = parent::batchInsertProvider();
 
-        $data['escape-danger-chars']['expected'] = "INSERT INTO \"customer\" (\"address\") VALUES ('SQL-danger chars are escaped: ''); --')";
-        $data['bool-false, bool2-null']['expected'] = 'INSERT INTO "type" ("bool_col", "bool_col2") VALUES (FALSE, NULL)';
-        $data['bool-false, time-now()']['expected'] = 'INSERT INTO {{%type}} ({{%type}}.[[bool_col]], [[time]]) VALUES (FALSE, now())';
+        $data['escape-danger-chars'][3] = "INSERT INTO \"customer\" (\"address\") VALUES ('SQL-danger chars are escaped: ''); --')";
+        $data['bool-false, bool2-null'][3] = 'INSERT INTO "type" ("bool_col", "bool_col2") VALUES (FALSE, NULL)';
+        $data['bool-false, time-now()'][3] = 'INSERT INTO {{%type}} ({{%type}}.[[bool_col]], [[time]]) VALUES (FALSE, now())';
 
         return $data;
     }

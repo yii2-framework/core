@@ -25,7 +25,7 @@ abstract class BaseQueryBuilderUnion extends BaseDatabase
 {
     public function testBuildUnion(): void
     {
-        $db = $this->getConnection(true, false);
+        $db = $this->getConnection(false, false);
 
         $expectedQuerySql = $this->replaceQuotes(
             <<<SQL
@@ -65,7 +65,7 @@ abstract class BaseQueryBuilderUnion extends BaseDatabase
 
     public function testBuildUnionSubqueryInFrom(): void
     {
-        $db = $this->getConnection(true, false);
+        $db = $this->getConnection(false, false);
 
         $union = (new Query())
             ->select('id, name')
@@ -97,7 +97,7 @@ abstract class BaseQueryBuilderUnion extends BaseDatabase
 
     public function testBuildUnionAllSubqueryInFrom(): void
     {
-        $db = $this->getConnection(true, false);
+        $db = $this->getConnection(false, false);
 
         $union = (new Query())
             ->select('id, name')
@@ -129,7 +129,7 @@ abstract class BaseQueryBuilderUnion extends BaseDatabase
 
     public function testBuildUnionSubqueryInJoin(): void
     {
-        $db = $this->getConnection(true, false);
+        $db = $this->getConnection(false, false);
 
         $union = (new Query())
             ->select('id, name')
@@ -163,7 +163,7 @@ abstract class BaseQueryBuilderUnion extends BaseDatabase
 
     public function testBuildUnionSubqueryInCondition(): void
     {
-        $db = $this->getConnection(true, false);
+        $db = $this->getConnection(false, false);
 
         $union = (new Query())
             ->select('id')
@@ -196,7 +196,7 @@ abstract class BaseQueryBuilderUnion extends BaseDatabase
 
     public function testBuildWithQueryEmpty(): void
     {
-        $db = $this->getConnection(true, false);
+        $db = $this->getConnection(false, false);
 
         $params = [];
 
@@ -212,7 +212,7 @@ abstract class BaseQueryBuilderUnion extends BaseDatabase
 
     public function testBuildWithQueryRawSql(): void
     {
-        $db = $this->getConnection(true, false);
+        $db = $this->getConnection(false, false);
 
         $params = [];
 
@@ -243,7 +243,7 @@ abstract class BaseQueryBuilderUnion extends BaseDatabase
 
     public function testBuildWithQuery(): void
     {
-        $db = $this->getConnection(true, false);
+        $db = $this->getConnection(false, false);
 
         $with1Query = (new Query())
             ->select('id')
@@ -287,7 +287,7 @@ abstract class BaseQueryBuilderUnion extends BaseDatabase
 
     public function testBuildWithQueryRecursive(): void
     {
-        $db = $this->getConnection(true, false);
+        $db = $this->getConnection(false, false);
 
         $with1Query = (new Query())
             ->select('id')

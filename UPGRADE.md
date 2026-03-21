@@ -427,7 +427,7 @@ handled in PHP by `SoftCascadeStrategy`. The following migrations are no longer 
 - `m260314_000000_rbac_fix_mssql_cascade`
 
 **No action required** for new installations. For existing MSSQL installations, the old triggers will remain in the
-database but are harmless since `DbManager` no longer relies on them. You may drop them manually:
+database but are harmless since `DbManager` no longer relies on them. You may drop them manually (replace `dbo` with the schema that owns your RBAC tables):
 
 ```sql
 DROP TRIGGER IF EXISTS dbo.trigger_delete_auth_item_child;

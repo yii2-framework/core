@@ -2889,13 +2889,13 @@ parameters:
 		-
 			message: '#^Construct empty\(\) is not allowed\. Use more strict comparison\.$#'
 			identifier: empty.notAllowed
-			count: 7
+			count: 6
 			path: src/rbac/DbManager.php
 
 		-
 			message: '#^Loose comparison via "\=\=" is not allowed\.$#'
 			identifier: equal.notAllowed
-			count: 2
+			count: 1
 			path: src/rbac/DbManager.php
 
 		-
@@ -2937,7 +2937,7 @@ parameters:
 		-
 			message: '#^Method m140506_102106_rbac_init\:\:up\(\) should return mixed but return statement is missing\.$#'
 			identifier: return.missing
-			count: 2
+			count: 1
 			path: src/rbac/migrations/m140506_102106_rbac_init.php
 
 		-
@@ -2999,30 +2999,6 @@ parameters:
 			identifier: method.childReturnType
 			count: 1
 			path: src/rbac/migrations/m180523_151638_rbac_updates_indexes_without_prefix.php
-
-		-
-			message: '#^Method m200409_110543_rbac_update_mssql_trigger\:\:down\(\) should return mixed but return statement is missing\.$#'
-			identifier: return.missing
-			count: 2
-			path: src/rbac/migrations/m200409_110543_rbac_update_mssql_trigger.php
-
-		-
-			message: '#^Method m200409_110543_rbac_update_mssql_trigger\:\:up\(\) should return mixed but return statement is missing\.$#'
-			identifier: return.missing
-			count: 2
-			path: src/rbac/migrations/m200409_110543_rbac_update_mssql_trigger.php
-
-		-
-			message: '#^Return type \(mixed\) of method m200409_110543_rbac_update_mssql_trigger\:\:down\(\) should be covariant with return type \(bool\) of method yii\\db\\MigrationInterface\:\:down\(\)$#'
-			identifier: method.childReturnType
-			count: 1
-			path: src/rbac/migrations/m200409_110543_rbac_update_mssql_trigger.php
-
-		-
-			message: '#^Return type \(mixed\) of method m200409_110543_rbac_update_mssql_trigger\:\:up\(\) should be covariant with return type \(bool\) of method yii\\db\\MigrationInterface\:\:up\(\)$#'
-			identifier: method.childReturnType
-			count: 1
-			path: src/rbac/migrations/m200409_110543_rbac_update_mssql_trigger.php
 
 		-
 			message: '#^Construct empty\(\) is not allowed\. Use more strict comparison\.$#'

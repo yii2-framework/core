@@ -316,16 +316,23 @@ class DbManager extends BaseManager
      */
     protected function removeItem($item)
     {
-        $this->cascadeStrategy->removeItem(
-            $this->db,
-            $item->name,
-            $this->itemChildTable,
-            $this->assignmentTable,
-        );
+        $this->db->transaction(
+            function () use ($item): void {
+                $this->cascadeStrategy->removeItem(
+                    $this->db,
+                    $item->name,
+                    $this->itemChildTable,
+                    $this->assignmentTable,
+                );
 
-        $this->db->createCommand()
-            ->delete($this->itemTable, ['name' => $item->name])
-            ->execute();
+                $this->db->createCommand()
+                    ->delete(
+                        $this->itemTable,
+                        ['name' => $item->name],
+                    )
+                    ->execute();
+            }
+        );
 
         $this->invalidateCache();
 
@@ -337,35 +344,42 @@ class DbManager extends BaseManager
      */
     protected function updateItem($name, $item)
     {
-        $postUpdate = null;
+        $this->db->transaction(
+            function () use ($name, $item): void {
+                $postUpdate = null;
 
-        if ($item->name !== $name) {
-            $postUpdate = $this->cascadeStrategy->updateItem(
-                $this->db,
-                $name,
-                $item->name,
-                $this->itemTable,
-                $this->itemChildTable,
-                $this->assignmentTable,
-            );
-        }
+                if ($item->name !== $name) {
+                    $postUpdate = $this->cascadeStrategy->updateItem(
+                        $this->db,
+                        $name,
+                        $item->name,
+                        $this->itemTable,
+                        $this->itemChildTable,
+                        $this->assignmentTable,
+                    );
+                }
 
-        $item->updatedAt = time();
+                $item->updatedAt = time();
 
-        $this->db->createCommand()
-            ->update($this->itemTable, [
-                'name' => $item->name,
-                'description' => $item->description,
-                'rule_name' => $item->ruleName,
-                'data' => $item->data === null ? null : serialize($item->data),
-                'updated_at' => $item->updatedAt,
-            ], [
-                'name' => $name,
-            ])->execute();
+                $this->db->createCommand()
+                    ->update(
+                        $this->itemTable,
+                        [
+                            'name' => $item->name,
+                            'description' => $item->description,
+                            'rule_name' => $item->ruleName,
+                            'data' => $item->data === null ? null : serialize($item->data),
+                            'updated_at' => $item->updatedAt,
+                        ],
+                        ['name' => $name],
+                    )
+                    ->execute();
 
-        if ($postUpdate !== null) {
-            $postUpdate();
-        }
+                if ($postUpdate !== null) {
+                    $postUpdate();
+                }
+            }
+        );
 
         $this->invalidateCache();
 
@@ -402,31 +416,38 @@ class DbManager extends BaseManager
      */
     protected function updateRule($name, $rule)
     {
-        $postUpdate = null;
+        $this->db->transaction(
+            function () use ($name, $rule): void {
+                $postUpdate = null;
 
-        if ($rule->name !== $name) {
-            $postUpdate = $this->cascadeStrategy->updateRule(
-                $this->db,
-                $name,
-                $rule->name,
-                $this->itemTable,
-            );
-        }
+                if ($rule->name !== $name) {
+                    $postUpdate = $this->cascadeStrategy->updateRule(
+                        $this->db,
+                        $name,
+                        $rule->name,
+                        $this->itemTable,
+                    );
+                }
 
-        $rule->updatedAt = time();
+                $rule->updatedAt = time();
 
-        $this->db->createCommand()
-            ->update($this->ruleTable, [
-                'name' => $rule->name,
-                'data' => serialize($rule),
-                'updated_at' => $rule->updatedAt,
-            ], [
-                'name' => $name,
-            ])->execute();
+                $this->db->createCommand()
+                    ->update(
+                        $this->ruleTable,
+                        [
+                            'name' => $rule->name,
+                            'data' => serialize($rule),
+                            'updated_at' => $rule->updatedAt,
+                        ],
+                        ['name' => $name]
+                    )
+                    ->execute();
 
-        if ($postUpdate !== null) {
-            $postUpdate();
-        }
+                if ($postUpdate !== null) {
+                    $postUpdate();
+                }
+            }
+        );
 
         $this->invalidateCache();
 
@@ -438,15 +459,22 @@ class DbManager extends BaseManager
      */
     protected function removeRule($rule)
     {
-        $this->cascadeStrategy->removeRule(
-            $this->db,
-            $rule->name,
-            $this->itemTable,
-        );
+        $this->db->transaction(
+            function () use ($rule): void {
+                $this->cascadeStrategy->removeRule(
+                    $this->db,
+                    $rule->name,
+                    $this->itemTable,
+                );
 
-        $this->db->createCommand()
-            ->delete($this->ruleTable, ['name' => $rule->name])
-            ->execute();
+                $this->db->createCommand()
+                    ->delete(
+                        $this->ruleTable,
+                        ['name' => $rule->name],
+                    )
+                    ->execute();
+            }
+        );
 
         $this->invalidateCache();
 
@@ -998,17 +1026,24 @@ class DbManager extends BaseManager
      */
     protected function removeAllItems($type)
     {
-        $this->cascadeStrategy->removeAllItems(
-            $this->db,
-            $type,
-            $this->itemTable,
-            $this->itemChildTable,
-            $this->assignmentTable,
-        );
+        $this->db->transaction(
+            function () use ($type): void {
+                $this->cascadeStrategy->removeAllItems(
+                    $this->db,
+                    $type,
+                    $this->itemTable,
+                    $this->itemChildTable,
+                    $this->assignmentTable,
+                );
 
-        $this->db->createCommand()
-            ->delete($this->itemTable, ['type' => $type])
-            ->execute();
+                $this->db->createCommand()
+                    ->delete(
+                        $this->itemTable,
+                        ['type' => $type],
+                    )
+                    ->execute();
+            }
+        );
 
         $this->invalidateCache();
     }
@@ -1018,12 +1053,18 @@ class DbManager extends BaseManager
      */
     public function removeAllRules()
     {
-        $this->cascadeStrategy->removeAllRules(
-            $this->db,
-            $this->itemTable,
-        );
+        $this->db->transaction(
+            function (): void {
+                $this->cascadeStrategy->removeAllRules(
+                    $this->db,
+                    $this->itemTable,
+                );
 
-        $this->db->createCommand()->delete($this->ruleTable)->execute();
+                $this->db->createCommand()
+                    ->delete($this->ruleTable)
+                    ->execute();
+            }
+        );
 
         $this->invalidateCache();
     }

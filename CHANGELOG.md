@@ -72,3 +72,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - test(db): normalize `QueryBuilder` tests with external providers, PHPUnit 10 attributes, heredoc SQL, and `final` driver classes.
 - refactor(rbac)!: extract cascade logic into `CascadeStrategyInterface`, add Oracle driver support, remove MSSQL triggers; fix Oracle BLOB `fetchAll()` corruption via `STRINGIFY_FETCHES`.
 - test(db): add `QueryCacheTest` for MySQL, PostgreSQL, SQLite, and Oracle drivers; align existing MSSQL `QueryCacheTest` to project conventions.
+- test(caching): add `DbCache` tests for SQLite/Oracle, normalize all drivers via `MysqlCacheTest` base class; extract `DbHelper`; fix Oracle BLOB `PdoValue` error in `getDataFieldValue()`.

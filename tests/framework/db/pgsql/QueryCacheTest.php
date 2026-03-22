@@ -8,7 +8,7 @@ declare(strict_types=1);
  * @license https://www.yiiframework.com/license/
  */
 
-namespace yiiunit\framework\db\mssql;
+namespace yiiunit\framework\db\pgsql;
 
 use PHPUnit\Framework\Attributes\Group;
 use yii\caching\FileCache;
@@ -17,17 +17,17 @@ use yii\db\Query;
 use yiiunit\base\db\BaseDatabase;
 
 /**
- * Unit test for {@see \yii\db\Connection::cache()} with MSSQL driver.
+ * Unit test for {@see \yii\db\Connection::cache()} with PostgreSQL driver.
  *
  * @author Wilmer Arambula <terabytesoftw@gmail.com>
  * @since 2.2
  */
 #[Group('db')]
-#[Group('mssql')]
+#[Group('pgsql')]
 #[Group('query-cache')]
 final class QueryCacheTest extends BaseDatabase
 {
-    protected $driverName = 'sqlsrv';
+    protected $driverName = 'pgsql';
 
     public function testQueryCacheFileCache(): void
     {
@@ -55,7 +55,7 @@ final class QueryCacheTest extends BaseDatabase
             ->execute();
 
         $value = static fn(Connection $db): bool|int|string|null => (new Query())
-            ->select(['blob_col'])
+            ->select(['char_col2'])
             ->from('type')
             ->where(['int_col' => $key])
             ->createCommand($db)
@@ -65,7 +65,7 @@ final class QueryCacheTest extends BaseDatabase
         $result = $db->cache($value);
 
         self::assertSame(
-            'a:1:{s:13:"template";s:1:"1";}',
+            '6a3ce1a0bffe8eeb6fa986caf443e24c',
             $result,
             'First query should return the correct scalar value.',
         );
@@ -74,7 +74,7 @@ final class QueryCacheTest extends BaseDatabase
         $result = $db->cache($value);
 
         self::assertSame(
-            'a:1:{s:13:"template";s:1:"1";}',
+            '6a3ce1a0bffe8eeb6fa986caf443e24c',
             $result,
             'Cached query should return the same scalar value.',
         );

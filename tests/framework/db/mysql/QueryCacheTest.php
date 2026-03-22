@@ -8,7 +8,7 @@ declare(strict_types=1);
  * @license https://www.yiiframework.com/license/
  */
 
-namespace yiiunit\framework\db\mssql;
+namespace yiiunit\framework\db\mysql;
 
 use PHPUnit\Framework\Attributes\Group;
 use yii\caching\FileCache;
@@ -17,17 +17,17 @@ use yii\db\Query;
 use yiiunit\base\db\BaseDatabase;
 
 /**
- * Unit test for {@see \yii\db\Connection::cache()} with MSSQL driver.
+ * Unit test for {@see \yii\db\Connection::cache()} with MySQL driver.
  *
  * @author Wilmer Arambula <terabytesoftw@gmail.com>
  * @since 2.2
  */
 #[Group('db')]
-#[Group('mssql')]
+#[Group('mysql')]
 #[Group('query-cache')]
 final class QueryCacheTest extends BaseDatabase
 {
-    protected $driverName = 'sqlsrv';
+    protected $driverName = 'mysql';
 
     public function testQueryCacheFileCache(): void
     {

@@ -5413,18 +5413,6 @@ parameters:
 			path: tests/base/db/BaseDatabase.php
 
 		-
-			message: '#^Only booleans are allowed in &&, yii\\db\\Connection given on the right side\.$#'
-			identifier: booleanAnd.rightNotBoolean
-			count: 1
-			path: tests/base/db/BaseDatabase.php
-
-		-
-			message: '#^Only booleans are allowed in an if condition, yii\\db\\Connection given\.$#'
-			identifier: if.condNotBoolean
-			count: 1
-			path: tests/base/db/BaseDatabase.php
-
-		-
 			message: '#^Anonymous function has an unused use \$update\.$#'
 			identifier: closure.unusedUse
 			count: 1

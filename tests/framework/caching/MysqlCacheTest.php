@@ -134,24 +134,24 @@ class MysqlCacheTest extends BaseCache
 
     public function testSynchronousSetWithTheSameKey(): void
     {
-        $KEY = 'sync-test-key';
-        $VALUE = 'sync-test-value';
+        $key = 'sync-test-key';
+        $value = 'sync-test-value';
 
         $cache = $this->getCacheInstance();
 
         static::$time = time();
 
         self::assertTrue(
-            $cache->set($KEY, $VALUE, 60),
+            $cache->set($key, $value, 60),
             "First cache set should return 'true'.",
         );
         self::assertTrue(
-            $cache->set($KEY, $VALUE, 60),
+            $cache->set($key, $value, 60),
             "Second cache set with the same key should return 'true'.",
         );
         self::assertSame(
-            $VALUE,
-            $cache->get($KEY),
+            $value,
+            $cache->get($key),
             'Cache value should match after synchronous set with the same key.',
         );
     }

@@ -51,14 +51,14 @@ abstract class BaseDatabase extends TestCase
 
         $this->database = $databases[$this->driverName];
 
-        $pdo_database = "pdo_{$this->driverName}";
+        $pdoDatabase = "pdo_{$this->driverName}";
 
         if ($this->driverName === 'oci') {
-            $pdo_database = 'oci8';
+            $pdoDatabase = 'oci8';
         }
 
-        if (!\extension_loaded('pdo') || !\extension_loaded($pdo_database)) {
-            $this->markTestSkipped("PDO and {$pdo_database} extension are required.");
+        if (!\extension_loaded('pdo') || !\extension_loaded($pdoDatabase)) {
+            $this->markTestSkipped("PDO and {$pdoDatabase} extension are required.");
         }
 
         $this->mockApplication();
@@ -66,10 +66,7 @@ abstract class BaseDatabase extends TestCase
 
     protected function tearDown(): void
     {
-        if ($this->_db) {
-            $this->_db->close();
-        }
-
+        $this->_db?->close();
         $this->destroyApplication();
     }
 
@@ -83,7 +80,7 @@ abstract class BaseDatabase extends TestCase
      */
     public function getConnection($reset = true, $open = true): Connection
     {
-        if (!$reset && $this->_db) {
+        if (!$reset && $this->_db !== null) {
             return $this->_db;
         }
 

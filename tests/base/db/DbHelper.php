@@ -12,6 +12,8 @@ namespace yiiunit\base\db;
 
 use yii\db\Connection;
 
+use RuntimeException;
+
 use function explode;
 use function file_get_contents;
 use function preg_replace;
@@ -76,10 +78,14 @@ final class DbHelper
     {
         $db->open();
 
-        $driverName = $db->getDriverName();
+        $content = file_get_contents($fixture);
 
-        if ($driverName === 'oci') {
-            [$drops, $creates] = explode('/* STATEMENTS */', file_get_contents($fixture), 2);
+        if ($content === false) {
+            throw new RuntimeException("Failed to read fixture file: {$fixture}");
+        }
+
+        if ($db->getDriverName() === 'oci') {
+            [$drops, $creates] = explode('/* STATEMENTS */', $content, 2);
             [$statements, $triggers, $data] = explode('/* TRIGGERS */', $creates, 3);
             $lines = [
                 ...explode('--', $drops),
@@ -88,7 +94,7 @@ final class DbHelper
                 ...explode(';', $data),
             ];
         } else {
-            $lines = explode(';', file_get_contents($fixture));
+            $lines = explode(';', $content);
         }
 
         foreach ($lines as $line) {

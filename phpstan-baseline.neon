@@ -6487,30 +6487,6 @@ parameters:
 			path: tests/framework/caching/CallbackDependencyTest.php
 
 		-
-			message: '#^Dynamic call to static method PHPUnit\\Framework\\Assert\:\:assertEquals\(\)\.$#'
-			identifier: staticMethod.dynamicCall
-			count: 3
-			path: tests/framework/caching/DbCacheTest.php
-
-		-
-			message: '#^Dynamic call to static method PHPUnit\\Framework\\Assert\:\:assertFalse\(\)\.$#'
-			identifier: staticMethod.dynamicCall
-			count: 2
-			path: tests/framework/caching/DbCacheTest.php
-
-		-
-			message: '#^Dynamic call to static method PHPUnit\\Framework\\Assert\:\:assertTrue\(\)\.$#'
-			identifier: staticMethod.dynamicCall
-			count: 4
-			path: tests/framework/caching/DbCacheTest.php
-
-		-
-			message: '#^Dynamic call to static method PHPUnit\\Framework\\Assert\:\:markTestSkipped\(\)\.$#'
-			identifier: staticMethod.dynamicCall
-			count: 1
-			path: tests/framework/caching/DbCacheTest.php
-
-		-
 			message: '#^Dynamic call to static method PHPUnit\\Framework\\Assert\:\:assertFalse\(\)\.$#'
 			identifier: staticMethod.dynamicCall
 			count: 2
@@ -6611,36 +6587,6 @@ parameters:
 			identifier: equal.notAllowed
 			count: 2
 			path: tests/framework/caching/MemCachedTest.php
-
-		-
-			message: '#^Dynamic call to static method PHPUnit\\Framework\\Assert\:\:assertEquals\(\)\.$#'
-			identifier: staticMethod.dynamicCall
-			count: 3
-			path: tests/framework/caching/MssqlCacheTest.php
-
-		-
-			message: '#^Dynamic call to static method PHPUnit\\Framework\\Assert\:\:assertFalse\(\)\.$#'
-			identifier: staticMethod.dynamicCall
-			count: 2
-			path: tests/framework/caching/MssqlCacheTest.php
-
-		-
-			message: '#^Dynamic call to static method PHPUnit\\Framework\\Assert\:\:assertTrue\(\)\.$#'
-			identifier: staticMethod.dynamicCall
-			count: 4
-			path: tests/framework/caching/MssqlCacheTest.php
-
-		-
-			message: '#^Dynamic call to static method PHPUnit\\Framework\\Assert\:\:markTestSkipped\(\)\.$#'
-			identifier: staticMethod.dynamicCall
-			count: 1
-			path: tests/framework/caching/MssqlCacheTest.php
-
-		-
-			message: '#^Dynamic call to static method PHPUnit\\Framework\\Assert\:\:markTestSkipped\(\)\.$#'
-			identifier: staticMethod.dynamicCall
-			count: 1
-			path: tests/framework/caching/PgSQLCacheTest.php
 
 		-
 			message: '#^Dynamic call to static method PHPUnit\\Framework\\Assert\:\:assertEquals\(\)\.$#'

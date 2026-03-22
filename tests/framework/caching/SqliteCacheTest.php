@@ -13,24 +13,24 @@ namespace yiiunit\framework\caching;
 use PHPUnit\Framework\Attributes\Group;
 
 /**
- * Unit test for {@see \yii\caching\DbCache} with PostgreSQL driver.
+ * Unit test for {@see \yii\caching\DbCache} with SQLite driver.
  *
  * @author Wilmer Arambula <terabytesoftw@gmail.com>
  * @since 2.2
  */
 #[Group('db')]
-#[Group('pgsql')]
+#[Group('sqlite')]
 #[Group('caching')]
-final class PgSQLCacheTest extends MysqlCacheTest
+final class SqliteCacheTest extends MysqlCacheTest
 {
-    protected static string $driverName = 'pgsql';
+    protected static string $driverName = 'sqlite';
 
     protected function cacheTableColumns(): array
     {
         return [
             'id' => 'VARCHAR(128) NOT NULL PRIMARY KEY',
             'expire' => 'INTEGER',
-            'data' => 'BYTEA',
+            'data' => 'BLOB',
         ];
     }
 }

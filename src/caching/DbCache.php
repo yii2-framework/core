@@ -324,11 +324,15 @@ class DbCache extends Cache
     }
 
     /**
-     * @return PdoValue PdoValue or direct $value for usage in MSSQL
+     * @return PdoValue|string PdoValue or direct $value for usage in MSSQL/Oracle
      * @since 2.0.42
      */
     protected function getDataFieldValue($value)
     {
-        return $this->isVarbinaryDataField() ? $value : new PdoValue($value, \PDO::PARAM_LOB);
+        if ($this->isVarbinaryDataField() || $this->db->getDriverName() === 'oci') {
+            return $value;
+        }
+
+        return new PdoValue($value, \PDO::PARAM_LOB);
     }
 }

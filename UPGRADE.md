@@ -436,6 +436,60 @@ DROP TRIGGER IF EXISTS <schema>.trigger_delete_auth_rule;
 DROP TRIGGER IF EXISTS <schema>.trigger_update_auth_rule;
 ```
 
+### Schema metadata type parameter changed from `string` to `MetadataType` enum
+
+The `$type` parameter in `Schema::getTableMetadata()`, `Schema::getSchemaMetadata()`, and `Schema::setTableMetadata()`
+has changed from `string` to the new `yii\db\MetadataType` enum. The dynamic method dispatch via
+`$this->{'loadTable' . ucfirst($type)}` has been replaced with an explicit `match` expression in the new
+`Schema::loadTableTypeMetadata()` method.
+
+The `mssql\Schema::getSchemaMetadata()` override has been removed. It applied `quoteSimpleTableName()` to table names
+before passing them to `getTableMetadata()`, which produced bracket-quoted cache keys (`[table]`) that did not match
+the unquoted keys used by `refreshTableSchema()` and `schemaCacheExclude`. The base implementation now handles all
+drivers correctly.
+
+The `MetadataType` enum cases are:
+
+| Case | Value | Resolves to |
+| --- | --- | --- |
+| `MetadataType::Schema` | `'schema'` | `TableSchema\|null` |
+| `MetadataType::PrimaryKey` | `'primaryKey'` | `Constraint\|null` |
+| `MetadataType::ForeignKeys` | `'foreignKeys'` | `ForeignKeyConstraint[]` |
+| `MetadataType::Indexes` | `'indexes'` | `IndexConstraint[]` |
+| `MetadataType::Uniques` | `'uniques'` | `Constraint[]` |
+| `MetadataType::Checks` | `'checks'` | `CheckConstraint[]` |
+| `MetadataType::DefaultValues` | `'defaultValues'` | `DefaultValueConstraint[]` |
+
+**Action required** if your application extends `Schema` and either overrides these methods or calls
+`getTableMetadata()` / `getSchemaMetadata()` / `setTableMetadata()` from subclass code:
+
+```php
+// before
+protected function getTableMetadata($name, $type, $refresh) { ... }
+protected function getSchemaMetadata($schema, $type, $refresh) { ... }
+protected function setTableMetadata($name, $type, $data) { ... }
+
+// after
+use yii\db\MetadataType;
+
+protected function getTableMetadata(string $name, MetadataType $type, bool $refresh) { ... }
+protected function getSchemaMetadata(string $schema, MetadataType $type, bool $refresh) { ... }
+protected function setTableMetadata(string $name, MetadataType $type, mixed $data): void { ... }
+```
+
+Any subclass code that passes string literals (e.g., `$this->getTableMetadata($name, 'primaryKey', $refresh)`) must be
+updated to pass the corresponding `MetadataType` enum case (e.g., `MetadataType::PrimaryKey`).
+
+Custom metadata types that previously relied on string-based dynamic dispatch (`'loadTable' . ucfirst($type)`) are no
+longer supported. `MetadataType` is a closed enum — additional cases cannot be added externally.
+
+New protected methods available for subclasses:
+
+- `Schema::loadTableTypeMetadata(MetadataType $type, string $name)` — dispatches to the appropriate `loadTable*()`
+  method via `match`. Override to customize handling for the existing `MetadataType` cases.
+- `Schema::cacheAndReturnConstraints(string $tableName, array $result, MetadataType $returnType)` — caches all
+  constraint entries from a result array and returns the requested type. Use in driver `loadTableConstraints()` methods.
+
 ### Base `QueryBuilder` deprecated API removal
 
 The following deprecated members of `yii\db\QueryBuilder` have been removed (all deprecated since 2.0.14):

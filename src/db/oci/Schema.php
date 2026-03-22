@@ -22,6 +22,7 @@ use yii\db\ConstraintFinderInterface;
 use yii\db\ConstraintFinderTrait;
 use yii\db\ForeignKeyConstraint;
 use yii\db\IndexConstraint;
+use yii\db\MetadataType;
 use yii\db\IntegrityException;
 use yii\db\oci\ColumnSchema;
 use yii\db\TableSchema;
@@ -189,7 +190,7 @@ class Schema extends \yii\db\Schema implements ConstraintFinderInterface
      */
     protected function loadTablePrimaryKey($tableName)
     {
-        return $this->loadTableConstraints($tableName, 'primaryKey');
+        return $this->loadTableConstraints($tableName, MetadataType::PrimaryKey);
     }
 
     /**
@@ -197,7 +198,7 @@ class Schema extends \yii\db\Schema implements ConstraintFinderInterface
      */
     protected function loadTableForeignKeys($tableName)
     {
-        return $this->loadTableConstraints($tableName, 'foreignKeys');
+        return $this->loadTableConstraints($tableName, MetadataType::ForeignKeys);
     }
 
     /**
@@ -261,7 +262,7 @@ class Schema extends \yii\db\Schema implements ConstraintFinderInterface
      */
     protected function loadTableUniques($tableName)
     {
-        return $this->loadTableConstraints($tableName, 'uniques');
+        return $this->loadTableConstraints($tableName, MetadataType::Uniques);
     }
 
     /**
@@ -269,7 +270,7 @@ class Schema extends \yii\db\Schema implements ConstraintFinderInterface
      */
     protected function loadTableChecks($tableName)
     {
-        return $this->loadTableConstraints($tableName, 'checks');
+        return $this->loadTableConstraints($tableName, MetadataType::Checks);
     }
 
     /**
@@ -767,17 +768,14 @@ class Schema extends \yii\db\Schema implements ConstraintFinderInterface
      * Loads multiple types of constraints and returns the specified ones.
      *
      * @param string $tableName table name.
-     * @param string $returnType return type:
-     * - primaryKey
-     * - foreignKeys
-     * - uniques
-     * - checks
+     * @param MetadataType $returnType return type.
+     *
      * @return mixed constraints.
      *
      * @see https://docs.oracle.com/en/database/oracle/oracle-database/19/refrn/ALL_CONSTRAINTS.html
      * @see https://docs.oracle.com/en/database/oracle/oracle-database/19/refrn/ALL_CONS_COLUMNS.html
      */
-    private function loadTableConstraints($tableName, $returnType)
+    private function loadTableConstraints(string $tableName, MetadataType $returnType): mixed
     {
         $sql = <<<SQL
             SELECT
@@ -817,17 +815,17 @@ class Schema extends \yii\db\Schema implements ConstraintFinderInterface
         $constraints = ArrayHelper::index($constraints, null, ['type', 'name']);
 
         $result = [
-            'primaryKey' => null,
-            'foreignKeys' => [],
-            'uniques' => [],
-            'checks' => [],
+            MetadataType::PrimaryKey->value => null,
+            MetadataType::ForeignKeys->value => [],
+            MetadataType::Uniques->value => [],
+            MetadataType::Checks->value => [],
         ];
 
         foreach ($constraints as $type => $names) {
             foreach ($names as $name => $constraint) {
                 switch ($type) {
                     case 'P':
-                        $result['primaryKey'] = new Constraint(
+                        $result[MetadataType::PrimaryKey->value] = new Constraint(
                             [
                                 'name' => $name,
                                 'columnNames' => ArrayHelper::getColumn($constraint, 'column_name'),
@@ -835,7 +833,7 @@ class Schema extends \yii\db\Schema implements ConstraintFinderInterface
                         );
                         break;
                     case 'R':
-                        $result['foreignKeys'][] = new ForeignKeyConstraint(
+                        $result[MetadataType::ForeignKeys->value][] = new ForeignKeyConstraint(
                             [
                                 'name' => $name,
                                 'columnNames' => ArrayHelper::getColumn($constraint, 'column_name'),
@@ -848,7 +846,7 @@ class Schema extends \yii\db\Schema implements ConstraintFinderInterface
                         );
                         break;
                     case 'U':
-                        $result['uniques'][] = new Constraint(
+                        $result[MetadataType::Uniques->value][] = new Constraint(
                             [
                                 'name' => $name,
                                 'columnNames' => ArrayHelper::getColumn($constraint, 'column_name'),
@@ -856,7 +854,7 @@ class Schema extends \yii\db\Schema implements ConstraintFinderInterface
                         );
                         break;
                     case 'C':
-                        $result['checks'][] = new CheckConstraint(
+                        $result[MetadataType::Checks->value][] = new CheckConstraint(
                             [
                                 'name' => $name,
                                 'columnNames' => ArrayHelper::getColumn($constraint, 'column_name'),
@@ -868,10 +866,6 @@ class Schema extends \yii\db\Schema implements ConstraintFinderInterface
             }
         }
 
-        foreach ($result as $type => $data) {
-            $this->setTableMetadata($tableName, $type, $data);
-        }
-
-        return $result[$returnType];
+        return $this->cacheAndReturnConstraints($tableName, $result, $returnType);
     }
 }

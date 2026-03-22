@@ -1537,12 +1537,6 @@ parameters:
 			path: src/db/Schema.php
 
 		-
-			message: '#^Variable method call on \$this\(yii\\db\\Schema\<T of yii\\db\\ColumnSchema \= yii\\db\\ColumnSchema\>\)\.$#'
-			identifier: method.dynamicName
-			count: 2
-			path: src/db/Schema.php
-
-		-
 			message: '#^Construct empty\(\) is not allowed\. Use more strict comparison\.$#'
 			identifier: empty.notAllowed
 			count: 2
@@ -1821,12 +1815,6 @@ parameters:
 		-
 			message: '#^Parameter \#1 \$table \(yii\\db\\mssql\\TableSchema\) of method yii\\db\\mssql\\Schema\:\:findUniqueIndexes\(\) should be contravariant with parameter \$table \(yii\\db\\TableSchema\) of method yii\\db\\Schema\<T of yii\\db\\mssql\\ColumnSchema \= yii\\db\\mssql\\ColumnSchema\>\:\:findUniqueIndexes\(\)$#'
 			identifier: method.childParameterType
-			count: 1
-			path: src/db/mssql/Schema.php
-
-		-
-			message: '#^Variable method call on \$this\(yii\\db\\mssql\\Schema\<T of yii\\db\\mssql\\ColumnSchema \= yii\\db\\mssql\\ColumnSchema\>\)\.$#'
-			identifier: method.dynamicName
 			count: 1
 			path: src/db/mssql/Schema.php
 

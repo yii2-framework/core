@@ -317,4 +317,19 @@ final class SchemaTest extends BaseSchema
             'Inserted primary key should match selected.',
         );
     }
+
+    public function testDefaultValuesCacheKeyAfterPrimaryKeyLoad(): void
+    {
+        $db = $this->getConnection(false, true);
+        $schema = $db->getSchema();
+
+        $schema->getTablePrimaryKey('T_constraints_1');
+
+        $defaults = $schema->getTableDefaultValues('T_constraints_1');
+
+        self::assertNotEmpty(
+            $defaults,
+            'Default values should be pre-cached when primary key is loaded via loadTableConstraints().',
+        );
+    }
 }

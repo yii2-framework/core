@@ -32,21 +32,21 @@ trait ConstraintFinderTrait
     /**
      * Returns the metadata of the given type for the given table.
      * @param string $name table name. The table name may contain schema name if any. Do not quote the table name.
-     * @param string $type metadata type.
+     * @param MetadataType $type metadata type.
      * @param bool $refresh whether to reload the table metadata even if it is found in the cache.
      * @return mixed metadata.
      */
-    abstract protected function getTableMetadata($name, $type, $refresh);
+    abstract protected function getTableMetadata(string $name, MetadataType $type, bool $refresh);
 
     /**
      * Returns the metadata of the given type for all tables in the given schema.
      * @param string $schema the schema of the metadata. Defaults to empty string, meaning the current or default schema name.
-     * @param string $type metadata type.
+     * @param MetadataType $type metadata type.
      * @param bool $refresh whether to fetch the latest available table metadata. If this is `false`,
      * cached data may be returned if available.
      * @return array array of metadata.
      */
-    abstract protected function getSchemaMetadata($schema, $type, $refresh);
+    abstract protected function getSchemaMetadata(string $schema, MetadataType $type, bool $refresh);
 
     /**
      * Loads a primary key for the given table.
@@ -99,7 +99,7 @@ trait ConstraintFinderTrait
      */
     public function getTablePrimaryKey($name, $refresh = false)
     {
-        return $this->getTableMetadata($name, 'primaryKey', $refresh);
+        return $this->getTableMetadata($name, MetadataType::PrimaryKey, $refresh);
     }
 
     /**
@@ -112,7 +112,7 @@ trait ConstraintFinderTrait
      */
     public function getSchemaPrimaryKeys($schema = '', $refresh = false)
     {
-        return $this->getSchemaMetadata($schema, 'primaryKey', $refresh);
+        return $this->getSchemaMetadata($schema, MetadataType::PrimaryKey, $refresh);
     }
 
     /**
@@ -123,7 +123,7 @@ trait ConstraintFinderTrait
      */
     public function getTableForeignKeys($name, $refresh = false)
     {
-        return $this->getTableMetadata($name, 'foreignKeys', $refresh);
+        return $this->getTableMetadata($name, MetadataType::ForeignKeys, $refresh);
     }
 
     /**
@@ -136,7 +136,7 @@ trait ConstraintFinderTrait
      */
     public function getSchemaForeignKeys($schema = '', $refresh = false)
     {
-        return $this->getSchemaMetadata($schema, 'foreignKeys', $refresh);
+        return $this->getSchemaMetadata($schema, MetadataType::ForeignKeys, $refresh);
     }
 
     /**
@@ -147,7 +147,7 @@ trait ConstraintFinderTrait
      */
     public function getTableIndexes($name, $refresh = false)
     {
-        return $this->getTableMetadata($name, 'indexes', $refresh);
+        return $this->getTableMetadata($name, MetadataType::Indexes, $refresh);
     }
 
     /**
@@ -160,7 +160,7 @@ trait ConstraintFinderTrait
      */
     public function getSchemaIndexes($schema = '', $refresh = false)
     {
-        return $this->getSchemaMetadata($schema, 'indexes', $refresh);
+        return $this->getSchemaMetadata($schema, MetadataType::Indexes, $refresh);
     }
 
     /**
@@ -171,7 +171,7 @@ trait ConstraintFinderTrait
      */
     public function getTableUniques($name, $refresh = false)
     {
-        return $this->getTableMetadata($name, 'uniques', $refresh);
+        return $this->getTableMetadata($name, MetadataType::Uniques, $refresh);
     }
 
     /**
@@ -184,7 +184,7 @@ trait ConstraintFinderTrait
      */
     public function getSchemaUniques($schema = '', $refresh = false)
     {
-        return $this->getSchemaMetadata($schema, 'uniques', $refresh);
+        return $this->getSchemaMetadata($schema, MetadataType::Uniques, $refresh);
     }
 
     /**
@@ -195,7 +195,7 @@ trait ConstraintFinderTrait
      */
     public function getTableChecks($name, $refresh = false)
     {
-        return $this->getTableMetadata($name, 'checks', $refresh);
+        return $this->getTableMetadata($name, MetadataType::Checks, $refresh);
     }
 
     /**
@@ -208,7 +208,7 @@ trait ConstraintFinderTrait
      */
     public function getSchemaChecks($schema = '', $refresh = false)
     {
-        return $this->getSchemaMetadata($schema, 'checks', $refresh);
+        return $this->getSchemaMetadata($schema, MetadataType::Checks, $refresh);
     }
 
     /**
@@ -219,7 +219,7 @@ trait ConstraintFinderTrait
      */
     public function getTableDefaultValues($name, $refresh = false)
     {
-        return $this->getTableMetadata($name, 'defaultValues', $refresh);
+        return $this->getTableMetadata($name, MetadataType::DefaultValues, $refresh);
     }
 
     /**
@@ -232,6 +232,6 @@ trait ConstraintFinderTrait
      */
     public function getSchemaDefaultValues($schema = '', $refresh = false)
     {
-        return $this->getSchemaMetadata($schema, 'defaultValues', $refresh);
+        return $this->getSchemaMetadata($schema, MetadataType::DefaultValues, $refresh);
     }
 }

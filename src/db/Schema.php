@@ -20,6 +20,8 @@ use yii\caching\CacheInterface;
 use yii\caching\TagDependency;
 use yii\db\IntegrityException;
 
+use function array_key_exists;
+
 /**
  * Schema is the base class for concrete DBMS-specific schema classes.
  *
@@ -37,6 +39,13 @@ use yii\db\IntegrityException;
  * transaction. This can be one of [[Transaction::READ_UNCOMMITTED]], [[Transaction::READ_COMMITTED]],
  * [[Transaction::REPEATABLE_READ]] and [[Transaction::SERIALIZABLE]] but also a string containing DBMS specific
  * syntax to be used after `SET TRANSACTION ISOLATION LEVEL`.
+ *
+ * @method Constraint|null loadTablePrimaryKey(string $tableName)
+ * @method ForeignKeyConstraint[] loadTableForeignKeys(string $tableName)
+ * @method IndexConstraint[] loadTableIndexes(string $tableName)
+ * @method Constraint[] loadTableUniques(string $tableName)
+ * @method CheckConstraint[] loadTableChecks(string $tableName)
+ * @method DefaultValueConstraint[] loadTableDefaultValues(string $tableName)
  *
  * @author Qiang Xue <qiang.xue@gmail.com>
  * @author Sergey Makinen <sergey@makinen.ru>
@@ -194,20 +203,23 @@ abstract class Schema extends BaseObject
      */
     public function getTableSchema($name, $refresh = false)
     {
-        return $this->getTableMetadata($name, 'schema', $refresh);
+        return $this->getTableMetadata($name, MetadataType::Schema, $refresh);
     }
 
     /**
      * Returns the metadata for all tables in the database.
-     * @param string $schema the schema of the tables. Defaults to empty string, meaning the current or default schema name.
-     * @param bool $refresh whether to fetch the latest available table schemas. If this is `false`,
-     * cached data may be returned if available.
+     *
+     * @param string $schema the schema of the tables. Defaults to empty string, meaning the current or default schema
+     * name.
+     * @param bool $refresh whether to fetch the latest available table schemas. If this is `false`, cached data may be
+     * returned if available.
+     *
      * @return TableSchema[] the metadata for all tables in the database.
      * Each array element is an instance of [[TableSchema]] or its child class.
      */
     public function getTableSchemas($schema = '', $refresh = false)
     {
-        return $this->getSchemaMetadata($schema, 'schema', $refresh);
+        return $this->getSchemaMetadata($schema, MetadataType::Schema, $refresh);
     }
 
     /**
@@ -228,10 +240,12 @@ abstract class Schema extends BaseObject
 
     /**
      * Returns all table names in the database.
-     * @param string $schema the schema of the tables. Defaults to empty string, meaning the current or default schema name.
+     * @param string $schema the schema of the tables. Defaults to empty string, meaning the current or default schema
+     * name.
      * If not empty, the returned table names will be prefixed with the schema name.
      * @param bool $refresh whether to fetch the latest available table names. If this is false,
      * table names fetched previously (if available) will be returned.
+     *
      * @return string[] all table names in the database.
      */
     public function getTableNames($schema = '', $refresh = false)
@@ -736,55 +750,87 @@ abstract class Schema extends BaseObject
 
     /**
      * Returns the metadata of the given type for the given table.
-     * If there's no metadata in the cache, this method will call
-     * a `'loadTable' . ucfirst($type)` named method with the table name to obtain the metadata.
+     *
      * @param string $name table name. The table name may contain schema name if any. Do not quote the table name.
-     * @param string $type metadata type.
+     * @param MetadataType $type metadata type.
      * @param bool $refresh whether to reload the table metadata even if it is found in the cache.
+     *
      * @return mixed metadata.
+     *
      * @since 2.0.13
      */
-    protected function getTableMetadata($name, $type, $refresh)
+    protected function getTableMetadata(string $name, MetadataType $type, bool $refresh)
     {
         $cache = null;
+
         if ($this->db->enableSchemaCache && !in_array($name, $this->db->schemaCacheExclude, true)) {
-            $schemaCache = is_string($this->db->schemaCache) ? Yii::$app->get($this->db->schemaCache, false) : $this->db->schemaCache;
+            $schemaCache = is_string($this->db->schemaCache)
+                ? Yii::$app->get($this->db->schemaCache, false)
+                : $this->db->schemaCache;
+
             if ($schemaCache instanceof CacheInterface) {
                 $cache = $schemaCache;
             }
         }
+
         $rawName = $this->getRawTableName($name);
+
         if (!isset($this->_tableMetadata[$rawName])) {
             $this->loadTableMetadataFromCache($cache, $rawName);
         }
-        if ($refresh || !array_key_exists($type, $this->_tableMetadata[$rawName])) {
-            $this->_tableMetadata[$rawName][$type] = $this->{'loadTable' . ucfirst($type)}($rawName);
+
+        if ($refresh || !array_key_exists($type->value, $this->_tableMetadata[$rawName])) {
+            $this->_tableMetadata[$rawName][$type->value] = $this->loadTableTypeMetadata($type, $rawName);
             $this->saveTableMetadataToCache($cache, $rawName);
         }
 
-        return $this->_tableMetadata[$rawName][$type];
+        return $this->_tableMetadata[$rawName][$type->value];
+    }
+
+    /**
+     * Loads the desired metadata type for the given table name.
+     *
+     * @param MetadataType $type metadata type.
+     * @param string $name the raw table name.
+     *
+     * @return Constraint|CheckConstraint[]|DefaultValueConstraint[]|ForeignKeyConstraint[]|IndexConstraint[]|TableSchema|null
+     */
+    protected function loadTableTypeMetadata(MetadataType $type, string $name): Constraint|array|TableSchema|null
+    {
+        return match ($type) {
+            MetadataType::Schema => $this->loadTableSchema($name),
+            MetadataType::PrimaryKey => $this->loadTablePrimaryKey($name),
+            MetadataType::ForeignKeys => $this->loadTableForeignKeys($name),
+            MetadataType::Indexes => $this->loadTableIndexes($name),
+            MetadataType::Uniques => $this->loadTableUniques($name),
+            MetadataType::Checks => $this->loadTableChecks($name),
+            MetadataType::DefaultValues => $this->loadTableDefaultValues($name),
+        };
     }
 
     /**
      * Returns the metadata of the given type for all tables in the given schema.
-     * This method will call a `'getTable' . ucfirst($type)` named method with the table name
-     * and the refresh flag to obtain the metadata.
+     *
      * @param string $schema the schema of the metadata. Defaults to empty string, meaning the current or default schema name.
-     * @param string $type metadata type.
+     * @param MetadataType $type metadata type.
      * @param bool $refresh whether to fetch the latest available table metadata. If this is `false`,
      * cached data may be returned if available.
+     *
      * @return array array of metadata.
+     *
      * @since 2.0.13
      */
-    protected function getSchemaMetadata($schema, $type, $refresh)
+    protected function getSchemaMetadata(string $schema, MetadataType $type, bool $refresh)
     {
         $metadata = [];
-        $methodName = 'getTable' . ucfirst($type);
+
         foreach ($this->getTableNames($schema, $refresh) as $name) {
             if ($schema !== '') {
                 $name = $schema . '.' . $name;
             }
-            $tableMetadata = $this->$methodName($name, $refresh);
+
+            $tableMetadata = $this->getTableMetadata($name, $type, $refresh);
+
             if ($tableMetadata !== null) {
                 $metadata[] = $tableMetadata;
             }
@@ -795,14 +841,36 @@ abstract class Schema extends BaseObject
 
     /**
      * Sets the metadata of the given type for the given table.
+     *
      * @param string $name table name.
-     * @param string $type metadata type.
+     * @param MetadataType $type metadata type.
      * @param mixed $data metadata.
+     *
      * @since 2.0.13
      */
-    protected function setTableMetadata($name, $type, $data)
+    protected function setTableMetadata(string $name, MetadataType $type, mixed $data): void
     {
-        $this->_tableMetadata[$this->getRawTableName($name)][$type] = $data;
+        $this->_tableMetadata[$this->getRawTableName($name)][$type->value] = $data;
+    }
+
+    /**
+     * Caches all constraint metadata from the result array and returns the requested type.
+     *
+     * @param string $tableName table name.
+     * @param array<string, mixed> $result constraint metadata keyed by {@see MetadataType} values.
+     * @param MetadataType $returnType the metadata type to return.
+     *
+     * @return mixed the requested constraint metadata.
+     */
+    protected function cacheAndReturnConstraints(string $tableName, array $result, MetadataType $returnType): mixed
+    {
+        foreach (MetadataType::cases() as $metadataType) {
+            if (array_key_exists($metadataType->value, $result)) {
+                $this->setTableMetadata($tableName, $metadataType, $result[$metadataType->value]);
+            }
+        }
+
+        return $result[$returnType->value];
     }
 
     /**

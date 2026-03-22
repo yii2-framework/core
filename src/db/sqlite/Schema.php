@@ -18,6 +18,7 @@ use yii\db\ConstraintFinderInterface;
 use yii\db\ConstraintFinderTrait;
 use yii\db\ForeignKeyConstraint;
 use yii\db\IndexConstraint;
+use yii\db\MetadataType;
 use yii\db\SqlToken;
 use yii\db\TableSchema;
 use yii\db\Transaction;
@@ -139,7 +140,7 @@ class Schema extends BaseSchema implements ConstraintFinderInterface
      */
     protected function loadTablePrimaryKey($tableName)
     {
-        return $this->loadTableConstraints($tableName, 'primaryKey');
+        return $this->loadTableConstraints($tableName, MetadataType::PrimaryKey);
     }
 
     /**
@@ -178,7 +179,7 @@ class Schema extends BaseSchema implements ConstraintFinderInterface
      */
     protected function loadTableIndexes($tableName)
     {
-        return $this->loadTableConstraints($tableName, 'indexes');
+        return $this->loadTableConstraints($tableName, MetadataType::Indexes);
     }
 
     /**
@@ -186,7 +187,7 @@ class Schema extends BaseSchema implements ConstraintFinderInterface
      */
     protected function loadTableUniques($tableName)
     {
-        return $this->loadTableConstraints($tableName, 'uniques');
+        return $this->loadTableConstraints($tableName, MetadataType::Uniques);
     }
 
     /**
@@ -448,18 +449,17 @@ class Schema extends BaseSchema implements ConstraintFinderInterface
 
     /**
      * Loads multiple types of constraints and returns the specified ones.
+     *
      * @param string $tableName table name.
-     * @param string $returnType return type:
-     * - primaryKey
-     * - indexes
-     * - uniques
+     * @param MetadataType $returnType return type.
+     *
      * @return mixed constraints.
      *
      * @see https://www.sqlite.org/pragma.html#pragma_index_list
      * @see https://www.sqlite.org/pragma.html#pragma_index_info
      * @see https://www.sqlite.org/lang_createtable.html#primkeyconst
      */
-    private function loadTableConstraints($tableName, $returnType)
+    private function loadTableConstraints(string $tableName, MetadataType $returnType): mixed
     {
         $indexes = $this->db->createCommand(
             'PRAGMA index_list(' . $this->quoteValue($tableName) . ')',
@@ -477,9 +477,9 @@ class Schema extends BaseSchema implements ConstraintFinderInterface
         }
 
         $result = [
-            'primaryKey' => null,
-            'indexes' => [],
-            'uniques' => [],
+            MetadataType::PrimaryKey->value => null,
+            MetadataType::Indexes->value => [],
+            MetadataType::Uniques->value => [],
         ];
 
         foreach ($indexes as $index) {
@@ -501,7 +501,7 @@ class Schema extends BaseSchema implements ConstraintFinderInterface
                 }
             }
 
-            $result['indexes'][] = new IndexConstraint(
+            $result[MetadataType::Indexes->value][] = new IndexConstraint(
                 [
                     'isPrimary' => $index['origin'] === 'pk',
                     'isUnique' => (bool) $index['unique'],
@@ -511,18 +511,18 @@ class Schema extends BaseSchema implements ConstraintFinderInterface
             );
 
             if ($index['origin'] === 'u') {
-                $result['uniques'][] = new Constraint(
+                $result[MetadataType::Uniques->value][] = new Constraint(
                     [
                         'name' => $index['name'],
                         'columnNames' => ArrayHelper::getColumn($columns, 'name'),
                     ],
                 );
             } elseif ($index['origin'] === 'pk') {
-                $result['primaryKey'] = new Constraint(['columnNames' => ArrayHelper::getColumn($columns, 'name')]);
+                $result[MetadataType::PrimaryKey->value] = new Constraint(['columnNames' => ArrayHelper::getColumn($columns, 'name')]);
             }
         }
 
-        if ($result['primaryKey'] === null) {
+        if ($result[MetadataType::PrimaryKey->value] === null) {
             /*
              * Additional check for PK in case of INTEGER PRIMARY KEY with ROWID
              * See https://www.sqlite.org/lang_createtable.html#primkeyconst
@@ -533,17 +533,13 @@ class Schema extends BaseSchema implements ConstraintFinderInterface
 
             foreach ($tableColumns as $tableColumn) {
                 if ($tableColumn['pk'] > 0) {
-                    $result['primaryKey'] = new Constraint(['columnNames' => [$tableColumn['name']]]);
+                    $result[MetadataType::PrimaryKey->value] = new Constraint(['columnNames' => [$tableColumn['name']]]);
                     break;
                 }
             }
         }
 
-        foreach ($result as $type => $data) {
-            $this->setTableMetadata($tableName, $type, $data);
-        }
-
-        return $result[$returnType];
+        return $this->cacheAndReturnConstraints($tableName, $result, $returnType);
     }
 
     /**

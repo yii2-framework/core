@@ -436,6 +436,48 @@ DROP TRIGGER IF EXISTS <schema>.trigger_delete_auth_rule;
 DROP TRIGGER IF EXISTS <schema>.trigger_update_auth_rule;
 ```
 
+### Schema metadata type parameter changed from `string` to `MetadataType` enum
+
+The `$type` parameter in `Schema::getTableMetadata()`, `Schema::getSchemaMetadata()`, and `Schema::setTableMetadata()`
+has changed from `string` to the new `yii\db\MetadataType` enum. The dynamic method dispatch via
+`$this->{'loadTable' . ucfirst($type)}` has been replaced with an explicit `match` expression in the new
+`Schema::loadTableTypeMetadata()` method.
+
+The `MetadataType` enum cases are:
+
+| Case | Value | Resolves to |
+| --- | --- | --- |
+| `MetadataType::Schema` | `'schema'` | `TableSchema\|null` |
+| `MetadataType::PrimaryKey` | `'primaryKey'` | `Constraint\|null` |
+| `MetadataType::ForeignKeys` | `'foreignKeys'` | `ForeignKeyConstraint[]` |
+| `MetadataType::Indexes` | `'indexes'` | `IndexConstraint[]` |
+| `MetadataType::Uniques` | `'uniques'` | `Constraint[]` |
+| `MetadataType::Checks` | `'checks'` | `CheckConstraint[]` |
+| `MetadataType::DefaultValues` | `'defaultValues'` | `DefaultValueConstraint[]` |
+
+**Action required** if your application extends `Schema` and overrides any of these methods:
+
+```php
+// before
+protected function getTableMetadata($name, $type, $refresh) { ... }
+protected function getSchemaMetadata($schema, $type, $refresh) { ... }
+protected function setTableMetadata($name, $type, $data) { ... }
+
+// after
+use yii\db\MetadataType;
+
+protected function getTableMetadata(string $name, MetadataType $type, bool $refresh) { ... }
+protected function getSchemaMetadata(string $schema, MetadataType $type, bool $refresh) { ... }
+protected function setTableMetadata(string $name, MetadataType $type, mixed $data): void { ... }
+```
+
+New protected methods available for subclasses:
+
+- `Schema::loadTableTypeMetadata(MetadataType $type, string $name)` — dispatches to the appropriate `loadTable*()`
+  method via `match`. Override to add custom metadata types.
+- `Schema::cacheAndReturnConstraints(string $tableName, array $result, MetadataType $returnType)` — caches all
+  constraint entries from a result array and returns the requested type. Use in driver `loadTableConstraints()` methods.
+
 ### Base `QueryBuilder` deprecated API removal
 
 The following deprecated members of `yii\db\QueryBuilder` have been removed (all deprecated since 2.0.14):

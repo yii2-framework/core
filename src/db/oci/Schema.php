@@ -590,8 +590,8 @@ class Schema extends \yii\db\Schema implements ConstraintFinderInterface
     {
         $query = <<<SQL
             SELECT
-                "dic"."INDEX_NAME",
-                "dic"."COLUMN_NAME"
+                "dic"."INDEX_NAME" AS "index_name",
+                "dic"."COLUMN_NAME" AS "column_name"
             FROM "ALL_INDEXES" "di"
             INNER JOIN "ALL_IND_COLUMNS" "dic"
                 ON "dic"."INDEX_OWNER" = "di"."OWNER"
@@ -614,8 +614,10 @@ class Schema extends \yii\db\Schema implements ConstraintFinderInterface
             ],
         );
 
-        foreach ($command->queryAll() as $row) {
-            $result[$row['INDEX_NAME']][] = $row['COLUMN_NAME'];
+        $rows = $this->normalizePdoRowKeyCase($command->queryAll(), true);
+
+        foreach ($rows as $row) {
+            $result[$row['index_name']][] = $row['column_name'];
         }
 
         return $result;

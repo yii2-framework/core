@@ -146,6 +146,8 @@ CREATE TABLE `type` (
   `char_col2` varchar(100) DEFAULT 'something',
   `char_col3` text,
   `enum_col` enum('a', 'B', 'c,D'),
+  `enum_col_paren` enum('a)','b(','c)d'),
+  `enum_col_quote` enum('it''s','they''re','plain'),
   `float_col` double(4,3) NOT NULL,
   `float_col2` double DEFAULT '1.23',
   `blob_col` blob,

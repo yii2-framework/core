@@ -16,6 +16,10 @@ use yii\db\JsonExpression;
 
 use function in_array;
 use function is_string;
+use function str_replace;
+use function strpos;
+use function strrpos;
+use function substr;
 
 /**
  * Represents the metadata of a column in a MySQL database table.
@@ -40,6 +44,38 @@ class ColumnSchema extends \yii\db\ColumnSchema
      */
     public $disableJsonSupport = false;
 
+
+    /**
+     * {@inheritdoc}
+     *
+     * Extends the base implementation to parse MySQL enum literals from `dbType` using a quote-aware parser that
+     * handles values containing parentheses (`'a)'`) and escaped single quotes (`'it''s'`).
+     */
+    public function extractSizeFromDbType(): string
+    {
+        $this->enumValues = null;
+
+        $type = parent::extractSizeFromDbType();
+
+        if (strtolower($type) === 'enum') {
+            $openPos = strpos($this->dbType, '(');
+            $closePos = strrpos($this->dbType, ')');
+
+            if ($openPos !== false && $closePos !== false && $closePos > $openPos) {
+                $payload = substr($this->dbType, $openPos + 1, $closePos - $openPos - 1);
+
+                if (preg_match_all("/'(?:[^']*(?:''[^']*)*)'/", $payload, $matches)) {
+                    $this->enumValues = [];
+
+                    foreach ($matches[0] as $value) {
+                        $this->enumValues[] = str_replace("''", "'", substr($value, 1, -1));
+                    }
+                }
+            }
+        }
+
+        return $type;
+    }
 
     /**
      * {@inheritdoc}

@@ -313,17 +313,7 @@ class Schema extends \yii\db\Schema implements ConstraintFinderInterface
 
         $column->type = $this->typeMap[$type] ?? self::TYPE_STRING;
 
-        if ($type === 'enum') {
-            if (preg_match('/\(([^\)]+)\)/', $column->dbType, $enumMatch)) {
-                preg_match_all("/'[^']*'/", $enumMatch[1], $values);
-
-                foreach ($values[0] as $i => $value) {
-                    $values[$i] = trim($value, "'");
-                }
-
-                $column->enumValues = $values;
-            }
-        } elseif ($column->size === 1 && $type === 'bit') {
+        if ($column->size === 1 && $type === 'bit') {
             $column->type = 'boolean';
         } elseif ($type === 'bit') {
             if ($column->size > 32) {

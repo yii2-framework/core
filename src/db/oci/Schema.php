@@ -10,7 +10,6 @@ declare(strict_types=1);
 
 namespace yii\db\oci;
 
-use Exception;
 use PDO;
 use Yii;
 use yii\base\InvalidCallException;
@@ -353,17 +352,13 @@ class Schema extends \yii\db\Schema implements ConstraintFinderInterface
             ORDER BY "a"."COLUMN_ID"
             SQL;
 
-        try {
-            $columns = $this->db->createCommand(
-                $sql,
-                [
-                    ':tableName' => $table->name,
-                    ':schemaName' => $table->schemaName,
-                ],
-            )->queryAll();
-        } catch (Exception $e) {
-            return false;
-        }
+        $columns = $this->db->createCommand(
+            $sql,
+            [
+                ':tableName' => $table->name,
+                ':schemaName' => $table->schemaName,
+            ],
+        )->queryAll();
 
         if (empty($columns)) {
             return false;

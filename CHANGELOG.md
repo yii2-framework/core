@@ -79,3 +79,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - refactor(db)!: remove 9 dead methods from `DataReader` (`bindColumn`, `setFetchMode`, `readColumn`, `readObject`, `readAll`, `nextResult`, `getIsClosed`, `getRowCount`, `getColumnCount`); inline `rowCount()` into `count()`.
 - test(db): Raise code coverage to `100%` for `DataReader` classes across all drivers.
 - fix(db/oci): `findUniqueIndexes()` returns empty results when `PDO::ATTR_CASE` is `PDO::CASE_LOWER` due to missing `normalizePdoRowKeyCase()` call.
+- fix(db/oci): `findColumns()` blanket `catch (Exception)` silently swallows connection and permission errors; remove try/catch since Oracle catalog views return empty results for non-existent tables.

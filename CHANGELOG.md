@@ -76,3 +76,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - refactor(db)!: modernize base `QueryBuilder` remove deprecated `$conditionBuilders` and 8 `build*Condition()` methods; use `::class`, spread operator, short destructuring, `static` closures.
 - refactor(db)!: replace dynamic metadata dispatch with `MetadataType` enum and explicit `match`; fix MSSQL `'defaults'` cache key mismatch.
 - refactor(db)!: replace dynamic `queryInternal()` dispatch with `QueryMode` enum and explicit `match`; remove unused `$fetchMode` parameter from `queryAll()` and `queryOne()`.
+- refactor(db)!: remove 9 dead methods from `DataReader` (`bindColumn`, `setFetchMode`, `readColumn`, `readObject`, `readAll`, `nextResult`, `getIsClosed`, `getRowCount`, `getColumnCount`); inline `rowCount()` into `count()`.

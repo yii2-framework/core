@@ -555,6 +555,24 @@ The `MetadataType` enum cases have been renamed from PascalCase to UPPER_SNAKE_C
 **Action required** if your application references `MetadataType` enum cases directly. Update all references to use the
 new UPPER_SNAKE_CASE names. The backing string values remain unchanged (`'checks'`, `'primaryKey'`, etc.).
 
+### `DataReader` dead methods removed
+
+The following methods have been removed from `yii\db\DataReader` (zero production callers):
+
+| Removed method | Replacement |
+| --- | --- |
+| `bindColumn()` | Use `$command->pdoStatement->bindColumn()` directly |
+| `setFetchMode()` | Use `$command->fetchMode` property before calling `query()` |
+| `readColumn()` | Use `$command->queryColumn()` instead |
+| `readObject()` | Use `$command->pdoStatement->fetchObject()` directly |
+| `readAll()` | Use `$command->queryAll()` instead |
+| `nextResult()` | Use `$command->pdoStatement->nextRowset()` directly |
+| `getIsClosed()` | No replacement needed |
+| `getRowCount()` | Use `count($reader)` (Countable interface) |
+| `getColumnCount()` | Use `$command->pdoStatement->columnCount()` directly |
+
+The `@property-read` annotations for `$columnCount`, `$fetchMode`, `$isClosed`, and `$rowCount` have been removed.
+
 ### Base `QueryBuilder` deprecated API removal
 
 The following deprecated members of `yii\db\QueryBuilder` have been removed (all deprecated since 2.0.14):

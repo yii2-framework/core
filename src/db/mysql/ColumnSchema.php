@@ -79,6 +79,25 @@ class ColumnSchema extends \yii\db\ColumnSchema
 
     /**
      * {@inheritdoc}
+     *
+     * Handles BIT width boundaries:
+     * - `bit(1)` → `boolean`.
+     * - `bit(2)`–`bit(32)` → unchanged (remains `integer` from `typeMap`).
+     * - `bit(33+)` → `bigint`.
+     */
+    public function resolveType(string $type): void
+    {
+        if ($this->size === 1 && $type === 'bit') {
+            $this->type = 'boolean';
+        } elseif ($type === 'bit') {
+            if ($this->size > 32) {
+                $this->type = 'bigint';
+            }
+        }
+    }
+
+    /**
+     * {@inheritdoc}
      */
     public function dbTypecast($value)
     {

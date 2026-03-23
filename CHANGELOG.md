@@ -83,3 +83,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - fix(db/mysql): use quote-aware parser for MySQL enum column literals in `ColumnSchema::extractSizeFromDbType()`; fixes corrupted `enumValues` for definitions containing parentheses or escaped single quotes.
 - test(db/mysql): add regression cases for `bit(32)` and `bit(33+)` to `ColumnSchemaProvider`; covers the `integer` and `bigint` boundary branches in `Schema::loadColumnSchema()`.
 - fix(db/sqlite): `bit(17)`–`bit(32)` columns incorrectly mapped to `smallint` instead of `integer` in `Schema::loadColumnSchema()`; complete the BIT size-range mapping for all width boundaries.
+- refactor(db/mysql): extract BIT size-range type resolution from `Schema::loadColumnSchema()` into `ColumnSchema::resolveType()` for MySQL; add base no-op hook in `ColumnSchema`.

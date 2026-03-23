@@ -1248,6 +1248,7 @@ class Command extends Component
         return [
             __CLASS__,
             $queryMode->value,
+            $this->fetchMode,
             $this->db->dsn,
             $this->db->username,
             $this->getSql(),

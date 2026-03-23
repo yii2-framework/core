@@ -20,7 +20,8 @@ use function trim;
 /**
  * Represents the metadata of a column in a SQLite database table.
  *
- * Extends the base {@see \yii\db\ColumnSchema} with SQLite-specific default value handling:
+ * Extends the base {@see \yii\db\ColumnSchema} with SQLite-specific handling:
+ * - Resolves BIT size ranges to the correct abstract type (`boolean`, `smallint`, `integer`, `bigint`).
  * - Normalizes `null`, empty string, and `'null'` literals to `null`.
  * - Converts `CURRENT_TIMESTAMP` defaults on timestamp columns to {@see Expression} instances.
  * - Strips surrounding single/double-quote wrappers from string defaults.
@@ -30,6 +31,28 @@ use function trim;
  */
 class ColumnSchema extends \yii\db\ColumnSchema
 {
+    /**
+     * {@inheritdoc}
+     *
+     * Handles `tinyint(1)` and BIT width boundaries:
+     * - `tinyint(1)` or `bit(1)` → `boolean`.
+     * - `bit(2)`–`bit(16)` → unchanged (remains `smallint` from `typeMap`).
+     * - `bit(17)`–`bit(32)` → `integer`.
+     * - `bit(33+)` → `bigint`.
+     */
+    public function resolveType(string $type): void
+    {
+        if ($this->size === 1 && ($type === 'tinyint' || $type === 'bit')) {
+            $this->type = 'boolean';
+        } elseif ($type === 'bit') {
+            if ($this->size > 32) {
+                $this->type = 'bigint';
+            } elseif ($this->size > 16) {
+                $this->type = 'integer';
+            }
+        }
+    }
+
     /**
      * Converts a SQLite column default value to its PHP representation.
      *

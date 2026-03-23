@@ -15,7 +15,8 @@ use yii\db\Expression;
 /**
  * Data provider for {@see \yiiunit\framework\db\sqlite\ColumnSchemaTest} test cases.
  *
- * Provides representative input/output pairs for the SQLite `defaultPhpTypecast()` method.
+ * Provides representative input/output pairs for the SQLite `defaultPhpTypecast()` method, including BIT size-range
+ * boundary cases (`boolean`, `smallint`, `integer`, `bigint`).
  *
  * @author Wilmer Arambula <terabytesoftw@gmail.com>
  * @since 2.2
@@ -28,6 +29,48 @@ final class ColumnSchemaProvider
     public static function defaultPhpTypecast(): array
     {
         return [
+            'bit(1) maps to boolean' => [
+                'boolean',
+                'bit(1)',
+                'boolean',
+                '1',
+                true,
+            ],
+            'bit(5) maps to smallint' => [
+                'smallint',
+                'bit(5)',
+                'integer',
+                '21',
+                21,
+            ],
+            'bit(16) maps to smallint (upper boundary)' => [
+                'smallint',
+                'bit(16)',
+                'integer',
+                '65535',
+                65535,
+            ],
+            'bit(17) maps to integer (lower boundary)' => [
+                'integer',
+                'bit(17)',
+                'integer',
+                '131071',
+                131071,
+            ],
+            'bit(32) maps to integer (upper boundary)' => [
+                'integer',
+                'bit(32)',
+                'integer',
+                '2147483649',
+                2147483649,
+            ],
+            'bit(33) maps to bigint' => [
+                'bigint',
+                'bit(33)',
+                'integer',
+                '4294967297',
+                4294967297,
+            ],
             'boolean false default (0)' => [
                 'boolean',
                 'tinyint(1)',

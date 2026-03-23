@@ -8,6 +8,7 @@
 
 namespace yii\db;
 
+use PDO;
 use yii\base\BaseObject;
 use yii\helpers\StringHelper;
 
@@ -80,12 +81,13 @@ class ColumnSchema extends BaseObject
      */
     public string|null $comment = null;
 
-
     /**
      * Converts the input value according to [[phpType]] after retrieval from the database.
      * If the value is null or an [[Expression]], it will not be converted.
-     * @param mixed $value input value
-     * @return mixed converted value
+     *
+     * @param mixed $value input value.
+     *
+     * @return mixed converted value.
      */
     public function phpTypecast($value)
     {
@@ -144,11 +146,29 @@ class ColumnSchema extends BaseObject
     }
 
     /**
+     * Refines the abstract column type based on driver-specific size and width rules.
+     *
+     * Called by `Schema::loadColumnSchema()` after the initial type is resolved from the `typeMap`. The base
+     * implementation is a no-op. Driver subclasses override this method to remap types that depend on the column size
+     * (for example, BIT width boundaries, `tinyint(1)` → `boolean`).
+     *
+     * @param string $type the base database type name returned by {@see extractSizeFromDbType()} (for example, `bit`,
+     * `tinyint`).
+     *
+     * @since 2.2
+     */
+    public function resolveType(string $type): void
+    {
+    }
+
+    /**
      * Converts the input value according to [[type]] and [[dbType]] for use in a db query.
      * If the value is null or an [[Expression]], it will not be converted.
-     * @param mixed $value input value
-     * @return mixed converted value. This may also be an array containing the value as the first element
-     * and the PDO type as the second element.
+     *
+     * @param mixed $value input value.
+     *
+     * @return mixed converted value. This may also be an array containing the value as the first element and the PDO
+     * type as the second element.
      */
     public function dbTypecast($value)
     {
@@ -160,8 +180,11 @@ class ColumnSchema extends BaseObject
     /**
      * Converts the input value according to [[phpType]] after retrieval from the database.
      * If the value is null or an [[Expression]], it will not be converted.
-     * @param mixed $value input value
-     * @return mixed converted value
+     *
+     * @param mixed $value input value.
+     *
+     * @return mixed converted value.
+     *
      * @since 2.0.3
      */
     protected function typecast($value)
@@ -240,10 +263,10 @@ class ColumnSchema extends BaseObject
     }
 
     /**
-     * @return int[] array of numbers that represent possible PDO parameter types
+     * @return int[] array of numbers that represent possible PDO parameter types.
      */
     private function getPdoParamTypes()
     {
-        return [\PDO::PARAM_BOOL, \PDO::PARAM_INT, \PDO::PARAM_STR, \PDO::PARAM_LOB, \PDO::PARAM_NULL, \PDO::PARAM_STMT];
+        return [PDO::PARAM_BOOL, PDO::PARAM_INT, PDO::PARAM_STR, PDO::PARAM_LOB, PDO::PARAM_NULL, PDO::PARAM_STMT];
     }
 }

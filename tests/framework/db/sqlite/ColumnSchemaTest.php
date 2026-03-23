@@ -20,11 +20,6 @@ use yiiunit\framework\db\sqlite\providers\ColumnSchemaProvider;
 /**
  * Unit tests for {@see ColumnSchema} with SQLite driver.
  *
- * Test coverage.
- * - Converts `CURRENT_TIMESTAMP` defaults on timestamp columns to `Expression` instances.
- * - Normalizes `null`, empty, and `'null'` defaults to `null`.
- * - Strips surrounding quotes from string defaults and delegates to parent type casting.
- *
  * {@see ColumnSchemaProvider} for test case data providers.
  *
  * @author Wilmer Arambula <terabytesoftw@gmail.com>

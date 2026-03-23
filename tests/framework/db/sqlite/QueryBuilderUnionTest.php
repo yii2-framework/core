@@ -15,7 +15,7 @@ use yii\db\Query;
 use yiiunit\base\db\BaseQueryBuilderUnion;
 
 /**
- * Unit tests for {@see yii\db\sqlite\QueryBuilder} UNION and WITH query building tests for the SQLite driver.
+ * Unit tests for {@see \yii\db\sqlite\QueryBuilder} UNION and WITH query building tests for the SQLite driver.
  *
  * @author Wilmer Arambula <terabytesoftw@gmail.com>
  * @since 2.2

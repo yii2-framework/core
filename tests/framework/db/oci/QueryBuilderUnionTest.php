@@ -15,7 +15,7 @@ use yii\db\Query;
 use yiiunit\base\db\BaseQueryBuilderUnion;
 
 /**
- * Unit tests for {@see yii\db\oci\QueryBuilder} UNION and WITH query building tests for the Oracle driver.
+ * Unit tests for {@see \yii\db\oci\QueryBuilder} UNION and WITH query building tests for the Oracle driver.
  *
  * @author Wilmer Arambula <terabytesoftw@gmail.com>
  * @since 2.2

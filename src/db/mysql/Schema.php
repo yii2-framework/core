@@ -313,15 +313,7 @@ class Schema extends \yii\db\Schema implements ConstraintFinderInterface
 
         $column->type = $this->typeMap[$type] ?? self::TYPE_STRING;
 
-        if ($column->size === 1 && $type === 'bit') {
-            $column->type = 'boolean';
-        } elseif ($type === 'bit') {
-            if ($column->size > 32) {
-                $column->type = 'bigint';
-            } elseif ($column->size === 32) {
-                $column->type = 'integer';
-            }
-        }
+        $column->resolveType($type);
 
         $column->phpType = $this->getColumnPhpType($column);
 

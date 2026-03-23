@@ -12,6 +12,9 @@ use Yii;
 use yii\base\Component;
 use yii\base\NotSupportedException;
 
+use function is_array;
+use function is_resource;
+
 /**
  * Command represents a SQL statement to be executed against a database.
  *
@@ -113,7 +116,6 @@ class Command extends Component
      * when executing the command.
      */
     private $_retryHandler;
-
 
     /**
      * Enables query cache for this command.
@@ -395,51 +397,58 @@ class Command extends Component
     /**
      * Executes the SQL statement and returns query result.
      * This method is for executing a SQL query that returns result set, such as `SELECT`.
-     * @return DataReader the reader object for fetching the query result
-     * @throws Exception execution failed
+     *
+     * @return DataReader the reader object for fetching the query result.
+     *
+     * @throws Exception execution failed.
      */
     public function query()
     {
-        return $this->queryInternal('');
+        return $this->queryInternal(QueryMode::CURSOR);
     }
 
     /**
      * Executes the SQL statement and returns ALL rows at once.
-     * @param int|null $fetchMode the result fetch mode. Please refer to [PHP manual](https://www.php.net/manual/en/function.PDOStatement-setFetchMode.php)
-     * for valid fetch modes. If this parameter is null, the value set in [[fetchMode]] will be used.
+     *
      * @return array all rows of the query result. Each array element is an array representing a row of data.
      * An empty array is returned if the query results in nothing.
-     * @throws Exception execution failed
+     *
+     * @throws Exception execution failed.
      */
-    public function queryAll($fetchMode = null)
+    public function queryAll()
     {
-        return $this->queryInternal('fetchAll', $fetchMode);
+        $result = $this->queryInternal(QueryMode::ALL);
+
+        return is_array($result) ? $result : [];
     }
 
     /**
      * Executes the SQL statement and returns the first row of the result.
      * This method is best used when only the first row of result is needed for a query.
-     * @param int|null $fetchMode the result fetch mode. Please refer to [PHP manual](https://www.php.net/manual/en/pdostatement.setfetchmode.php)
-     * for valid fetch modes. If this parameter is null, the value set in [[fetchMode]] will be used.
+     *
      * @return array|false the first row (in terms of an array) of the query result. False is returned if the query
      * results in nothing.
-     * @throws Exception execution failed
+     *
+     * @throws Exception execution failed.
      */
-    public function queryOne($fetchMode = null)
+    public function queryOne()
     {
-        return $this->queryInternal('fetch', $fetchMode);
+        return $this->queryInternal(QueryMode::ONE);
     }
 
     /**
      * Executes the SQL statement and returns the value of the first column in the first row of data.
      * This method is best used when only a single value is needed for a query.
+     *
      * @return string|int|null|false the value of the first column in the first row of the query result.
-     * False is returned if there is no value.
+     * `false` is returned if there is no value.
+     *
      * @throws Exception execution failed
      */
     public function queryScalar()
     {
-        $result = $this->queryInternal('fetchColumn', 0);
+        $result = $this->queryInternal(QueryMode::SCALAR);
+
         if (is_resource($result) && get_resource_type($result) === 'stream') {
             return stream_get_contents($result);
         }
@@ -449,14 +458,16 @@ class Command extends Component
 
     /**
      * Executes the SQL statement and returns the first column of the result.
-     * This method is best used when only the first column of result (i.e. the first element in each row)
-     * is needed for a query.
+     * This method is best used when only the first column of result (i.e. the first element in each row) is needed for
+     * a query.
+     *
      * @return array the first column of the query result. Empty array is returned if the query results in nothing.
-     * @throws Exception execution failed
+     *
+     * @throws Exception execution failed.
      */
     public function queryColumn()
     {
-        return $this->queryInternal('fetchAll', \PDO::FETCH_COLUMN);
+        return $this->queryInternal(QueryMode::COLUMN);
     }
 
     /**
@@ -1152,26 +1163,32 @@ class Command extends Component
 
     /**
      * Performs the actual DB query of a SQL statement.
-     * @param string $method method of PDOStatement to be called
-     * @param int|null $fetchMode the result fetch mode. Please refer to [PHP manual](https://www.php.net/manual/en/function.PDOStatement-setFetchMode.php)
-     * for valid fetch modes. If this parameter is null, the value set in [[fetchMode]] will be used.
-     * @return mixed the method execution result
-     * @throws Exception if the query causes any problem
+     *
+     * @param QueryMode $queryMode the query execution mode.
+     *
+     * @return mixed the query result.
+     *
+     * @throws Exception if the query causes any problem.
+     *
      * @since 2.0.1 this method is protected (was private before).
      */
-    protected function queryInternal($method, $fetchMode = null)
+    protected function queryInternal(QueryMode $queryMode)
     {
-        list($profile, $rawSql) = $this->logQuery('yii\db\Command::query');
+        [$profile, $rawSql] = $this->logQuery('yii\db\Command::query');
 
-        if ($method !== '') {
+        if ($queryMode !== QueryMode::CURSOR) {
             $info = $this->db->getQueryCacheInfo($this->queryCacheDuration, $this->queryCacheDependency);
+
             if (is_array($info)) {
                 /** @var \yii\caching\CacheInterface $cache */
                 $cache = $info[0];
-                $cacheKey = $this->getCacheKey($method, $fetchMode, '');
+
+                $cacheKey = $this->getCacheKey($queryMode, '');
                 $result = $cache->get($cacheKey);
+
                 if (is_array($result) && array_key_exists(0, $result)) {
                     Yii::debug('Query result served from cache', 'yii\db\Command::query');
+
                     return $result[0];
                 }
             }
@@ -1184,24 +1201,28 @@ class Command extends Component
 
             $this->internalExecute($rawSql);
 
-            if ($method === '') {
-                $result = new DataReader($this);
-            } else {
-                if ($fetchMode === null) {
-                    $fetchMode = $this->fetchMode;
-                }
-                $result = call_user_func_array([$this->pdoStatement, $method], (array) $fetchMode);
+            $result = match ($queryMode) {
+                QueryMode::ALL => $this->pdoStatement->fetchAll($this->fetchMode),
+                QueryMode::COLUMN => $this->pdoStatement->fetchAll(\PDO::FETCH_COLUMN),
+                QueryMode::CURSOR => new DataReader($this),
+                QueryMode::ONE => $this->pdoStatement->fetch($this->fetchMode),
+                QueryMode::SCALAR => $this->pdoStatement->fetchColumn(0),
+            };
+
+            if ($queryMode !== QueryMode::CURSOR) {
                 $this->pdoStatement->closeCursor();
             }
 
             $profile and Yii::endProfile($rawSql, 'yii\db\Command::query');
         } catch (Exception $e) {
             $profile and Yii::endProfile($rawSql, 'yii\db\Command::query');
+
             throw $e;
         }
 
         if (isset($cache, $cacheKey, $info)) {
             $cache->set($cacheKey, [$result], $info[1], $info[2]);
+
             Yii::debug('Saved query result in cache', 'yii\db\Command::query');
         }
 
@@ -1211,20 +1232,22 @@ class Command extends Component
     /**
      * Returns the cache key for the query.
      *
-     * @param string $method method of PDOStatement to be called
-     * @param int $fetchMode the result fetch mode. Please refer to [PHP manual](https://www.php.net/manual/en/function.PDOStatement-setFetchMode.php)
-     * for valid fetch modes.
-     * @return array the cache key
+     * @param QueryMode $queryMode the query execution mode.
+     * @param string $rawSql the raw SQL statement.
+     *
+     * @return array the cache key.
+     *
      * @since 2.0.16
      */
-    protected function getCacheKey($method, $fetchMode, $rawSql)
+    protected function getCacheKey(QueryMode $queryMode, string $rawSql): array
     {
         $params = $this->params;
+
         ksort($params);
+
         return [
             __CLASS__,
-            $method,
-            $fetchMode,
+            $queryMode->value,
             $this->db->dsn,
             $this->db->username,
             $this->getSql(),

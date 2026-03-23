@@ -284,10 +284,11 @@ SQL;
         $result = $command->queryOne();
         $this->assertIsObject($result);
 
-        // FETCH_NUM, customized in query method
+        // FETCH_NUM, customized via fetchMode property
         $sql = 'SELECT * FROM {{customer}}';
         $command = $db->createCommand($sql);
-        $result = $command->queryOne([], PDO::FETCH_NUM);
+        $command->fetchMode = PDO::FETCH_NUM;
+        $result = $command->queryOne();
         $this->assertTrue(\is_array($result) && isset($result[0]));
     }
 

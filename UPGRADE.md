@@ -452,13 +452,13 @@ The `MetadataType` enum cases are:
 
 | Case | Value | Resolves to |
 | --- | --- | --- |
-| `MetadataType::Schema` | `'schema'` | `TableSchema\|null` |
-| `MetadataType::PrimaryKey` | `'primaryKey'` | `Constraint\|null` |
-| `MetadataType::ForeignKeys` | `'foreignKeys'` | `ForeignKeyConstraint[]` |
-| `MetadataType::Indexes` | `'indexes'` | `IndexConstraint[]` |
-| `MetadataType::Uniques` | `'uniques'` | `Constraint[]` |
-| `MetadataType::Checks` | `'checks'` | `CheckConstraint[]` |
-| `MetadataType::DefaultValues` | `'defaultValues'` | `DefaultValueConstraint[]` |
+| `MetadataType::SCHEMA` | `'schema'` | `TableSchema\|null` |
+| `MetadataType::PRIMARY_KEY` | `'primaryKey'` | `Constraint\|null` |
+| `MetadataType::FOREIGN_KEYS` | `'foreignKeys'` | `ForeignKeyConstraint[]` |
+| `MetadataType::INDEXES` | `'indexes'` | `IndexConstraint[]` |
+| `MetadataType::UNIQUES` | `'uniques'` | `Constraint[]` |
+| `MetadataType::CHECKS` | `'checks'` | `CheckConstraint[]` |
+| `MetadataType::DEFAULT_VALUES` | `'defaultValues'` | `DefaultValueConstraint[]` |
 
 **Action required** if your application extends `Schema` and either overrides these methods or calls
 `getTableMetadata()` / `getSchemaMetadata()` / `setTableMetadata()` from subclass code:
@@ -478,7 +478,7 @@ protected function setTableMetadata(string $name, MetadataType $type, mixed $dat
 ```
 
 Any subclass code that passes string literals (e.g., `$this->getTableMetadata($name, 'primaryKey', $refresh)`) must be
-updated to pass the corresponding `MetadataType` enum case (e.g., `MetadataType::PrimaryKey`).
+updated to pass the corresponding `MetadataType` enum case (e.g., `MetadataType::PRIMARY_KEY`).
 
 Custom metadata types that previously relied on string-based dynamic dispatch (`'loadTable' . ucfirst($type)`) are no
 longer supported. `MetadataType` is a closed enum — additional cases cannot be added externally.
@@ -489,6 +489,71 @@ New protected methods available for subclasses:
   method via `match`. Override to customize handling for the existing `MetadataType` cases.
 - `Schema::cacheAndReturnConstraints(string $tableName, array $result, MetadataType $returnType)` — caches all
   constraint entries from a result array and returns the requested type. Use in driver `loadTableConstraints()` methods.
+
+### `Command::queryInternal()` dispatch replaced with `QueryMode` enum
+
+The `Command::queryInternal()` method signature has changed from `(string $method, $fetchMode = null)` to
+`(QueryMode $queryMode)`. The dynamic dispatch via `call_user_func_array([$this->pdoStatement, $method], ...)` has been
+replaced with an explicit `match` expression on the `QueryMode` enum.
+
+The `$fetchMode` parameter has been removed from `queryAll()` and `queryOne()`. Use the `$fetchMode` property instead:
+
+```php
+// before
+$row = $command->queryOne(PDO::FETCH_OBJ);
+$rows = $command->queryAll(PDO::FETCH_NUM);
+
+// after
+$command->fetchMode = PDO::FETCH_OBJ;
+$row = $command->queryOne();
+
+$command->fetchMode = PDO::FETCH_NUM;
+$rows = $command->queryAll();
+```
+
+The `getCacheKey()` signature has changed from `(string $method, int $fetchMode, string $rawSql)` to
+`(QueryMode $queryMode, string $rawSql)`. Existing cached query results will be invalidated on upgrade.
+
+The `QueryMode` enum cases are:
+
+| Case | Value | Used by |
+| --- | --- | --- |
+| `QueryMode::CURSOR` | `0` | `query()` — returns `DataReader` |
+| `QueryMode::ALL` | `1` | `queryAll()` — fetches all rows |
+| `QueryMode::ONE` | `2` | `queryOne()` — fetches single row |
+| `QueryMode::COLUMN` | `3` | `queryColumn()` — fetches first column |
+| `QueryMode::SCALAR` | `4` | `queryScalar()` — fetches single value |
+
+**Action required** if your application extends `Command` and overrides `queryInternal()` or `getCacheKey()`:
+
+```php
+// before
+protected function queryInternal($method, $fetchMode = null) { ... }
+protected function getCacheKey($method, $fetchMode, $rawSql) { ... }
+
+// after
+use yii\db\QueryMode;
+
+protected function queryInternal(QueryMode $queryMode) { ... }
+protected function getCacheKey(QueryMode $queryMode, string $rawSql): array { ... }
+```
+
+### `MetadataType` enum cases renamed to UPPER_SNAKE_CASE
+
+The `MetadataType` enum cases have been renamed from PascalCase to UPPER_SNAKE_CASE to follow PHP constant conventions:
+
+| Before | After |
+| --- | --- |
+| `MetadataType::Checks` | `MetadataType::CHECKS` |
+| `MetadataType::DefaultValues` | `MetadataType::DEFAULT_VALUES` |
+| `MetadataType::ForeignKeys` | `MetadataType::FOREIGN_KEYS` |
+| `MetadataType::Indexes` | `MetadataType::INDEXES` |
+| `MetadataType::PrimaryKey` | `MetadataType::PRIMARY_KEY` |
+| `MetadataType::Schema` | `MetadataType::SCHEMA` |
+| `MetadataType::Uniques` | `MetadataType::UNIQUES` |
+
+**Action required** if your application references `MetadataType` enum cases directly. Update all references to use the
+new UPPER_SNAKE_CASE names. The backing string values remain unchanged (`'checks'`, `'primaryKey'`, etc.).
 
 ### Base `QueryBuilder` deprecated API removal
 

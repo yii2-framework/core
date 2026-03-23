@@ -140,7 +140,7 @@ class Schema extends BaseSchema implements ConstraintFinderInterface
      */
     protected function loadTablePrimaryKey($tableName)
     {
-        return $this->loadTableConstraints($tableName, MetadataType::PrimaryKey);
+        return $this->loadTableConstraints($tableName, MetadataType::PRIMARY_KEY);
     }
 
     /**
@@ -179,7 +179,7 @@ class Schema extends BaseSchema implements ConstraintFinderInterface
      */
     protected function loadTableIndexes($tableName)
     {
-        return $this->loadTableConstraints($tableName, MetadataType::Indexes);
+        return $this->loadTableConstraints($tableName, MetadataType::INDEXES);
     }
 
     /**
@@ -187,7 +187,7 @@ class Schema extends BaseSchema implements ConstraintFinderInterface
      */
     protected function loadTableUniques($tableName)
     {
-        return $this->loadTableConstraints($tableName, MetadataType::Uniques);
+        return $this->loadTableConstraints($tableName, MetadataType::UNIQUES);
     }
 
     /**
@@ -477,9 +477,9 @@ class Schema extends BaseSchema implements ConstraintFinderInterface
         }
 
         $result = [
-            MetadataType::PrimaryKey->value => null,
-            MetadataType::Indexes->value => [],
-            MetadataType::Uniques->value => [],
+            MetadataType::INDEXES->value => [],
+            MetadataType::PRIMARY_KEY->value => null,
+            MetadataType::UNIQUES->value => [],
         ];
 
         foreach ($indexes as $index) {
@@ -501,7 +501,7 @@ class Schema extends BaseSchema implements ConstraintFinderInterface
                 }
             }
 
-            $result[MetadataType::Indexes->value][] = new IndexConstraint(
+            $result[MetadataType::INDEXES->value][] = new IndexConstraint(
                 [
                     'isPrimary' => $index['origin'] === 'pk',
                     'isUnique' => (bool) $index['unique'],
@@ -511,18 +511,20 @@ class Schema extends BaseSchema implements ConstraintFinderInterface
             );
 
             if ($index['origin'] === 'u') {
-                $result[MetadataType::Uniques->value][] = new Constraint(
+                $result[MetadataType::UNIQUES->value][] = new Constraint(
                     [
                         'name' => $index['name'],
                         'columnNames' => ArrayHelper::getColumn($columns, 'name'),
                     ],
                 );
             } elseif ($index['origin'] === 'pk') {
-                $result[MetadataType::PrimaryKey->value] = new Constraint(['columnNames' => ArrayHelper::getColumn($columns, 'name')]);
+                $result[MetadataType::PRIMARY_KEY->value] = new Constraint(
+                    ['columnNames' => ArrayHelper::getColumn($columns, 'name')],
+                );
             }
         }
 
-        if ($result[MetadataType::PrimaryKey->value] === null) {
+        if ($result[MetadataType::PRIMARY_KEY->value] === null) {
             /*
              * Additional check for PK in case of INTEGER PRIMARY KEY with ROWID
              * See https://www.sqlite.org/lang_createtable.html#primkeyconst
@@ -533,7 +535,9 @@ class Schema extends BaseSchema implements ConstraintFinderInterface
 
             foreach ($tableColumns as $tableColumn) {
                 if ($tableColumn['pk'] > 0) {
-                    $result[MetadataType::PrimaryKey->value] = new Constraint(['columnNames' => [$tableColumn['name']]]);
+                    $result[MetadataType::PRIMARY_KEY->value] = new Constraint(
+                        ['columnNames' => [$tableColumn['name']]],
+                    );
                     break;
                 }
             }

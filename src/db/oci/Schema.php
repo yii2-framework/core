@@ -30,7 +30,6 @@ use yii\helpers\ArrayHelper;
 
 use function array_change_key_case;
 use function array_keys;
-use function array_merge;
 use function count;
 use function explode;
 use function implode;
@@ -190,7 +189,7 @@ class Schema extends \yii\db\Schema implements ConstraintFinderInterface
      */
     protected function loadTablePrimaryKey($tableName)
     {
-        return $this->loadTableConstraints($tableName, MetadataType::PrimaryKey);
+        return $this->loadTableConstraints($tableName, MetadataType::PRIMARY_KEY);
     }
 
     /**
@@ -198,7 +197,7 @@ class Schema extends \yii\db\Schema implements ConstraintFinderInterface
      */
     protected function loadTableForeignKeys($tableName)
     {
-        return $this->loadTableConstraints($tableName, MetadataType::ForeignKeys);
+        return $this->loadTableConstraints($tableName, MetadataType::FOREIGN_KEYS);
     }
 
     /**
@@ -262,7 +261,7 @@ class Schema extends \yii\db\Schema implements ConstraintFinderInterface
      */
     protected function loadTableUniques($tableName)
     {
-        return $this->loadTableConstraints($tableName, MetadataType::Uniques);
+        return $this->loadTableConstraints($tableName, MetadataType::UNIQUES);
     }
 
     /**
@@ -270,7 +269,7 @@ class Schema extends \yii\db\Schema implements ConstraintFinderInterface
      */
     protected function loadTableChecks($tableName)
     {
-        return $this->loadTableConstraints($tableName, MetadataType::Checks);
+        return $this->loadTableConstraints($tableName, MetadataType::CHECKS);
     }
 
     /**
@@ -815,17 +814,17 @@ class Schema extends \yii\db\Schema implements ConstraintFinderInterface
         $constraints = ArrayHelper::index($constraints, null, ['type', 'name']);
 
         $result = [
-            MetadataType::PrimaryKey->value => null,
-            MetadataType::ForeignKeys->value => [],
-            MetadataType::Uniques->value => [],
-            MetadataType::Checks->value => [],
+            MetadataType::CHECKS->value => [],
+            MetadataType::FOREIGN_KEYS->value => [],
+            MetadataType::PRIMARY_KEY->value => null,
+            MetadataType::UNIQUES->value => [],
         ];
 
         foreach ($constraints as $type => $names) {
             foreach ($names as $name => $constraint) {
                 switch ($type) {
                     case 'P':
-                        $result[MetadataType::PrimaryKey->value] = new Constraint(
+                        $result[MetadataType::PRIMARY_KEY->value] = new Constraint(
                             [
                                 'name' => $name,
                                 'columnNames' => ArrayHelper::getColumn($constraint, 'column_name'),
@@ -833,7 +832,7 @@ class Schema extends \yii\db\Schema implements ConstraintFinderInterface
                         );
                         break;
                     case 'R':
-                        $result[MetadataType::ForeignKeys->value][] = new ForeignKeyConstraint(
+                        $result[MetadataType::FOREIGN_KEYS->value][] = new ForeignKeyConstraint(
                             [
                                 'name' => $name,
                                 'columnNames' => ArrayHelper::getColumn($constraint, 'column_name'),
@@ -846,7 +845,7 @@ class Schema extends \yii\db\Schema implements ConstraintFinderInterface
                         );
                         break;
                     case 'U':
-                        $result[MetadataType::Uniques->value][] = new Constraint(
+                        $result[MetadataType::UNIQUES->value][] = new Constraint(
                             [
                                 'name' => $name,
                                 'columnNames' => ArrayHelper::getColumn($constraint, 'column_name'),
@@ -854,7 +853,7 @@ class Schema extends \yii\db\Schema implements ConstraintFinderInterface
                         );
                         break;
                     case 'C':
-                        $result[MetadataType::Checks->value][] = new CheckConstraint(
+                        $result[MetadataType::CHECKS->value][] = new CheckConstraint(
                             [
                                 'name' => $name,
                                 'columnNames' => ArrayHelper::getColumn($constraint, 'column_name'),

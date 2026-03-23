@@ -8,6 +8,7 @@
 
 namespace yii\db\sqlite;
 
+use yii\db\QueryMode;
 use yii\db\SqlToken;
 use yii\helpers\StringHelper;
 
@@ -46,24 +47,32 @@ class Command extends \yii\db\Command
     /**
      * {@inheritdoc}
      */
-    protected function queryInternal($method, $fetchMode = null)
+    protected function queryInternal(QueryMode $queryMode)
     {
         $sql = $this->getSql();
+
         $params = $this->params;
+
         $statements = $this->splitStatements($sql, $params);
+
         if ($statements === false) {
-            return parent::queryInternal($method, $fetchMode);
+            return parent::queryInternal($queryMode);
         }
 
-        list($lastStatementSql, $lastStatementParams) = array_pop($statements);
+        [$lastStatementSql, $lastStatementParams] = array_pop($statements);
+
         foreach ($statements as $statement) {
-            list($statementSql, $statementParams) = $statement;
+            [$statementSql, $statementParams] = $statement;
             $this->setSql($statementSql)->bindValues($statementParams);
             parent::execute();
         }
+
         $this->setSql($lastStatementSql)->bindValues($lastStatementParams);
-        $result = parent::queryInternal($method, $fetchMode);
+
+        $result = parent::queryInternal($queryMode);
+
         $this->setSql($sql)->bindValues($params);
+
         return $result;
     }
 

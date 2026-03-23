@@ -21,6 +21,8 @@ use yii\caching\TagDependency;
 use yii\db\IntegrityException;
 
 use function array_key_exists;
+use function in_array;
+use function is_string;
 
 /**
  * Schema is the base class for concrete DBMS-specific schema classes.
@@ -197,13 +199,15 @@ abstract class Schema extends BaseObject
 
     /**
      * Obtains the metadata for the named table.
+     *
      * @param string $name table name. The table name may contain schema name if any. Do not quote the table name.
      * @param bool $refresh whether to reload the table schema even if it is found in the cache.
+     *
      * @return TableSchema|null table metadata. `null` if the named table does not exist.
      */
     public function getTableSchema($name, $refresh = false)
     {
-        return $this->getTableMetadata($name, MetadataType::Schema, $refresh);
+        return $this->getTableMetadata($name, MetadataType::SCHEMA, $refresh);
     }
 
     /**
@@ -219,7 +223,7 @@ abstract class Schema extends BaseObject
      */
     public function getTableSchemas($schema = '', $refresh = false)
     {
-        return $this->getSchemaMetadata($schema, MetadataType::Schema, $refresh);
+        return $this->getSchemaMetadata($schema, MetadataType::SCHEMA, $refresh);
     }
 
     /**
@@ -795,26 +799,27 @@ abstract class Schema extends BaseObject
      *
      * @return Constraint|CheckConstraint[]|DefaultValueConstraint[]|ForeignKeyConstraint[]|IndexConstraint[]|TableSchema|null
      */
-    protected function loadTableTypeMetadata(MetadataType $type, string $name): Constraint|array|TableSchema|null
+    protected function loadTableTypeMetadata(MetadataType $type, string $name): array|Constraint|TableSchema|null
     {
         return match ($type) {
-            MetadataType::Schema => $this->loadTableSchema($name),
-            MetadataType::PrimaryKey => $this->loadTablePrimaryKey($name),
-            MetadataType::ForeignKeys => $this->loadTableForeignKeys($name),
-            MetadataType::Indexes => $this->loadTableIndexes($name),
-            MetadataType::Uniques => $this->loadTableUniques($name),
-            MetadataType::Checks => $this->loadTableChecks($name),
-            MetadataType::DefaultValues => $this->loadTableDefaultValues($name),
+            MetadataType::CHECKS => $this->loadTableChecks($name),
+            MetadataType::DEFAULT_VALUES => $this->loadTableDefaultValues($name),
+            MetadataType::FOREIGN_KEYS => $this->loadTableForeignKeys($name),
+            MetadataType::INDEXES => $this->loadTableIndexes($name),
+            MetadataType::PRIMARY_KEY => $this->loadTablePrimaryKey($name),
+            MetadataType::SCHEMA => $this->loadTableSchema($name),
+            MetadataType::UNIQUES => $this->loadTableUniques($name),
         };
     }
 
     /**
      * Returns the metadata of the given type for all tables in the given schema.
      *
-     * @param string $schema the schema of the metadata. Defaults to empty string, meaning the current or default schema name.
+     * @param string $schema the schema of the metadata. Defaults to empty string, meaning the current or default schema
+     * name.
      * @param MetadataType $type metadata type.
-     * @param bool $refresh whether to fetch the latest available table metadata. If this is `false`,
-     * cached data may be returned if available.
+     * @param bool $refresh whether to fetch the latest available table metadata. If this is `false`, cached data may be
+     * returned if available.
      *
      * @return array array of metadata.
      *

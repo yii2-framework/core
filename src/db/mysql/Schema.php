@@ -157,7 +157,7 @@ class Schema extends \yii\db\Schema implements ConstraintFinderInterface
      */
     protected function loadTablePrimaryKey($tableName)
     {
-        return $this->loadTableConstraints($tableName, MetadataType::PrimaryKey);
+        return $this->loadTableConstraints($tableName, MetadataType::PRIMARY_KEY);
     }
 
     /**
@@ -165,7 +165,7 @@ class Schema extends \yii\db\Schema implements ConstraintFinderInterface
      */
     protected function loadTableForeignKeys($tableName)
     {
-        return $this->loadTableConstraints($tableName, MetadataType::ForeignKeys);
+        return $this->loadTableConstraints($tableName, MetadataType::FOREIGN_KEYS);
     }
 
     /**
@@ -221,7 +221,7 @@ class Schema extends \yii\db\Schema implements ConstraintFinderInterface
      */
     protected function loadTableUniques($tableName)
     {
-        return $this->loadTableConstraints($tableName, MetadataType::Uniques);
+        return $this->loadTableConstraints($tableName, MetadataType::UNIQUES);
     }
 
     /**
@@ -627,21 +627,21 @@ class Schema extends \yii\db\Schema implements ConstraintFinderInterface
         $constraints = ArrayHelper::index($constraints, null, ['type', 'name']);
 
         $result = [
-            MetadataType::PrimaryKey->value => null,
-            MetadataType::ForeignKeys->value => [],
-            MetadataType::Uniques->value => [],
+            MetadataType::FOREIGN_KEYS->value => [],
+            MetadataType::PRIMARY_KEY->value => null,
+            MetadataType::UNIQUES->value => [],
         ];
 
         foreach ($constraints as $type => $names) {
             foreach ($names as $name => $constraint) {
                 switch ($type) {
                     case 'PRIMARY KEY':
-                        $result[MetadataType::PrimaryKey->value] = new Constraint([
+                        $result[MetadataType::PRIMARY_KEY->value] = new Constraint([
                             'columnNames' => ArrayHelper::getColumn($constraint, 'column_name'),
                         ]);
                         break;
                     case 'FOREIGN KEY':
-                        $result[MetadataType::ForeignKeys->value][] = new ForeignKeyConstraint([
+                        $result[MetadataType::FOREIGN_KEYS->value][] = new ForeignKeyConstraint([
                             'name' => $name,
                             'columnNames' => ArrayHelper::getColumn($constraint, 'column_name'),
                             'foreignSchemaName' => $constraint[0]['foreign_table_schema'],
@@ -652,7 +652,7 @@ class Schema extends \yii\db\Schema implements ConstraintFinderInterface
                         ]);
                         break;
                     case 'UNIQUE':
-                        $result[MetadataType::Uniques->value][] = new Constraint([
+                        $result[MetadataType::UNIQUES->value][] = new Constraint([
                             'name' => $name,
                             'columnNames' => ArrayHelper::getColumn($constraint, 'column_name'),
                         ]);

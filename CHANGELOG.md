@@ -81,3 +81,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - fix(db/oci): `findUniqueIndexes()` returns empty results when `PDO::ATTR_CASE` is `PDO::CASE_LOWER` due to missing `normalizePdoRowKeyCase()` call.
 - fix(db/oci): `findColumns()` blanket `catch (Exception)` silently swallows connection and permission errors; remove try/catch since Oracle catalog views return empty results for non-existent tables.
 - fix(db/mysql): use quote-aware parser for MySQL enum column literals in `ColumnSchema::extractSizeFromDbType()`; fixes corrupted `enumValues` for definitions containing parentheses or escaped single quotes.
+- test(db/mysql): add regression cases for `bit(32)` and `bit(33+)` to `ColumnSchemaProvider`; covers the `integer` and `bigint` boundary branches in `Schema::loadColumnSchema()`.

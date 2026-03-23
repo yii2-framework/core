@@ -42,6 +42,20 @@ final class ColumnSchemaProvider
                 "b'10101'",
                 21,
             ],
+            'bit(32) default b\'10000000000000000000000000000001\'' => [
+                'integer',
+                'bit(32)',
+                'integer',
+                "b'10000000000000000000000000000001'",
+                2147483649,
+            ],
+            'bit(33) default b\'100000000000000000000000000000001\'' => [
+                'bigint',
+                'bit(33)',
+                'integer',
+                "b'100000000000000000000000000000001'",
+                4294967297,
+            ],
             'current_timestamp() on timestamp column (MariaDB format)' => [
                 'timestamp',
                 'timestamp',

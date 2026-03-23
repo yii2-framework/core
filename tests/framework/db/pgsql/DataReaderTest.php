@@ -11,18 +11,18 @@ declare(strict_types=1);
 namespace yiiunit\framework\db\pgsql;
 
 use PHPUnit\Framework\Attributes\Group;
-use yiiunit\base\db\BaseQueryBuilderUnion;
+use yiiunit\base\db\BaseDataReader;
 
 /**
- * Unit tests for {@see \yii\db\pgsql\QueryBuilder} UNION and WITH query building tests for the PostgreSQL driver.
+ * Unit tests for {@see \yii\db\DataReader} for the PostgreSQL driver.
  *
  * @author Wilmer Arambula <terabytesoftw@gmail.com>
  * @since 2.2
  */
 #[Group('db')]
 #[Group('pgsql')]
-#[Group('query-builder')]
-final class QueryBuilderUnionTest extends BaseQueryBuilderUnion
+#[Group('data-reader')]
+final class DataReaderTest extends BaseDataReader
 {
     protected $driverName = 'pgsql';
 }

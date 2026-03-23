@@ -188,7 +188,7 @@ abstract class BaseDataReader extends BaseDatabase
             SQL,
         )->query();
 
-        foreach ($reader as $row) {
+        foreach ($reader as $_) {
             // consume first traversal
         }
 
@@ -210,7 +210,7 @@ abstract class BaseDataReader extends BaseDatabase
 
         $keys = [];
 
-        foreach ($reader as $key => $row) {
+        foreach ($reader as $key => $_) {
             $keys[] = $key;
         }
 
@@ -230,13 +230,8 @@ abstract class BaseDataReader extends BaseDatabase
             SELECT * FROM {{customer}}
             SQL,
         )->query();
-        $reader = $db->createCommand(
-            <<<SQL
-            SELECT * FROM {{customer}}
-            SQL,
-        )->query();
 
-        foreach ($reader as $row) {
+        foreach ($reader as $_) {
             // consume all rows
         }
 

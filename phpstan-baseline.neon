@@ -5311,12 +5311,6 @@ parameters:
 			path: tests/base/db/BaseCommand.php
 
 		-
-			message: '#^Method yii\\db\\Command\:\:queryOne\(\) invoked with 2 parameters, 0\-1 required\.$#'
-			identifier: arguments.count
-			count: 1
-			path: tests/base/db/BaseCommand.php
-
-		-
 			message: '#^Offset 0 does not exist on array\{\}\.$#'
 			identifier: offsetAccess.notFound
 			count: 8

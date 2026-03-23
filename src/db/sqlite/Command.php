@@ -67,9 +67,17 @@ class Command extends \yii\db\Command
             parent::execute();
         }
 
+        // disable query cache for split batches: earlier statements may mutate data, and the cache key would only
+        // reflect the tail statement's SQL, causing different batches with the same final SELECT to share cached
+        // results.
+        $originalCacheDuration = $this->queryCacheDuration;
+        $this->queryCacheDuration = -1;
+
         $this->setSql($lastStatementSql)->bindValues($lastStatementParams);
 
         $result = parent::queryInternal($queryMode);
+
+        $this->queryCacheDuration = $originalCacheDuration;
 
         $this->setSql($sql)->bindValues($params);
 

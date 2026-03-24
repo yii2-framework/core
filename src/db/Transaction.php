@@ -11,6 +11,7 @@ declare(strict_types=1);
 namespace yii\db;
 
 use Yii;
+use yii\base\InvalidArgumentException;
 use yii\base\InvalidConfigException;
 use yii\base\NotSupportedException;
 
@@ -59,8 +60,8 @@ class Transaction extends \yii\base\BaseObject
 
     /**
      * Returns a value indicating whether this transaction is active.
-     * @return bool whether this transaction is active. Only an active transaction
-     * can [[commit()]] or [[rollBack()]].
+     *
+     * @return bool whether this transaction is active. Only an active transaction can [[commit()]] or [[rollBack()]].
      */
     public function getIsActive(): bool
     {
@@ -145,6 +146,7 @@ class Transaction extends \yii\base\BaseObject
 
     /**
      * Commits a transaction.
+     *
      * @throws Exception if the transaction is not active
      */
     public function commit(): void
@@ -214,11 +216,12 @@ class Transaction extends \yii\base\BaseObject
      * Sets the transaction isolation level for this transaction.
      *
      * This method can be used to set the isolation level while the transaction is already active.
-     * However this is not supported by all DBMS so you might rather specify the isolation level directly
-     * when calling [[begin()]].
+     * However this is not supported by all DBMS so you might rather specify the isolation level directly when calling
+     * [[begin()]].
      * @param TransactionIsolationLevel|string $level The transaction isolation level to use for this transaction.
      * This can be a [[TransactionIsolationLevel]] enum case or a string containing DBMS specific syntax to be used
      * after `SET TRANSACTION ISOLATION LEVEL`.
+     *
      * @throws Exception if the transaction is not active
      * @see https://en.wikipedia.org/wiki/Isolation_%28database_systems%29#Isolation_levels
      */
@@ -236,6 +239,7 @@ class Transaction extends \yii\base\BaseObject
 
     /**
      * @return int The current nesting level of the transaction.
+     *
      * @since 2.0.8
      */
     public function getLevel(): int
@@ -246,12 +250,16 @@ class Transaction extends \yii\base\BaseObject
     /**
      * Creates a new savepoint.
      *
-     * @param string $name The savepoint name
+     * @param string $name The savepoint name (alphanumeric and underscores only).
+     *
+     * @throws InvalidArgumentException if the name contains unsafe characters.
      *
      * @since 2.2
      */
     public function createSavepoint(string $name): void
     {
+        $this->validateSavepointName($name);
+
         $this->db->createCommand(
             <<<SQL
             SAVEPOINT $name
@@ -262,12 +270,16 @@ class Transaction extends \yii\base\BaseObject
     /**
      * Releases an existing savepoint.
      *
-     * @param string $name The savepoint name
+     * @param string $name The savepoint name (alphanumeric and underscores only).
+     *
+     * @throws InvalidArgumentException if the name contains unsafe characters.
      *
      * @since 2.2
      */
     public function releaseSavepoint(string $name): void
     {
+        $this->validateSavepointName($name);
+
         $this->db->createCommand(
             <<<SQL
             RELEASE SAVEPOINT $name
@@ -278,12 +290,16 @@ class Transaction extends \yii\base\BaseObject
     /**
      * Rolls back to a previously created savepoint.
      *
-     * @param string $name The savepoint name
+     * @param string $name The savepoint name (alphanumeric and underscores only).
+     *
+     * @throws InvalidArgumentException if the name contains unsafe characters.
      *
      * @since 2.2
      */
     public function rollBackSavepoint(string $name): void
     {
+        $this->validateSavepointName($name);
+
         $this->db->createCommand(
             <<<SQL
             ROLLBACK TO SAVEPOINT $name
@@ -305,5 +321,17 @@ class Transaction extends \yii\base\BaseObject
             SET TRANSACTION ISOLATION LEVEL $level
             SQL
         )->execute();
+    }
+
+    /**
+     * Validates that a savepoint name contains only safe characters (alphanumeric and underscores).
+     *
+     * @throws InvalidArgumentException if the name contains unsafe characters.
+     */
+    protected function validateSavepointName(string $name): void
+    {
+        if (!preg_match('/^[a-zA-Z_][a-zA-Z0-9_]*$/', $name)) {
+            throw new InvalidArgumentException("Invalid savepoint name: '{$name}'.");
+        }
     }
 }

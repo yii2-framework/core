@@ -11,6 +11,7 @@ declare(strict_types=1);
 namespace yiiunit\base\db;
 
 use Exception;
+use yii\base\InvalidArgumentException;
 use yii\base\NotSupportedException;
 use yii\db\Connection;
 use yii\db\TransactionIsolationLevel;
@@ -114,23 +115,36 @@ abstract class BaseTransaction extends BaseDatabase
     {
         $connection = $this->getConnection();
 
-        $this->expectException(Exception::class);
-        $this->expectExceptionMessage('Exception in transaction shortcut.');
+        $exceptionThrown = false;
 
-        $connection->transaction(
-            static function () use ($connection): never {
-                $connection->createCommand()
-                    ->insert('profile', ['description' => 'test transaction shortcut'])
-                    ->execute();
+        try {
+            $connection->transaction(
+                static function () use ($connection): never {
+                    $connection->createCommand()
+                        ->insert('profile', ['description' => 'test transaction shortcut'])
+                        ->execute();
 
-                throw new Exception('Exception in transaction shortcut.');
-            }
+                    throw new Exception('Exception in transaction shortcut.');
+                }
+            );
+        } catch (Exception $e) {
+            $exceptionThrown = true;
+
+            self::assertSame(
+                'Exception in transaction shortcut.',
+                $e->getMessage(),
+            );
+        }
+
+        self::assertTrue(
+            $exceptionThrown,
+            'Exception should have been thrown.',
         );
 
         $profilesCount = $connection
             ->createCommand(
                 <<<SQL
-                SELECT COUNT(*) FROM profile WHERE description = 'test transaction shortcut'
+                SELECT COUNT(*) FROM {{profile}} WHERE [[description]] = 'test transaction shortcut'
                 SQL,
             )
             ->queryScalar();
@@ -196,7 +210,7 @@ abstract class BaseTransaction extends BaseDatabase
 
         $profilesCount = $connection->createCommand(
             <<<SQL
-            SELECT COUNT(*) FROM profile WHERE description = 'test transaction shortcut';
+            SELECT COUNT(*) FROM {{profile}} WHERE [[description]] = 'test transaction shortcut'
             SQL,
         )->queryScalar();
 
@@ -258,6 +272,42 @@ abstract class BaseTransaction extends BaseDatabase
                 $db->beginTransaction();
             }
         );
+    }
+
+    public function testThrowInvalidArgumentExceptionWhenCreateSavepointWithUnsafeName(): void
+    {
+        $connection = $this->getConnection();
+
+        $transaction = $connection->beginTransaction();
+
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage("Invalid savepoint name: 'DROP TABLE users'.");
+
+        $transaction->createSavepoint('DROP TABLE users');
+    }
+
+    public function testThrowInvalidArgumentExceptionWhenReleaseSavepointWithUnsafeName(): void
+    {
+        $connection = $this->getConnection();
+
+        $transaction = $connection->beginTransaction();
+
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage("Invalid savepoint name: 'DROP TABLE users'.");
+
+        $transaction->releaseSavepoint('DROP TABLE users');
+    }
+
+    public function testThrowInvalidArgumentExceptionWhenRollBackSavepointWithUnsafeName(): void
+    {
+        $connection = $this->getConnection();
+
+        $transaction = $connection->beginTransaction();
+
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage("Invalid savepoint name: 'DROP TABLE users'.");
+
+        $transaction->rollBackSavepoint('DROP TABLE users');
     }
 
     public function testRollbackTransactionsWithSavePoints(): void

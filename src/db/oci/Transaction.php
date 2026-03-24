@@ -25,5 +25,6 @@ class Transaction extends \yii\db\Transaction
      */
     public function releaseSavepoint(string $name): void
     {
+        $this->validateSavepointName($name);
     }
 }

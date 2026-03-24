@@ -648,7 +648,7 @@ The following `public` methods have been removed from `yii\db\Schema` (and drive
 | `Schema::createSavepoint($name)` | `Transaction::createSavepoint(string $name)` |
 | `Schema::releaseSavepoint($name)` | `Transaction::releaseSavepoint(string $name)` |
 | `Schema::rollBackSavepoint($name)` | `Transaction::rollBackSavepoint(string $name)` |
-| `Schema::setTransactionIsolationLevel($level)` | `Transaction::setTransactionIsolationLevel(string $level)` (protected) |
+| `Schema::setTransactionIsolationLevel($level)` | `Transaction::setIsolationLevel(TransactionIsolationLevel\|string $level)` |
 
 Driver-specific overrides have been moved to new `Transaction` subclasses:
 
@@ -660,8 +660,9 @@ A new `Connection::$transactionMap` property (analogous to `$schemaMap` and `$co
 class is instantiated per driver.
 
 **Action required** if your application calls `$schema->createSavepoint()`, `$schema->releaseSavepoint()`,
-`$schema->rollBackSavepoint()`, or `$schema->setTransactionIsolationLevel()` directly — use the equivalent methods on
-the `Transaction` object returned by `$connection->beginTransaction()`.
+`$schema->rollBackSavepoint()`, or `$schema->setTransactionIsolationLevel()` directly — use
+`$transaction->createSavepoint()`, `$transaction->releaseSavepoint()`, `$transaction->rollBackSavepoint()`, and
+`$transaction->setIsolationLevel()` on the `Transaction` object returned by `$connection->beginTransaction()`.
 
 **Action required** if your application extends a driver `Schema` class and overrides any of these methods — move the
 override to a custom `Transaction` subclass and register it in `Connection::$transactionMap`.

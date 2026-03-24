@@ -26,6 +26,8 @@ class Transaction extends \yii\db\Transaction
      */
     public function createSavepoint(string $name): void
     {
+        $this->validateSavepointName($name);
+
         $this->db->createCommand(
             <<<SQL
             SAVE TRANSACTION $name
@@ -40,6 +42,7 @@ class Transaction extends \yii\db\Transaction
      */
     public function releaseSavepoint(string $name): void
     {
+        $this->validateSavepointName($name);
     }
 
     /**
@@ -47,6 +50,8 @@ class Transaction extends \yii\db\Transaction
      */
     public function rollBackSavepoint(string $name): void
     {
+        $this->validateSavepointName($name);
+
         $this->db->createCommand(
             <<<SQL
             ROLLBACK TRANSACTION $name

@@ -374,7 +374,7 @@ class Schema extends \yii\db\Schema implements ConstraintFinderInterface
                 }
             }
 
-            $column->defaultValue = $column->isPrimaryKey
+            $column->defaultValue = $column->isPrimaryKey && $column->autoIncrement
                 ? null
                 : $column->defaultPhpTypecast($column->defaultValue);
 

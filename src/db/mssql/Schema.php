@@ -444,7 +444,7 @@ class Schema extends \yii\db\Schema implements ConstraintFinderInterface
                 $table->sequenceName = '';
             }
 
-            $column->defaultValue = $column->isPrimaryKey
+            $column->defaultValue = $column->isPrimaryKey && $column->autoIncrement
                 ? null
                 : $column->defaultPhpTypecast($column->defaultValue);
 

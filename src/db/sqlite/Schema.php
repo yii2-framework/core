@@ -120,7 +120,7 @@ class Schema extends BaseSchema implements ConstraintFinderInterface
             $this->findConstraints($table);
 
             foreach ($table->columns as $column) {
-                $column->defaultValue = $column->isPrimaryKey
+                $column->defaultValue = $column->isPrimaryKey && $column->autoIncrement
                     ? null
                     : $column->defaultPhpTypecast($column->defaultValue);
             }

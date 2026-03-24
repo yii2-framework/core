@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 /**
  * @link https://www.yiiframework.com/
  * @copyright Copyright (c) 2008 Yii Software LLC
@@ -9,6 +11,7 @@
 namespace yii\db;
 
 use Yii;
+use yii\base\InvalidArgumentException;
 use yii\base\InvalidConfigException;
 use yii\base\NotSupportedException;
 
@@ -30,21 +33,14 @@ use yii\base\NotSupportedException;
  * } catch (\Exception $e) {
  *     $transaction->rollBack();
  *     throw $e;
- * } catch (\Throwable $e) {
- *     $transaction->rollBack();
- *     throw $e;
  * }
  * ```
  *
- * > Note: in the above code we have two catch-blocks for compatibility
- * > with PHP 5.x and PHP 7.x. `\Exception` implements the [`\Throwable` interface](https://www.php.net/manual/en/class.throwable.php)
- * > since PHP 7.0, so you can skip the part with `\Exception` if your app uses only PHP 7.0 and higher.
- *
  * @property-read bool $isActive Whether this transaction is active. Only an active transaction can
  * [[commit()]] or [[rollBack()]].
- * @property-write string $isolationLevel The transaction isolation level to use for this transaction. This
- * can be one of [[READ_UNCOMMITTED]], [[READ_COMMITTED]], [[REPEATABLE_READ]] and [[SERIALIZABLE]] but also a
- * string containing DBMS specific syntax to be used after `SET TRANSACTION ISOLATION LEVEL`.
+ * @property-write string|TransactionIsolationLevel $isolationLevel The transaction isolation level to use for this
+ * transaction. This can be a [[TransactionIsolationLevel]] enum case or a string containing DBMS specific syntax to be
+ * used after `SET TRANSACTION ISOLATION LEVEL`.
  * @property-read int $level The current nesting level of the transaction.
  *
  * @author Qiang Xue <qiang.xue@gmail.com>
@@ -53,26 +49,6 @@ use yii\base\NotSupportedException;
 class Transaction extends \yii\base\BaseObject
 {
     /**
-     * A constant representing the transaction isolation level `READ UNCOMMITTED`.
-     * @see https://en.wikipedia.org/wiki/Isolation_%28database_systems%29#Isolation_levels
-     */
-    public const READ_UNCOMMITTED = 'READ UNCOMMITTED';
-    /**
-     * A constant representing the transaction isolation level `READ COMMITTED`.
-     * @see https://en.wikipedia.org/wiki/Isolation_%28database_systems%29#Isolation_levels
-     */
-    public const READ_COMMITTED = 'READ COMMITTED';
-    /**
-     * A constant representing the transaction isolation level `REPEATABLE READ`.
-     * @see https://en.wikipedia.org/wiki/Isolation_%28database_systems%29#Isolation_levels
-     */
-    public const REPEATABLE_READ = 'REPEATABLE READ';
-    /**
-     * A constant representing the transaction isolation level `SERIALIZABLE`.
-     * @see https://en.wikipedia.org/wiki/Isolation_%28database_systems%29#Isolation_levels
-     */
-    public const SERIALIZABLE = 'SERIALIZABLE';
-    /**
      * @var Connection the database connection that this transaction is associated with.
      */
     public $db;
@@ -80,81 +56,100 @@ class Transaction extends \yii\base\BaseObject
     /**
      * @var int the nesting level of the transaction. 0 means the outermost level.
      */
-    private $_level = 0;
-
+    private int $_level = 0;
 
     /**
      * Returns a value indicating whether this transaction is active.
-     * @return bool whether this transaction is active. Only an active transaction
-     * can [[commit()]] or [[rollBack()]].
+     *
+     * @return bool whether this transaction is active. Only an active transaction can [[commit()]] or [[rollBack()]].
      */
-    public function getIsActive()
+    public function getIsActive(): bool
     {
         return $this->_level > 0 && $this->db && $this->db->isActive;
     }
 
     /**
      * Begins a transaction.
-     * @param string|null $isolationLevel The [isolation level][] to use for this transaction.
-     * This can be one of [[READ_UNCOMMITTED]], [[READ_COMMITTED]], [[REPEATABLE_READ]] and [[SERIALIZABLE]] but
-     * also a string containing DBMS specific syntax to be used after `SET TRANSACTION ISOLATION LEVEL`.
+     *
+     * @param TransactionIsolationLevel|string|null $isolationLevel The [isolation level][] to use for this transaction.
+     * This can be a [[TransactionIsolationLevel]] enum case or a string containing DBMS specific syntax to be used
+     * after `SET TRANSACTION ISOLATION LEVEL`.
      * If not specified (`null`) the isolation level will not be set explicitly and the DBMS default will be used.
      *
-     * > Note: This setting does not work for PostgreSQL, where setting the isolation level before the transaction
-     * has no effect. You have to call [[setIsolationLevel()]] in this case after the transaction has started.
+     * > Note: This setting does not work for PostgreSQL, where setting the isolation level before the transaction has
+     * no effect. You have to call [[setIsolationLevel()]] in this case after the transaction has started.
      *
      * > Note: Some DBMS allow setting of the isolation level only for the whole connection so subsequent transactions
-     * may get the same isolation level even if you did not specify any. When using this feature
-     * you may need to set the isolation level for all transactions explicitly to avoid conflicting settings.
+     * may get the same isolation level even if you did not specify any. When using this feature you may need to set the
+     * isolation level for all transactions explicitly to avoid conflicting settings.
      * At the time of this writing affected DBMS are MSSQL and SQLite.
      *
      * [isolation level]: https://en.wikipedia.org/wiki/Isolation_%28database_systems%29#Isolation_levels
      *
-     * Starting from version 2.0.16, this method throws exception when beginning nested transaction and underlying DBMS
-     * does not support savepoints.
      * @throws InvalidConfigException if [[db]] is `null`
      * @throws NotSupportedException if the DBMS does not support nested transactions
      * @throws Exception if DB connection fails
      */
-    public function begin($isolationLevel = null)
+    public function begin(TransactionIsolationLevel|string|null $isolationLevel = null): void
     {
         if ($this->db === null) {
             throw new InvalidConfigException('Transaction::db must be set.');
         }
+
         $this->db->open();
 
         if ($this->_level === 0) {
-            if ($isolationLevel !== null) {
-                $this->db->getSchema()->setTransactionIsolationLevel($isolationLevel);
+            $resolvedLevel = $isolationLevel instanceof TransactionIsolationLevel
+                ? $isolationLevel->value
+                : $isolationLevel;
+
+            if ($resolvedLevel !== null) {
+                $this->setTransactionIsolationLevel($resolvedLevel);
             }
-            Yii::debug('Begin transaction' . ($isolationLevel ? ' with isolation level ' . $isolationLevel : ''), __METHOD__);
+
+            Yii::debug(
+                'Begin transaction' . ($resolvedLevel ? " with isolation level {$resolvedLevel}" : ''),
+                __METHOD__,
+            );
 
             $this->db->trigger(Connection::EVENT_BEGIN_TRANSACTION);
             $this->db->pdo->beginTransaction();
+
             $this->_level = 1;
 
             return;
         }
 
         $schema = $this->db->getSchema();
+
         if ($schema->supportsSavepoint()) {
-            Yii::debug('Set savepoint ' . $this->_level, __METHOD__);
+            Yii::debug(
+                "Set savepoint {$this->_level}",
+                __METHOD__,
+            );
+
             // make sure the transaction wasn't autocommitted
             if ($this->db->pdo->inTransaction()) {
-                $schema->createSavepoint('LEVEL' . $this->_level);
+                $this->createSavepoint('LEVEL' . $this->_level);
             }
         } else {
-            Yii::info('Transaction not started: nested transaction not supported', __METHOD__);
+            Yii::info(
+                'Transaction not started: nested transaction not supported',
+                __METHOD__,
+            );
+
             throw new NotSupportedException('Transaction not started: nested transaction not supported.');
         }
+
         $this->_level++;
     }
 
     /**
      * Commits a transaction.
+     *
      * @throws Exception if the transaction is not active
      */
-    public function commit()
+    public function commit(): void
     {
         if (!$this->getIsActive()) {
             throw new Exception('Failed to commit transaction: transaction was inactive.');
@@ -176,7 +171,7 @@ class Transaction extends \yii\base\BaseObject
             Yii::debug('Release savepoint ' . $this->_level, __METHOD__);
             // make sure the transaction wasn't autocommitted
             if ($this->db->pdo->inTransaction()) {
-                $schema->releaseSavepoint('LEVEL' . $this->_level);
+                $this->releaseSavepoint('LEVEL' . $this->_level);
             }
         } else {
             Yii::info('Transaction not committed: nested transaction not supported', __METHOD__);
@@ -186,7 +181,7 @@ class Transaction extends \yii\base\BaseObject
     /**
      * Rolls back a transaction.
      */
-    public function rollBack()
+    public function rollBack(): void
     {
         if (!$this->getIsActive()) {
             // do nothing if transaction is not active: this could be the transaction is committed
@@ -210,7 +205,7 @@ class Transaction extends \yii\base\BaseObject
             Yii::debug('Roll back to savepoint ' . $this->_level, __METHOD__);
             // make sure the transaction wasn't autocommitted
             if ($this->db->pdo->inTransaction()) {
-                $schema->rollBackSavepoint('LEVEL' . $this->_level);
+                $this->rollBackSavepoint('LEVEL' . $this->_level);
             }
         } else {
             Yii::info('Transaction not rolled back: nested transaction not supported', __METHOD__);
@@ -221,29 +216,122 @@ class Transaction extends \yii\base\BaseObject
      * Sets the transaction isolation level for this transaction.
      *
      * This method can be used to set the isolation level while the transaction is already active.
-     * However this is not supported by all DBMS so you might rather specify the isolation level directly
-     * when calling [[begin()]].
-     * @param string $level The transaction isolation level to use for this transaction.
-     * This can be one of [[READ_UNCOMMITTED]], [[READ_COMMITTED]], [[REPEATABLE_READ]] and [[SERIALIZABLE]] but
-     * also a string containing DBMS specific syntax to be used after `SET TRANSACTION ISOLATION LEVEL`.
+     * However this is not supported by all DBMS so you might rather specify the isolation level directly when calling
+     * [[begin()]].
+     * @param TransactionIsolationLevel|string $level The transaction isolation level to use for this transaction.
+     * This can be a [[TransactionIsolationLevel]] enum case or a string containing DBMS specific syntax to be used
+     * after `SET TRANSACTION ISOLATION LEVEL`.
+     *
      * @throws Exception if the transaction is not active
      * @see https://en.wikipedia.org/wiki/Isolation_%28database_systems%29#Isolation_levels
      */
-    public function setIsolationLevel($level)
+    public function setIsolationLevel(TransactionIsolationLevel|string $level): void
     {
         if (!$this->getIsActive()) {
             throw new Exception('Failed to set isolation level: transaction was inactive.');
         }
-        Yii::debug('Setting transaction isolation level to ' . $level, __METHOD__);
-        $this->db->getSchema()->setTransactionIsolationLevel($level);
+
+        $resolvedLevel = $level instanceof TransactionIsolationLevel ? $level->value : $level;
+
+        Yii::debug('Setting transaction isolation level to ' . $resolvedLevel, __METHOD__);
+        $this->setTransactionIsolationLevel($resolvedLevel);
     }
 
     /**
      * @return int The current nesting level of the transaction.
+     *
      * @since 2.0.8
      */
-    public function getLevel()
+    public function getLevel(): int
     {
         return $this->_level;
+    }
+
+    /**
+     * Creates a new savepoint.
+     *
+     * @param string $name The savepoint name (alphanumeric and underscores only).
+     *
+     * @throws InvalidArgumentException if the name contains unsafe characters.
+     *
+     * @since 2.2
+     */
+    public function createSavepoint(string $name): void
+    {
+        $this->validateSavepointName($name);
+
+        $this->db->createCommand(
+            <<<SQL
+            SAVEPOINT $name
+            SQL
+        )->execute();
+    }
+
+    /**
+     * Releases an existing savepoint.
+     *
+     * @param string $name The savepoint name (alphanumeric and underscores only).
+     *
+     * @throws InvalidArgumentException if the name contains unsafe characters.
+     *
+     * @since 2.2
+     */
+    public function releaseSavepoint(string $name): void
+    {
+        $this->validateSavepointName($name);
+
+        $this->db->createCommand(
+            <<<SQL
+            RELEASE SAVEPOINT $name
+            SQL
+        )->execute();
+    }
+
+    /**
+     * Rolls back to a previously created savepoint.
+     *
+     * @param string $name The savepoint name (alphanumeric and underscores only).
+     *
+     * @throws InvalidArgumentException if the name contains unsafe characters.
+     *
+     * @since 2.2
+     */
+    public function rollBackSavepoint(string $name): void
+    {
+        $this->validateSavepointName($name);
+
+        $this->db->createCommand(
+            <<<SQL
+            ROLLBACK TO SAVEPOINT $name
+            SQL
+        )->execute();
+    }
+
+    /**
+     * Executes the DBMS-specific SQL to set the transaction isolation level.
+     *
+     * @param string $level The resolved isolation level string.
+     *
+     * @since 2.2
+     */
+    protected function setTransactionIsolationLevel(string $level): void
+    {
+        $this->db->createCommand(
+            <<<SQL
+            SET TRANSACTION ISOLATION LEVEL $level
+            SQL
+        )->execute();
+    }
+
+    /**
+     * Validates that a savepoint name contains only safe characters (alphanumeric and underscores).
+     *
+     * @throws InvalidArgumentException if the name contains unsafe characters.
+     */
+    protected function validateSavepointName(string $name): void
+    {
+        if (!preg_match('/^[a-zA-Z_][a-zA-Z0-9_]*$/', $name)) {
+            throw new InvalidArgumentException("Invalid savepoint name: '{$name}'.");
+        }
     }
 }

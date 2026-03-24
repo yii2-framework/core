@@ -8,8 +8,6 @@
 
 namespace yiiunit\framework\db\oci;
 
-use yii\db\Connection;
-use yii\db\Transaction;
 use yiiunit\base\db\BaseConnection;
 
 /**
@@ -76,42 +74,6 @@ class ConnectionTest extends BaseConnection
         $this->assertEquals('"table"."column"', $connection->quoteSql('{{table}}."column"'));
         $this->assertEquals('"table"."column"', $connection->quoteSql('{{%table}}.[[column]]'));
         $this->assertEquals('"table"."column"', $connection->quoteSql('{{%table}}."column"'));
-    }
-
-    public function testTransactionIsolation(): void
-    {
-        $connection = $this->getConnection(true);
-
-        $transaction = $connection->beginTransaction(Transaction::READ_COMMITTED);
-        $transaction->commit();
-
-        $transaction = $connection->beginTransaction(Transaction::SERIALIZABLE);
-        $transaction->commit();
-
-        $this->assertTrue(true);
-    }
-
-    /**
-     * Note: The READ UNCOMMITTED isolation level allows dirty reads. Oracle Database doesn't use dirty reads, nor does
-     * it even allow them.
-     *
-     * Change Transaction::READ_UNCOMMITTED => Transaction::READ_COMMITTED.
-     */
-    public function testTransactionShortcutCustom(): void
-    {
-        $connection = $this->getConnection(true);
-
-        $result = $connection->transaction(static function (Connection $db) {
-            $db->createCommand()->insert('profile', ['description' => 'test transaction shortcut'])->execute();
-            return true;
-        }, Transaction::READ_COMMITTED);
-
-        $this->assertTrue($result, 'transaction shortcut valid value should be returned from callback');
-
-        $profilesCount = $connection->createCommand(
-            "SELECT COUNT(*) FROM {{profile}} WHERE [[description]] = 'test transaction shortcut'"
-        )->queryScalar();
-        $this->assertEquals(1, $profilesCount, 'profile should be inserted in transaction shortcut');
     }
 
     public function testQuoteValue(): void

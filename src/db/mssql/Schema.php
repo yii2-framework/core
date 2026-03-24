@@ -326,30 +326,6 @@ class Schema extends \yii\db\Schema implements ConstraintFinderInterface
     }
 
     /**
-     * {@inheritdoc}
-     */
-    public function createSavepoint($name)
-    {
-        $this->db->createCommand("SAVE TRANSACTION $name")->execute();
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function releaseSavepoint($name)
-    {
-        // does nothing as MSSQL does not support this
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function rollBackSavepoint($name)
-    {
-        $this->db->createCommand("ROLLBACK TRANSACTION $name")->execute();
-    }
-
-    /**
      * Creates a query builder for the MSSQL database.
      * @return QueryBuilder query builder interface.
      */

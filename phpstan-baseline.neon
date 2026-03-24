@@ -5331,13 +5331,13 @@ parameters:
 		-
 			message: '#^Dynamic call to static method PHPUnit\\Framework\\Assert\:\:assertEquals\(\)\.$#'
 			identifier: staticMethod.dynamicCall
-			count: 43
+			count: 38
 			path: tests/base/db/BaseConnection.php
 
 		-
 			message: '#^Dynamic call to static method PHPUnit\\Framework\\Assert\:\:assertFalse\(\)\.$#'
 			identifier: staticMethod.dynamicCall
-			count: 9
+			count: 7
 			path: tests/base/db/BaseConnection.php
 
 		-
@@ -5355,7 +5355,7 @@ parameters:
 		-
 			message: '#^Dynamic call to static method PHPUnit\\Framework\\Assert\:\:assertNotNull\(\)\.$#'
 			identifier: staticMethod.dynamicCall
-			count: 22
+			count: 17
 			path: tests/base/db/BaseConnection.php
 
 		-
@@ -5367,7 +5367,7 @@ parameters:
 		-
 			message: '#^Dynamic call to static method PHPUnit\\Framework\\Assert\:\:assertNull\(\)\.$#'
 			identifier: staticMethod.dynamicCall
-			count: 17
+			count: 14
 			path: tests/base/db/BaseConnection.php
 
 		-
@@ -5379,7 +5379,7 @@ parameters:
 		-
 			message: '#^Dynamic call to static method PHPUnit\\Framework\\Assert\:\:assertTrue\(\)\.$#'
 			identifier: staticMethod.dynamicCall
-			count: 8
+			count: 4
 			path: tests/base/db/BaseConnection.php
 
 		-

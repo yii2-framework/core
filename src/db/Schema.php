@@ -37,10 +37,7 @@ use function is_string;
  * @property-read string[] $tableNames All table names in the database.
  * @property-read TableSchema[] $tableSchemas The metadata for all tables in the database. Each array element
  * is an instance of [[TableSchema]] or its child class.
- * @property-write string $transactionIsolationLevel The transaction isolation level to use for this
- * transaction. This can be one of [[Transaction::READ_UNCOMMITTED]], [[Transaction::READ_COMMITTED]],
- * [[Transaction::REPEATABLE_READ]] and [[Transaction::SERIALIZABLE]] but also a string containing DBMS specific
- * syntax to be used after `SET TRANSACTION ISOLATION LEVEL`.
+ * @property-read bool $supportsSavepoint Whether this DBMS supports savepoints.
  *
  * @method Constraint|null loadTablePrimaryKey(string $tableName)
  * @method ForeignKeyConstraint[] loadTableForeignKeys(string $tableName)
@@ -399,46 +396,6 @@ abstract class Schema extends BaseObject
     public function supportsSavepoint()
     {
         return $this->db->enableSavepoint;
-    }
-
-    /**
-     * Creates a new savepoint.
-     * @param string $name the savepoint name
-     */
-    public function createSavepoint($name)
-    {
-        $this->db->createCommand("SAVEPOINT $name")->execute();
-    }
-
-    /**
-     * Releases an existing savepoint.
-     * @param string $name the savepoint name
-     */
-    public function releaseSavepoint($name)
-    {
-        $this->db->createCommand("RELEASE SAVEPOINT $name")->execute();
-    }
-
-    /**
-     * Rolls back to a previously created savepoint.
-     * @param string $name the savepoint name
-     */
-    public function rollBackSavepoint($name)
-    {
-        $this->db->createCommand("ROLLBACK TO SAVEPOINT $name")->execute();
-    }
-
-    /**
-     * Sets the isolation level of the current transaction.
-     * @param string $level The transaction isolation level to use for this transaction.
-     * This can be one of [[Transaction::READ_UNCOMMITTED]], [[Transaction::READ_COMMITTED]], [[Transaction::REPEATABLE_READ]]
-     * and [[Transaction::SERIALIZABLE]] but also a string containing DBMS specific syntax to be used
-     * after `SET TRANSACTION ISOLATION LEVEL`.
-     * @see https://en.wikipedia.org/wiki/Isolation_%28database_systems%29#Isolation_levels
-     */
-    public function setTransactionIsolationLevel($level)
-    {
-        $this->db->createCommand("SET TRANSACTION ISOLATION LEVEL $level")->execute();
     }
 
     /**

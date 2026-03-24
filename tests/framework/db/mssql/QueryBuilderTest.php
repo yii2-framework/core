@@ -1006,8 +1006,8 @@ final class QueryBuilderTest extends BaseQueryBuilder
 
         $db->createCommand($sql)->execute();
 
-        self::expectException(IntegrityException::class);
-        self::expectExceptionMessageMatches(
+        $this->expectException(IntegrityException::class);
+        $this->expectExceptionMessageMatches(
             '/conflicted with the CHECK constraint "CK_foo1_bar"/',
         );
 
@@ -1036,10 +1036,10 @@ final class QueryBuilderTest extends BaseQueryBuilder
             'First INSERT with UNIQUE constraint should succeed.',
         );
 
-        self::expectException(
+        $this->expectException(
             IntegrityException::class,
         );
-        self::expectExceptionMessageMatches(
+        $this->expectExceptionMessageMatches(
             '/Violation of UNIQUE KEY constraint \'UQ_foo1_bar\'/',
         );
 

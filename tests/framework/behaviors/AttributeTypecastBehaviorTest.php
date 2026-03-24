@@ -118,7 +118,7 @@ class AttributeTypecastBehaviorTest extends TestCase
         $model = new ActiveRecordAttributeTypecastWithEnum();
         $model->status = 'invalid';
 
-        self::expectException(ValueError::class);
+        $this->expectException(ValueError::class);
 
         $model->getAttributeTypecastBehavior()->typecastAttributes();
     }

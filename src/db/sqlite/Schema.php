@@ -21,7 +21,6 @@ use yii\db\IndexConstraint;
 use yii\db\MetadataType;
 use yii\db\SqlToken;
 use yii\db\TableSchema;
-use yii\db\Transaction;
 use yii\helpers\ArrayHelper;
 use yii\db\Schema as BaseSchema;
 
@@ -35,9 +34,6 @@ use function strtolower;
 
 /**
  * Schema is the class for retrieving metadata from a SQLite 3 database.
- *
- * @property-write string $transactionIsolationLevel The transaction isolation level to use for this
- * transaction. This can be either [[Transaction::READ_UNCOMMITTED]] or [[Transaction::SERIALIZABLE]].
  *
  * @author Qiang Xue <qiang.xue@gmail.com>
  * @since 2.0
@@ -401,25 +397,6 @@ class Schema extends BaseSchema implements ConstraintFinderInterface
         $column->phpType = $column->resolvePhpType();
 
         return $column;
-    }
-
-    /**
-     * Sets the isolation level of the current transaction.
-     * @param string $level The transaction isolation level to use for this transaction.
-     * This can be either [[Transaction::READ_UNCOMMITTED]] or [[Transaction::SERIALIZABLE]].
-     * @throws NotSupportedException when unsupported isolation levels are used.
-     * SQLite only supports SERIALIZABLE and READ UNCOMMITTED.
-     * @see https://www.sqlite.org/pragma.html#pragma_read_uncommitted
-     */
-    public function setTransactionIsolationLevel($level)
-    {
-        match ($level) {
-            Transaction::SERIALIZABLE => $this->db->createCommand('PRAGMA read_uncommitted = False;')->execute(),
-            Transaction::READ_UNCOMMITTED => $this->db->createCommand('PRAGMA read_uncommitted = True;')->execute(),
-            default => throw new NotSupportedException(
-                static::class . ' only supports transaction isolation levels READ UNCOMMITTED and SERIALIZABLE.',
-            ),
-        };
     }
 
     /**

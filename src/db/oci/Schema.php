@@ -283,14 +283,6 @@ class Schema extends \yii\db\Schema implements ConstraintFinderInterface
     /**
      * {@inheritdoc}
      */
-    public function releaseSavepoint($name)
-    {
-        // does nothing as Oracle does not support this
-    }
-
-    /**
-     * {@inheritdoc}
-     */
     public function quoteSimpleTableName($name)
     {
         return strpos($name, '"') !== false ? $name : '"' . $name . '"';

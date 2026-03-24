@@ -9,11 +9,15 @@
 namespace yii\db;
 
 use PDO;
+use Throwable;
 use Yii;
 use yii\base\Component;
 use yii\base\InvalidConfigException;
 use yii\base\NotSupportedException;
 use yii\caching\CacheInterface;
+
+use function call_user_func;
+use function is_array;
 
 /**
  * Connection represents a connection to a database via [PDO](https://www.php.net/manual/en/book.pdo.php).
@@ -93,7 +97,7 @@ use yii\caching\CacheInterface;
  * ```
  * $connection->transaction(function (Connection $db) {
  *     //return $db->...
- * }, Transaction::READ_UNCOMMITTED);
+ * }, TransactionIsolationLevel::READ_UNCOMMITTED);
  * ```
  *
  * Connection is often used as an application component and configured in the application
@@ -274,15 +278,14 @@ class Connection extends Component
      * [[Schema]] class to support DBMS that is not supported by Yii.
      */
     public $schemaMap = [
-        'pgsql' => 'yii\db\pgsql\Schema', // PostgreSQL
-        'mysqli' => 'yii\db\mysql\Schema', // MySQL
-        'mysql' => 'yii\db\mysql\Schema', // MySQL
-        'sqlite' => 'yii\db\sqlite\Schema', // sqlite 3
-        'sqlite2' => 'yii\db\sqlite\Schema', // sqlite 2
-        'sqlsrv' => 'yii\db\mssql\Schema', // newer MSSQL driver on MS Windows hosts
-        'oci' => 'yii\db\oci\Schema', // Oracle driver
-        'mssql' => 'yii\db\mssql\Schema', // older MSSQL driver on MS Windows hosts
-        'dblib' => 'yii\db\mssql\Schema', // dblib drivers on GNU/Linux (and maybe other OSes) hosts
+        'dblib' => mssql\Schema::class,
+        'mssql' => mssql\Schema::class,
+        'mysql' => mysql\Schema::class,
+        'mysqli' => mysql\Schema::class,
+        'oci' => oci\Schema::class,
+        'pgsql' => pgsql\Schema::class,
+        'sqlite' => sqlite\Schema::class,
+        'sqlsrv' => mssql\Schema::class,
     ];
     /**
      * @var string|null Custom PDO wrapper class. If not set, it will use [[PDO]] or [[\yii\db\mssql\PDO]] when MSSQL is used.
@@ -310,15 +313,35 @@ class Connection extends Component
      * @since 2.0.14
      */
     public $commandMap = [
-        'pgsql' => 'yii\db\Command', // PostgreSQL
-        'mysqli' => 'yii\db\Command', // MySQL
-        'mysql' => 'yii\db\Command', // MySQL
-        'sqlite' => 'yii\db\sqlite\Command', // sqlite 3
-        'sqlite2' => 'yii\db\sqlite\Command', // sqlite 2
-        'sqlsrv' => 'yii\db\Command', // newer MSSQL driver on MS Windows hosts
-        'oci' => 'yii\db\oci\Command', // Oracle driver
-        'mssql' => 'yii\db\Command', // older MSSQL driver on MS Windows hosts
-        'dblib' => 'yii\db\Command', // dblib drivers on GNU/Linux (and maybe other OSes) hosts
+        'dblib' => Command::class,
+        'mssql' => Command::class,
+        'mysql' => Command::class,
+        'mysqli' => Command::class,
+        'oci' => oci\Command::class,
+        'pgsql' => Command::class,
+        'sqlite' => sqlite\Command::class,
+        'sqlsrv' => Command::class,
+    ];
+    /**
+     * @var array Mapping between PDO driver names and [[Transaction]] classes.
+     * The keys of the array are PDO driver names while the values are either the corresponding transaction class names
+     * or configurations. Please refer to [[Yii::createObject()]] for details on how to specify a configuration.
+     *
+     * This property is mainly used by [[beginTransaction()]] to create new database [[Transaction]] objects.
+     * You normally do not need to set this property unless you want to use your own [[Transaction]] class or support
+     * DBMS that is not supported by Yii.
+     *
+     * @since 2.2
+     */
+    public $transactionMap = [
+        'dblib' => mssql\Transaction::class,
+        'mssql' => mssql\Transaction::class,
+        'mysql' => Transaction::class,
+        'mysqli' => Transaction::class,
+        'oci' => oci\Transaction::class,
+        'pgsql' => Transaction::class,
+        'sqlite' => sqlite\Transaction::class,
+        'sqlsrv' => mssql\Transaction::class,
     ];
     /**
      * @var bool whether to enable [savepoint](https://en.wikipedia.org/wiki/Savepoint).
@@ -783,17 +806,33 @@ class Connection extends Component
 
     /**
      * Starts a transaction.
-     * @param string|null $isolationLevel The isolation level to use for this transaction.
+     *
+     * @param TransactionIsolationLevel|string|null $isolationLevel The isolation level to use for this transaction.
      * See [[Transaction::begin()]] for details.
-     * @return Transaction the transaction initiated
+     *
+     * @return Transaction The transaction initiated.
      */
-    public function beginTransaction($isolationLevel = null)
+    public function beginTransaction(TransactionIsolationLevel|string|null $isolationLevel = null)
     {
         $this->open();
 
         if (($transaction = $this->getTransaction()) === null) {
-            $transaction = $this->_transaction = new Transaction(['db' => $this]);
+            $driver = $this->getDriverName();
+
+            $config = ['class' => Transaction::class];
+
+            if (isset($this->transactionMap[$driver])) {
+                $config = !is_array($this->transactionMap[$driver])
+                    ? ['class' => $this->transactionMap[$driver]]
+                    : $this->transactionMap[$driver];
+            }
+
+            $config['db'] = $this;
+
+            /** @var Transaction $transaction */
+            $transaction = $this->_transaction = Yii::createObject($config);
         }
+
         $transaction->begin($isolationLevel);
 
         return $transaction;
@@ -802,26 +841,30 @@ class Connection extends Component
     /**
      * Executes callback provided in a transaction.
      *
-     * @param callable $callback a valid PHP callback that performs the job. Accepts connection instance as parameter.
-     * @param string|null $isolationLevel The isolation level to use for this transaction.
+     * @param callable $callback A valid PHP callback that performs the job. Accepts connection instance as parameter.
+     * @param TransactionIsolationLevel|string|null $isolationLevel The isolation level to use for this transaction.
      * See [[Transaction::begin()]] for details.
-     * @throws \Throwable if there is any exception during query. In this case the transaction will be rolled back.
-     * @return mixed result of callback function
+     *
+     * @throws Throwable if there is any exception during query. In this case the transaction will be rolled back.
+     *
+     * @return mixed Result of callback function.
      */
-    public function transaction(callable $callback, $isolationLevel = null)
+    public function transaction(callable $callback, TransactionIsolationLevel|string|null $isolationLevel = null)
     {
         $transaction = $this->beginTransaction($isolationLevel);
+
         $level = $transaction->level;
 
         try {
             $result = call_user_func($callback, $this);
+
             if ($transaction->isActive && $transaction->level === $level) {
                 $transaction->commit();
             }
         } catch (\Exception $e) {
             $this->rollbackTransactionOnLevel($transaction, $level);
             throw $e;
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             $this->rollbackTransactionOnLevel($transaction, $level);
             throw $e;
         }

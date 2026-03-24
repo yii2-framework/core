@@ -617,6 +617,56 @@ The `protected` methods `extractColumnType()` and `extractColumnSize()` have bee
 `extractColumnSize()`: move the type resolution logic to a custom `oci\ColumnSchema::resolveType()` override and set
 `$columnSchemaClass` accordingly.
 
+### Transaction isolation-level constants replaced with `TransactionIsolationLevel` enum
+
+The four `Transaction::READ_UNCOMMITTED`, `Transaction::READ_COMMITTED`, `Transaction::REPEATABLE_READ`, and
+`Transaction::SERIALIZABLE` string constants have been replaced by the `yii\db\TransactionIsolationLevel` backed enum.
+
+Both `Transaction::begin()` and `Transaction::setIsolationLevel()` now accept `TransactionIsolationLevel|string`.
+Passing a raw string still works for DBMS-specific syntax (e.g., `'SERIALIZABLE READ ONLY DEFERRABLE'` on PostgreSQL).
+
+```php
+// before
+use yii\db\Transaction;
+
+$connection->beginTransaction(Transaction::READ_COMMITTED);
+$connection->transaction($callback, Transaction::REPEATABLE_READ);
+
+// after
+use yii\db\TransactionIsolationLevel;
+
+$connection->beginTransaction(TransactionIsolationLevel::READ_COMMITTED);
+$connection->transaction($callback, TransactionIsolationLevel::REPEATABLE_READ);
+```
+
+### Savepoint and isolation-level methods moved from `Schema` to `Transaction`
+
+The following `public` methods have been removed from `yii\db\Schema` (and driver subclasses):
+
+| Removed method | New location |
+| --- | --- |
+| `Schema::createSavepoint($name)` | `Transaction::createSavepoint(string $name)` |
+| `Schema::releaseSavepoint($name)` | `Transaction::releaseSavepoint(string $name)` |
+| `Schema::rollBackSavepoint($name)` | `Transaction::rollBackSavepoint(string $name)` |
+| `Schema::setTransactionIsolationLevel($level)` | `Transaction::setIsolationLevel(TransactionIsolationLevel\|string $level)` |
+
+Driver-specific overrides have been moved to new `Transaction` subclasses:
+
+- `yii\db\mssql\Transaction` — `SAVE TRANSACTION` / `ROLLBACK TRANSACTION` syntax, no-op `releaseSavepoint()`.
+- `yii\db\sqlite\Transaction` — `PRAGMA read_uncommitted` isolation levels.
+- `yii\db\oci\Transaction` — no-op `releaseSavepoint()`.
+
+A new `Connection::$transactionMap` property (analogous to `$schemaMap` and `$commandMap`) controls which `Transaction`
+class is instantiated per driver.
+
+**Action required** if your application calls `$schema->createSavepoint()`, `$schema->releaseSavepoint()`,
+`$schema->rollBackSavepoint()`, or `$schema->setTransactionIsolationLevel()` directly — use
+`$transaction->createSavepoint()`, `$transaction->releaseSavepoint()`, `$transaction->rollBackSavepoint()`, and
+`$transaction->setIsolationLevel()` on the `Transaction` object returned by `$connection->beginTransaction()`.
+
+**Action required** if your application extends a driver `Schema` class and overrides any of these methods — move the
+override to a custom `Transaction` subclass and register it in `Connection::$transactionMap`.
+
 ### Base `QueryBuilder` deprecated API removal
 
 The following deprecated members of `yii\db\QueryBuilder` have been removed (all deprecated since 2.0.14):

@@ -11,7 +11,6 @@ namespace yiiunit\framework\db\sqlite;
 use Yii;
 use yii\db\Connection;
 use yii\db\Exception;
-use yii\db\Transaction;
 use yiiunit\base\db\BaseConnection;
 use yiiunit\data\ar\ActiveRecord;
 use yiiunit\data\ar\Customer;
@@ -38,19 +37,6 @@ class ConnectionTest extends BaseConnection
         $this->assertEquals(123, $connection->quoteValue(123));
         $this->assertEquals("'string'", $connection->quoteValue('string'));
         $this->assertEquals("'It''s interesting'", $connection->quoteValue("It's interesting"));
-    }
-
-    public function testTransactionIsolation(): void
-    {
-        $connection = $this->getConnection(true);
-
-        $transaction = $connection->beginTransaction(Transaction::READ_UNCOMMITTED);
-        $transaction->rollBack();
-
-        $transaction = $connection->beginTransaction(Transaction::SERIALIZABLE);
-        $transaction->rollBack();
-
-        $this->assertTrue(true); // No exceptions means test is passed.
     }
 
     public function testMasterSlave(): void

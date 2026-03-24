@@ -1344,10 +1344,10 @@ final class ModelTest extends TestCase
 
     public function testCreateValidators(): void
     {
-        self::expectException(
+        $this->expectException(
             InvalidConfigException::class,
         );
-        self::expectExceptionMessage(
+        $this->expectExceptionMessage(
             'Invalid validation rule: a rule must specify both attribute names and validator type.',
         );
 
@@ -1401,10 +1401,10 @@ final class ModelTest extends TestCase
     {
         $model = require __DIR__ . '/stub/AnonymousModelClass.php';
 
-        self::expectException(
+        $this->expectException(
             InvalidConfigException::class,
         );
-        self::expectExceptionMessage(
+        $this->expectExceptionMessage(
             'The "formName()" method should be explicitly defined for anonymous models',
         );
 
@@ -1469,10 +1469,10 @@ final class ModelTest extends TestCase
 
         $model->setScenario('nonexistent');
 
-        self::expectException(
+        $this->expectException(
             InvalidArgumentException::class,
         );
-        self::expectExceptionMessage(
+        $this->expectExceptionMessage(
             'Unknown scenario: nonexistent',
         );
 

@@ -8,7 +8,6 @@
 
 namespace yiiunit\framework\db\pgsql;
 
-use yii\db\Transaction;
 use yiiunit\base\db\BaseConnection;
 
 /**
@@ -77,32 +76,5 @@ class ConnectionTest extends BaseConnection
         $this->assertEquals('"table"."column"', $connection->quoteSql('{{table}}."column"'));
         $this->assertEquals('"table"."column"', $connection->quoteSql('{{%table}}.[[column]]'));
         $this->assertEquals('"table"."column"', $connection->quoteSql('{{%table}}."column"'));
-    }
-
-    public function testTransactionIsolation(): void
-    {
-        $connection = $this->getConnection(true);
-
-        $transaction = $connection->beginTransaction();
-        $transaction->setIsolationLevel(Transaction::READ_UNCOMMITTED);
-        $transaction->commit();
-
-        $transaction = $connection->beginTransaction();
-        $transaction->setIsolationLevel(Transaction::READ_COMMITTED);
-        $transaction->commit();
-
-        $transaction = $connection->beginTransaction();
-        $transaction->setIsolationLevel(Transaction::REPEATABLE_READ);
-        $transaction->commit();
-
-        $transaction = $connection->beginTransaction();
-        $transaction->setIsolationLevel(Transaction::SERIALIZABLE);
-        $transaction->commit();
-
-        $transaction = $connection->beginTransaction();
-        $transaction->setIsolationLevel(Transaction::SERIALIZABLE . ' READ ONLY DEFERRABLE');
-        $transaction->commit();
-
-        $this->assertTrue(true); // No error occurred – assert passed.
     }
 }

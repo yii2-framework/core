@@ -160,10 +160,11 @@ final class ComponentTest extends TestCase
             $this->component->Text,
             "Should return default value for 'Text' property.",
         );
-        self::expectException(
+
+        $this->expectException(
             UnknownPropertyException::class,
         );
-        self::expectExceptionMessage(
+        $this->expectExceptionMessage(
             'Getting unknown property: yiiunit\data\base\NewComponent::Caption',
         );
 
@@ -182,10 +183,11 @@ final class ComponentTest extends TestCase
             $this->component->Text,
             "Should return the newly set value for 'Text' property.",
         );
-        self::expectException(
+
+        $this->expectException(
             UnknownPropertyException::class,
         );
-        self::expectExceptionMessage(
+        $this->expectExceptionMessage(
             'Setting unknown property: yiiunit\data\base\NewComponent::NewMember',
         );
 
@@ -243,10 +245,10 @@ final class ComponentTest extends TestCase
 
     public function testCallUnknownMethod(): void
     {
-        self::expectException(
+        $this->expectException(
             UnknownMethodException::class,
         );
-        self::expectExceptionMessage(
+        $this->expectExceptionMessage(
             'Calling unknown method: yiiunit\data\base\NewComponent::unknownMethod()',
         );
 
@@ -288,10 +290,10 @@ final class ComponentTest extends TestCase
 
     public function testUnsetReadonly(): void
     {
-        self::expectException(
+        $this->expectException(
             InvalidCallException::class,
         );
-        self::expectExceptionMessage(
+        $this->expectExceptionMessage(
             'Unsetting an unknown or read-only property: yiiunit\data\base\NewComponent::object',
         );
 
@@ -844,10 +846,10 @@ final class ComponentTest extends TestCase
 
     public function testSetReadOnlyProperty(): void
     {
-        self::expectException(
+        $this->expectException(
             InvalidCallException::class,
         );
-        self::expectExceptionMessage(
+        $this->expectExceptionMessage(
             'Setting read-only property: yiiunit\data\base\NewComponent::object',
         );
 
@@ -900,10 +902,10 @@ final class ComponentTest extends TestCase
 
     public function testWriteOnlyProperty(): void
     {
-        self::expectException(
+        $this->expectException(
             InvalidCallException::class,
         );
-        self::expectExceptionMessage(
+        $this->expectExceptionMessage(
             'Getting write-only property: yiiunit\data\base\NewComponent::writeOnly',
         );
 

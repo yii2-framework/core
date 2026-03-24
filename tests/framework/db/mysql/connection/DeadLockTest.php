@@ -14,7 +14,7 @@ use RuntimeException;
 use ErrorException;
 use yii\db\Connection;
 use yii\db\Exception;
-use yii\db\Transaction;
+use yii\db\TransactionIsolationLevel;
 
 /**
  * @group db
@@ -192,7 +192,7 @@ class DeadLockTest extends ConnectionTest
                         ->execute();
                     $this->log('child 1: commit');
                 });
-            }, Transaction::REPEATABLE_READ);
+            }, TransactionIsolationLevel::REPEATABLE_READ);
         } catch (Exception $e) {
             list($sqlError, $driverError, $driverMessage) = $e->errorInfo;
             // Deadlock found when trying to get lock; try restarting transaction
@@ -255,7 +255,7 @@ class DeadLockTest extends ConnectionTest
 
                     $this->log('child 2: commit');
                 });
-            }, Transaction::REPEATABLE_READ);
+            }, TransactionIsolationLevel::REPEATABLE_READ);
         } catch (Exception $e) {
             list($sqlError, $driverError, $driverMessage) = $e->errorInfo;
             // Deadlock found when trying to get lock; try restarting transaction

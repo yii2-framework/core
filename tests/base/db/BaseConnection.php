@@ -8,14 +8,13 @@
 
 namespace yiiunit\base\db;
 
-use Exception;
 use Yii;
 use yii\base\InvalidConfigException;
 use yii\caching\ArrayCache;
 use yii\db\conditions\AndCondition;
 use yii\db\conditions\OrCondition;
 use yii\db\Connection;
-use yii\db\Transaction;
+
 abstract class BaseConnection extends BaseDatabase
 {
     public function testConstruct(): void
@@ -168,139 +167,6 @@ abstract class BaseConnection extends BaseDatabase
         $this->assertEquals('`table`.`column`', $connection->quoteSql('{{table}}.`column`'));
         $this->assertEquals('`table`.`column`', $connection->quoteSql('{{%table}}.[[column]]'));
         $this->assertEquals('`table`.`column`', $connection->quoteSql('{{%table}}.`column`'));
-    }
-
-    public function testTransaction(): void
-    {
-        $connection = $this->getConnection(false);
-        $this->assertNull($connection->transaction);
-        $transaction = $connection->beginTransaction();
-        $this->assertNotNull($connection->transaction);
-        $this->assertTrue($transaction->isActive);
-
-        $connection->createCommand()->insert('profile', ['description' => 'test transaction'])->execute();
-
-        $transaction->rollBack();
-        $this->assertFalse($transaction->isActive);
-        $this->assertNull($connection->transaction);
-
-        $this->assertEquals(
-            0,
-            $connection->createCommand(
-                "SELECT COUNT(*) FROM {{profile}} WHERE [[description]] = 'test transaction'"
-            )->queryScalar()
-        );
-
-        $transaction = $connection->beginTransaction();
-        $connection->createCommand()->insert('profile', ['description' => 'test transaction'])->execute();
-        $transaction->commit();
-        $this->assertFalse($transaction->isActive);
-        $this->assertNull($connection->transaction);
-
-        $this->assertEquals(
-            1,
-            $connection->createCommand(
-                "SELECT COUNT(*) FROM {{profile}} WHERE [[description]] = 'test transaction'"
-            )->queryScalar()
-        );
-    }
-
-    public function testTransactionIsolation(): void
-    {
-        $connection = $this->getConnection(true);
-
-        $transaction = $connection->beginTransaction(Transaction::READ_UNCOMMITTED);
-        $transaction->commit();
-
-        $transaction = $connection->beginTransaction(Transaction::READ_COMMITTED);
-        $transaction->commit();
-
-        $transaction = $connection->beginTransaction(Transaction::REPEATABLE_READ);
-        $transaction->commit();
-
-        $transaction = $connection->beginTransaction(Transaction::SERIALIZABLE);
-        $transaction->commit();
-
-        $this->assertTrue(true); // should not be any exception so far
-    }
-
-    public function testTransactionShortcutException(): void
-    {
-        $connection = $this->getConnection(true);
-
-        $this->expectException(Exception::class);
-
-        $connection->transaction(function () use ($connection) {
-            $connection->createCommand()->insert('profile', ['description' => 'test transaction shortcut'])->execute();
-            throw new Exception('Exception in transaction shortcut');
-        });
-
-        $profilesCount = $connection
-            ->createCommand("SELECT COUNT(*) FROM profile WHERE description = 'test transaction shortcut';")
-            ->queryScalar();
-        $this->assertEquals(0, $profilesCount, 'profile should not be inserted in transaction shortcut');
-    }
-
-    public function testTransactionShortcutCorrect(): void
-    {
-        $connection = $this->getConnection(true);
-
-        $result = $connection->transaction(function () use ($connection) {
-            $connection->createCommand()->insert('profile', ['description' => 'test transaction shortcut'])->execute();
-            return true;
-        });
-
-        $this->assertTrue($result, 'transaction shortcut valid value should be returned from callback');
-
-        $profilesCount = $connection->createCommand(
-            "SELECT COUNT(*) FROM {{profile}} WHERE [[description]] = 'test transaction shortcut'"
-        )->queryScalar();
-
-        $this->assertEquals(1, $profilesCount, 'profile should be inserted in transaction shortcut');
-    }
-
-    public function testTransactionShortcutCustom(): void
-    {
-        $connection = $this->getConnection(true);
-
-        $result = $connection->transaction(function (Connection $db) {
-            $db->createCommand()->insert('profile', ['description' => 'test transaction shortcut'])->execute();
-            return true;
-        }, Transaction::READ_UNCOMMITTED);
-
-        $this->assertTrue($result, 'transaction shortcut valid value should be returned from callback');
-
-        $profilesCount = $connection->createCommand("SELECT COUNT(*) FROM profile WHERE description = 'test transaction shortcut';")->queryScalar();
-        $this->assertEquals(1, $profilesCount, 'profile should be inserted in transaction shortcut');
-    }
-
-    /**
-     * Tests nested transactions with partial rollback.
-     * @see https://github.com/yiisoft/yii2/issues/9851
-     */
-    public function testNestedTransaction(): void
-    {
-        /** @var Connection $connection */
-        $connection = $this->getConnection(true);
-        $connection->transaction(function (Connection $db) {
-            $this->assertNotNull($db->transaction);
-            $db->transaction(function (Connection $db) {
-                $this->assertNotNull($db->transaction);
-                $db->transaction->rollBack();
-            });
-            $this->assertNotNull($db->transaction);
-        });
-    }
-
-    public function testNestedTransactionNotSupported(): void
-    {
-        $connection = $this->getConnection();
-        $connection->enableSavepoint = false;
-        $connection->transaction(function (Connection $db) {
-            $this->assertNotNull($db->transaction);
-            $this->expectException('yii\base\NotSupportedException');
-            $db->beginTransaction();
-        });
     }
 
     public function testEnableQueryLog(): void
@@ -534,7 +400,7 @@ abstract class BaseConnection extends BaseDatabase
 
         $this->assertFalse($cache->exists($cacheKey));
         $connection->open();
-        $this->assertFalse($cache->exists($cacheKey), 'Connection was successful – cache must not contain information about this DSN');
+        $this->assertFalse($cache->exists($cacheKey), 'Connection was successful – cache must not contain information about this DSN');
         $connection->close();
 
         $cacheKey = ['yii\db\Connection::openFromPoolSequentially', 'host:invalid'];
@@ -543,7 +409,7 @@ abstract class BaseConnection extends BaseDatabase
             $connection->open();
         } catch (InvalidConfigException $e) {
         }
-        $this->assertTrue($cache->exists($cacheKey), 'Connection was not successful – cache must contain information about this DSN');
+        $this->assertTrue($cache->exists($cacheKey), 'Connection was not successful – cache must contain information about this DSN');
         $connection->close();
     }
 

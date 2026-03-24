@@ -315,7 +315,7 @@ class Schema extends \yii\db\Schema implements ConstraintFinderInterface
 
         $column->resolveType($type);
 
-        $column->phpType = $this->getColumnPhpType($column);
+        $column->phpType = $column->resolvePhpType();
 
         $column->defaultValue = $info['default'] ?? null;
 

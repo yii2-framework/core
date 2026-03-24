@@ -398,7 +398,7 @@ class Schema extends BaseSchema implements ConstraintFinderInterface
 
         $column->resolveType($type);
 
-        $column->phpType = $this->getColumnPhpType($column);
+        $column->phpType = $column->resolvePhpType();
 
         return $column;
     }

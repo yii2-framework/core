@@ -573,6 +573,31 @@ The following methods have been removed from `yii\db\DataReader` (zero productio
 
 The `@property-read` annotations for `$columnCount`, `$fetchMode`, `$isClosed`, and `$rowCount` have been removed.
 
+### `Schema::getColumnPhpType()` moved to `ColumnSchema::resolvePhpType()`
+
+The `protected` method `Schema::getColumnPhpType($column)` has been removed from `yii\db\Schema`. The PHP type
+resolution logic now lives in `ColumnSchema::resolvePhpType()`, which operates on the column's own `$type` and
+`$unsigned` properties.
+
+All five built-in drivers (MySQL, SQLite, MSSQL, PostgreSQL, Oracle) have been updated to call
+`$column->resolvePhpType()` instead of `$this->getColumnPhpType($column)`.
+
+**Action required** if your application extends `Schema` and overrides `getColumnPhpType()`:
+
+```php
+// before (in a custom Schema subclass)
+protected function getColumnPhpType($column)
+{
+    // custom logic
+}
+
+// after (in a custom ColumnSchema subclass)
+public function resolvePhpType(): string
+{
+    // custom logic using $this->type, $this->unsigned
+}
+```
+
 ### Base `QueryBuilder` deprecated API removal
 
 The following deprecated members of `yii\db\QueryBuilder` have been removed (all deprecated since 2.0.14):

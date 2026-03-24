@@ -713,7 +713,7 @@ class Schema extends \yii\db\Schema implements ConstraintFinderInterface
             $column->type = self::TYPE_STRING;
         }
 
-        $column->phpType = $this->getColumnPhpType($column);
+        $column->phpType = $column->resolvePhpType();
 
         return $column;
     }

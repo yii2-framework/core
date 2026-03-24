@@ -469,7 +469,7 @@ class Schema extends \yii\db\Schema implements ConstraintFinderInterface
             $column['DATA_LENGTH'],
         );
 
-        $c->phpType = $this->getColumnPhpType($c);
+        $c->phpType = $c->resolvePhpType();
 
         // store raw default for deferred resolution in `loadTableSchema()`, where `isPrimaryKey` is known
         $c->defaultValue = $column['DATA_DEFAULT'] ?? null;

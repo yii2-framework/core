@@ -162,6 +162,43 @@ class ColumnSchema extends BaseObject
     }
 
     /**
+     * Resolves the PHP type from the abstract column type.
+     *
+     * Maps the column's {@see $type} to the corresponding PHP type (`string`, `integer`, `boolean`, `double`,
+     * `resource`, `array`). Handles platform-dependent overflow for `bigint` (32-bit) and unsigned `integer` (32-bit).
+     *
+     * @return string PHP type name.
+     *
+     * @since 2.2
+     */
+    public function resolvePhpType(): string
+    {
+        static $typeMap = [
+            Schema::TYPE_TINYINT => 'integer',
+            Schema::TYPE_SMALLINT => 'integer',
+            Schema::TYPE_INTEGER => 'integer',
+            Schema::TYPE_BIGINT => 'integer',
+            Schema::TYPE_BOOLEAN => 'boolean',
+            Schema::TYPE_FLOAT => 'double',
+            Schema::TYPE_DOUBLE => 'double',
+            Schema::TYPE_BINARY => 'resource',
+            Schema::TYPE_JSON => 'array',
+        ];
+
+        if (isset($typeMap[$this->type])) {
+            if ($this->type === 'bigint') {
+                return PHP_INT_SIZE === 8 && !$this->unsigned ? 'integer' : 'string';
+            } elseif ($this->type === 'integer') {
+                return PHP_INT_SIZE === 4 && $this->unsigned ? 'string' : 'integer';
+            }
+
+            return $typeMap[$this->type];
+        }
+
+        return 'string';
+    }
+
+    /**
      * Converts the input value according to [[type]] and [[dbType]] for use in a db query.
      * If the value is null or an [[Expression]], it will not be converted.
      *

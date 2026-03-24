@@ -426,7 +426,13 @@ final class QueryBuilderTest extends BaseQueryBuilder
                     FROM [sys].[check_constraints] AS [cc]
                     INNER JOIN [sys].[columns] AS [c]
                         ON [c].[object_id] = [cc].[parent_object_id]
-                        AND [c].[column_id] = [cc].[parent_column_id]
+                        AND (
+                            [c].[column_id] = [cc].[parent_column_id]
+                            OR (
+                                [cc].[parent_column_id] = 0
+                                AND CHARINDEX(QUOTENAME(@columnName), [cc].[definition]) > 0
+                            )
+                        )
                         AND [c].[name] = @columnName
                     WHERE [cc].[parent_object_id] = OBJECT_ID(@tableName)
                     UNION
@@ -475,7 +481,13 @@ final class QueryBuilderTest extends BaseQueryBuilder
                     FROM [sys].[check_constraints] AS [cc]
                     INNER JOIN [sys].[columns] AS [c]
                         ON [c].[object_id] = [cc].[parent_object_id]
-                        AND [c].[column_id] = [cc].[parent_column_id]
+                        AND (
+                            [c].[column_id] = [cc].[parent_column_id]
+                            OR (
+                                [cc].[parent_column_id] = 0
+                                AND CHARINDEX(QUOTENAME(@columnName), [cc].[definition]) > 0
+                            )
+                        )
                         AND [c].[name] = @columnName
                     WHERE [cc].[parent_object_id] = OBJECT_ID(@tableName)
                     UNION
@@ -525,7 +537,13 @@ final class QueryBuilderTest extends BaseQueryBuilder
                     FROM [sys].[check_constraints] AS [cc]
                     INNER JOIN [sys].[columns] AS [c]
                         ON [c].[object_id] = [cc].[parent_object_id]
-                        AND [c].[column_id] = [cc].[parent_column_id]
+                        AND (
+                            [c].[column_id] = [cc].[parent_column_id]
+                            OR (
+                                [cc].[parent_column_id] = 0
+                                AND CHARINDEX(QUOTENAME(@columnName), [cc].[definition]) > 0
+                            )
+                        )
                         AND [c].[name] = @columnName
                     WHERE [cc].[parent_object_id] = OBJECT_ID(@tableName)
                     UNION
@@ -576,7 +594,13 @@ final class QueryBuilderTest extends BaseQueryBuilder
                     FROM [sys].[check_constraints] AS [cc]
                     INNER JOIN [sys].[columns] AS [c]
                         ON [c].[object_id] = [cc].[parent_object_id]
-                        AND [c].[column_id] = [cc].[parent_column_id]
+                        AND (
+                            [c].[column_id] = [cc].[parent_column_id]
+                            OR (
+                                [cc].[parent_column_id] = 0
+                                AND CHARINDEX(QUOTENAME(@columnName), [cc].[definition]) > 0
+                            )
+                        )
                         AND [c].[name] = @columnName
                     WHERE [cc].[parent_object_id] = OBJECT_ID(@tableName)
                     UNION
@@ -627,7 +651,13 @@ final class QueryBuilderTest extends BaseQueryBuilder
                     FROM [sys].[check_constraints] AS [cc]
                     INNER JOIN [sys].[columns] AS [c]
                         ON [c].[object_id] = [cc].[parent_object_id]
-                        AND [c].[column_id] = [cc].[parent_column_id]
+                        AND (
+                            [c].[column_id] = [cc].[parent_column_id]
+                            OR (
+                                [cc].[parent_column_id] = 0
+                                AND CHARINDEX(QUOTENAME(@columnName), [cc].[definition]) > 0
+                            )
+                        )
                         AND [c].[name] = @columnName
                     WHERE [cc].[parent_object_id] = OBJECT_ID(@tableName)
                     UNION
@@ -678,7 +708,13 @@ final class QueryBuilderTest extends BaseQueryBuilder
                     FROM [sys].[check_constraints] AS [cc]
                     INNER JOIN [sys].[columns] AS [c]
                         ON [c].[object_id] = [cc].[parent_object_id]
-                        AND [c].[column_id] = [cc].[parent_column_id]
+                        AND (
+                            [c].[column_id] = [cc].[parent_column_id]
+                            OR (
+                                [cc].[parent_column_id] = 0
+                                AND CHARINDEX(QUOTENAME(@columnName), [cc].[definition]) > 0
+                            )
+                        )
                         AND [c].[name] = @columnName
                     WHERE [cc].[parent_object_id] = OBJECT_ID(@tableName)
                     UNION
@@ -729,7 +765,13 @@ final class QueryBuilderTest extends BaseQueryBuilder
                     FROM [sys].[check_constraints] AS [cc]
                     INNER JOIN [sys].[columns] AS [c]
                         ON [c].[object_id] = [cc].[parent_object_id]
-                        AND [c].[column_id] = [cc].[parent_column_id]
+                        AND (
+                            [c].[column_id] = [cc].[parent_column_id]
+                            OR (
+                                [cc].[parent_column_id] = 0
+                                AND CHARINDEX(QUOTENAME(@columnName), [cc].[definition]) > 0
+                            )
+                        )
                         AND [c].[name] = @columnName
                     WHERE [cc].[parent_object_id] = OBJECT_ID(@tableName)
                     UNION
@@ -822,7 +864,13 @@ final class QueryBuilderTest extends BaseQueryBuilder
                     FROM [sys].[check_constraints] AS [cc]
                     INNER JOIN [sys].[columns] AS [c]
                         ON [c].[object_id] = [cc].[parent_object_id]
-                        AND [c].[column_id] = [cc].[parent_column_id]
+                        AND (
+                            [c].[column_id] = [cc].[parent_column_id]
+                            OR (
+                                [cc].[parent_column_id] = 0
+                                AND CHARINDEX(QUOTENAME(@columnName), [cc].[definition]) > 0
+                            )
+                        )
                         AND [c].[name] = @columnName
                     WHERE [cc].[parent_object_id] = OBJECT_ID(@tableName)
                     UNION
@@ -878,7 +926,13 @@ final class QueryBuilderTest extends BaseQueryBuilder
                     FROM [sys].[check_constraints] AS [cc]
                     INNER JOIN [sys].[columns] AS [c]
                         ON [c].[object_id] = [cc].[parent_object_id]
-                        AND [c].[column_id] = [cc].[parent_column_id]
+                        AND (
+                            [c].[column_id] = [cc].[parent_column_id]
+                            OR (
+                                [cc].[parent_column_id] = 0
+                                AND CHARINDEX(QUOTENAME(@columnName), [cc].[definition]) > 0
+                            )
+                        )
                         AND [c].[name] = @columnName
                     WHERE [cc].[parent_object_id] = OBJECT_ID(@tableName)
                     UNION
@@ -1016,7 +1070,13 @@ final class QueryBuilderTest extends BaseQueryBuilder
                     FROM [sys].[check_constraints] AS [cc]
                     INNER JOIN [sys].[columns] AS [c]
                         ON [c].[object_id] = [cc].[parent_object_id]
-                        AND [c].[column_id] = [cc].[parent_column_id]
+                        AND (
+                            [c].[column_id] = [cc].[parent_column_id]
+                            OR (
+                                [cc].[parent_column_id] = 0
+                                AND CHARINDEX(QUOTENAME(@columnName), [cc].[definition]) > 0
+                            )
+                        )
                         AND [c].[name] = @columnName
                     WHERE [cc].[parent_object_id] = OBJECT_ID(@tableName)
                     UNION
@@ -1072,6 +1132,32 @@ final class QueryBuilderTest extends BaseQueryBuilder
         self::assertNull(
             $schema->getColumn('bar'),
             'Column should no longer exist in the table schema after DROP COLUMN.',
+        );
+    }
+
+    public function testDropColumnWithTableScopedCheckConstraintOnDb(): void
+    {
+        $db = $this->getConnection(true);
+
+        $db->createCommand(
+            <<<SQL
+            ALTER TABLE [foo1] ADD CONSTRAINT [CK_foo1_table_scope] CHECK ([bar] IS NOT NULL OR [id] > 0)
+            SQL,
+        )->execute();
+
+        $sql = $db->queryBuilder->dropColumn('foo1', 'bar');
+
+        self::assertSame(
+            0,
+            $db->createCommand($sql)->execute(),
+            'DROP COLUMN should execute without errors on a column with a table-scoped CHECK constraint.',
+        );
+
+        $schema = $db->getTableSchema('[foo1]', true);
+
+        self::assertNull(
+            $schema->getColumn('bar'),
+            'Column should no longer exist in the table schema after DROP COLUMN with table-scoped CHECK.',
         );
     }
 }

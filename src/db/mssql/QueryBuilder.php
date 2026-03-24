@@ -657,6 +657,11 @@ class QueryBuilder extends \yii\db\QueryBuilder
     /**
      * Builds a SQL statement for dropping constraints for column of table.
      *
+     * Table-scoped CHECK constraints (`parent_column_id = 0`) are detected via `CHARINDEX(QUOTENAME())` on the
+     * constraint definition. This may produce a false positive if a string literal inside the definition contains the
+     * bracketed column name (for example, `CHECK ([other] <> '[bar]')`), causing the constraint to be dropped
+     * unnecessarily. In practice this scenario is extremely rare.
+     *
      * @param string $table the table whose constraint is to be dropped. The name will be properly quoted by the method.
      * @param string $column the column whose constraint is to be dropped. The name will be properly quoted by the method.
      * @param string $type type of constraint, leave empty for all type of constraints(for example: D - default, 'UQ' - unique, 'C' - check)
@@ -693,7 +698,13 @@ class QueryBuilder extends \yii\db\QueryBuilder
                     FROM [sys].[check_constraints] AS [cc]
                     INNER JOIN [sys].[columns] AS [c]
                         ON [c].[object_id] = [cc].[parent_object_id]
-                        AND [c].[column_id] = [cc].[parent_column_id]
+                        AND (
+                            [c].[column_id] = [cc].[parent_column_id]
+                            OR (
+                                [cc].[parent_column_id] = 0
+                                AND CHARINDEX(QUOTENAME(@columnName), [cc].[definition]) > 0
+                            )
+                        )
                         AND [c].[name] = @columnName
                     WHERE [cc].[parent_object_id] = OBJECT_ID(@tableName)
                     UNION

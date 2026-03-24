@@ -660,7 +660,7 @@ class Schema extends \yii\db\Schema implements ConstraintFinderInterface
 
             if ($column->isPrimaryKey && $column->autoIncrement) {
                 $column->defaultValue = null;
-            } elseif ($column->defaultValue) {
+            } elseif ($column->defaultValue !== null) {
                 $column->defaultValue = $column->defaultPhpTypecast($column->defaultValue);
             }
         }

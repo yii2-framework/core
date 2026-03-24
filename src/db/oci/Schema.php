@@ -40,8 +40,8 @@ use function trim;
 /**
  * Schema is the class for retrieving metadata from an Oracle database (version 12c and later).
  *
- * @property-read string $lastInsertID The row ID of the last row inserted, or the last value retrieved from
- * the sequence object.
+ * @property-read string $lastInsertID The row ID of the last row inserted, or the last value retrieved from the
+ * sequence object.
  *
  * @author Qiang Xue <qiang.xue@gmail.com>
  * @since 2.0
@@ -59,18 +59,15 @@ class Schema extends \yii\db\Schema implements ConstraintFinderInterface
     public $columnSchemaClass = ColumnSchema::class;
 
     /**
-     * @var array map of DB errors and corresponding exceptions
+     * @var array Map of DB errors and corresponding exceptions.
      * If left part is found in DB error message exception class from the right part is used.
      */
-    public $exceptionMap = [
-        'ORA-00001: unique constraint' => IntegrityException::class,
-    ];
+    public $exceptionMap = ['ORA-00001: unique constraint' => IntegrityException::class];
 
     /**
      * {@inheritdoc}
      */
     protected $tableQuoteCharacter = '"';
-
 
     /**
      * {@inheritdoc}
@@ -273,6 +270,7 @@ class Schema extends \yii\db\Schema implements ConstraintFinderInterface
 
     /**
      * {@inheritdoc}
+     *
      * @throws NotSupportedException if this method is called.
      */
     protected function loadTableDefaultValues($tableName)
@@ -305,10 +303,11 @@ class Schema extends \yii\db\Schema implements ConstraintFinderInterface
     }
 
     /**
-     * Collects the table column metadata.
+     * Collects the metadata of table columns.
      *
-     * @param TableSchema $table the table schema
-     * @return bool whether the table exists
+     * @param TableSchema $table The table metadata.
+     *
+     * @return bool Whether the table exists in the database.
      *
      * @see https://docs.oracle.com/en/database/oracle/oracle-database/19/refrn/ALL_TAB_COLUMNS.html
      * @see https://docs.oracle.com/en/database/oracle/oracle-database/19/refrn/ALL_OBJECTS.html
@@ -372,9 +371,10 @@ class Schema extends \yii\db\Schema implements ConstraintFinderInterface
     /**
      * Sequence name of table.
      *
-     * @param string $tableName
-     * @param string $schemaName
-     * @return string|null whether the sequence exists
+     * @param string $tableName Table name.
+     * @param string $schemaName Schema name.
+     *
+     * @return string|null Sequence name, or `null` if the table has no trigger-based sequence.
      *
      * @see https://docs.oracle.com/en/database/oracle/oracle-database/19/refrn/ALL_DEPENDENCIES.html
      * @see https://docs.oracle.com/en/database/oracle/oracle-database/19/refrn/ALL_TRIGGERS.html
@@ -405,37 +405,40 @@ class Schema extends \yii\db\Schema implements ConstraintFinderInterface
     }
 
     /**
-     * @Overrides method in class 'Schema'
-     * @see https://www.php.net/manual/en/function.PDO-lastInsertId.php -> Oracle does not support this
-     *
      * Returns the ID of the last inserted row or sequence value.
-     * @param string $sequenceName name of the sequence object (required by some DBMS)
-     * @return string the row ID of the last row inserted, or the last value retrieved from the sequence object
-     * @throws InvalidCallException if the DB connection is not active
+     *
+     * @param string $sequenceName Name of the sequence object (required by some DBMS).
+     *
+     * @throws InvalidCallException if the DB connection is not active.
+     *
+     * @return string The row ID of the last row inserted, or the last value retrieved from the sequence object.
+     *
+     * @see https://www.php.net/manual/en/function.PDO-lastInsertId.php -> Oracle does not support this
      */
     public function getLastInsertID($sequenceName = '')
     {
-        if ($this->db->isActive) {
-            // get the last insert id from the master connection
-            $sequenceName = $this->quoteSimpleTableName($sequenceName);
-
-            $sql = <<<SQL
-            SELECT {$sequenceName}.CURRVAL FROM DUAL
-            SQL;
-
-            return $this->db->useMaster(
-                static fn(Connection $db) => $db->createCommand($sql)->queryScalar(),
-            );
-        } else {
+        if (!$this->db->isActive) {
             throw new InvalidCallException('DB Connection is not active.');
         }
+
+        // get the last insert id from the master connection
+        $sequenceName = $this->quoteSimpleTableName($sequenceName);
+
+        $sql = <<<SQL
+        SELECT {$sequenceName}.CURRVAL FROM DUAL
+        SQL;
+
+        return $this->db->useMaster(
+            static fn(Connection $db) => $db->createCommand($sql)->queryScalar(),
+        );
     }
 
     /**
      * Creates ColumnSchema instance.
      *
-     * @param array $column
-     * @return T
+     * @param array $column Column metadata.
+     *
+     * @return T The column schema instance.
      */
     protected function createColumn($column)
     {
@@ -462,7 +465,7 @@ class Schema extends \yii\db\Schema implements ConstraintFinderInterface
     /**
      * Finds constraints and fills them into TableSchema object passed.
      *
-     * @param TableSchema $table
+     * @param TableSchema $table The table schema.
      *
      * @see https://docs.oracle.com/en/database/oracle/oracle-database/19/refrn/ALL_CONS_COLUMNS.html
      * @see https://docs.oracle.com/en/database/oracle/oracle-database/19/refrn/ALL_CONSTRAINTS.html
@@ -547,7 +550,8 @@ class Schema extends \yii\db\Schema implements ConstraintFinderInterface
 
     /**
      * Returns all unique indexes for the given table.
-     * Each array element is of the following structure:.
+     *
+     * Each array element is of the following structure:
      *
      * ```
      * [
@@ -556,8 +560,10 @@ class Schema extends \yii\db\Schema implements ConstraintFinderInterface
      * ]
      * ```
      *
-     * @param TableSchema $table the table metadata
-     * @return array all unique indexes for the given table.
+     * @param TableSchema $table The table metadata.
+     *
+     * @return array All unique indexes for the given table.
+     *
      * @since 2.0.4
      *
      * @see https://docs.oracle.com/en/database/oracle/oracle-database/19/refrn/ALL_INDEXES.html
@@ -627,9 +633,9 @@ class Schema extends \yii\db\Schema implements ConstraintFinderInterface
                 ];
 
                 if (!isset($columnSchemas[$name]) || $columnSchemas[$name]->phpType !== 'integer') {
-                    $returnParams[$phName]['dataType'] = \PDO::PARAM_STR;
+                    $returnParams[$phName]['dataType'] = PDO::PARAM_STR;
                 } else {
-                    $returnParams[$phName]['dataType'] = \PDO::PARAM_INT;
+                    $returnParams[$phName]['dataType'] = PDO::PARAM_INT;
                 }
 
                 $returnParams[$phName]['size'] = $columnSchemas[$name]->size ?? -1;
@@ -691,10 +697,10 @@ class Schema extends \yii\db\Schema implements ConstraintFinderInterface
     /**
      * Loads multiple types of constraints and returns the specified ones.
      *
-     * @param string $tableName table name.
-     * @param MetadataType $returnType return type.
+     * @param string $tableName Table name.
+     * @param MetadataType $returnType Return type.
      *
-     * @return mixed constraints.
+     * @return mixed Constraints.
      *
      * @see https://docs.oracle.com/en/database/oracle/oracle-database/19/refrn/ALL_CONSTRAINTS.html
      * @see https://docs.oracle.com/en/database/oracle/oracle-database/19/refrn/ALL_CONS_COLUMNS.html

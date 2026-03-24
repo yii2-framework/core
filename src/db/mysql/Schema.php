@@ -46,7 +46,7 @@ class Schema extends \yii\db\Schema implements ConstraintFinderInterface
      */
     public $columnSchemaClass = ColumnSchema::class;
     /**
-     * @var array mapping from physical column types (keys) to abstract column types (values)
+     * @var array Mapping from physical column types (keys) to abstract column types (values).
      */
     public $typeMap = [
         'tinyint' => self::TYPE_TINYINT,
@@ -276,6 +276,7 @@ class Schema extends \yii\db\Schema implements ConstraintFinderInterface
 
     /**
      * {@inheritdoc}
+     *
      * @throws NotSupportedException if this method is called.
      */
     protected function loadTableDefaultValues($tableName)
@@ -285,7 +286,8 @@ class Schema extends \yii\db\Schema implements ConstraintFinderInterface
 
     /**
      * Creates a query builder for the MySQL database.
-     * @return QueryBuilder query builder instance
+     *
+     * @return QueryBuilder Query builder instance.
      */
     public function createQueryBuilder()
     {
@@ -294,8 +296,10 @@ class Schema extends \yii\db\Schema implements ConstraintFinderInterface
 
     /**
      * Loads the column information into a [[ColumnSchema]] object.
-     * @param array $info column information
-     * @return T the column schema object
+     *
+     * @param array $info Column information.
+     *
+     * @return T The column schema object.
      */
     protected function loadColumnSchema($info)
     {
@@ -314,7 +318,6 @@ class Schema extends \yii\db\Schema implements ConstraintFinderInterface
         $column->type = $this->typeMap[$type] ?? self::TYPE_STRING;
 
         $column->resolveType($type);
-
         $column->phpType = $column->resolvePhpType();
 
         $column->defaultValue = $info['default'] ?? null;
@@ -324,9 +327,12 @@ class Schema extends \yii\db\Schema implements ConstraintFinderInterface
 
     /**
      * Collects the metadata of table columns.
-     * @param TableSchema $table the table metadata
-     * @return bool whether the table exists in the database
-     * @throws \Exception if DB query fails
+     *
+     * @param TableSchema $table The table metadata.
+     *
+     * @throws Exception if DB query fails.
+     *
+     * @return bool Whether the table exists in the database.
      */
     protected function findColumns($table)
     {
@@ -380,8 +386,10 @@ class Schema extends \yii\db\Schema implements ConstraintFinderInterface
 
     /**
      * Gets the CREATE TABLE sql string.
-     * @param TableSchema $table the table metadata
-     * @return string $sql the result of 'SHOW CREATE TABLE'
+     *
+     * @param TableSchema $table The table metadata.
+     *
+     * @return string $sql The result of 'SHOW CREATE TABLE'.
      *
      * @see https://dev.mysql.com/doc/refman/8.0/en/show-create-table.html
      */
@@ -401,8 +409,10 @@ class Schema extends \yii\db\Schema implements ConstraintFinderInterface
 
     /**
      * Collects the foreign key column details for the given table.
-     * @param TableSchema $table the table metadata
-     * @throws \Exception
+     *
+     * @param TableSchema $table The table metadata.
+     *
+     * @throws Exception if DB query fails.
      */
     protected function findConstraints($table)
     {
@@ -494,8 +504,9 @@ class Schema extends \yii\db\Schema implements ConstraintFinderInterface
      * ]
      * ```
      *
-     * @param TableSchema $table the table metadata
-     * @return array all unique indexes for the given table.
+     * @param TableSchema $table The table metadata.
+     *
+     * @return array All unique indexes for the given table.
      */
     public function findUniqueIndexes($table)
     {
@@ -527,10 +538,10 @@ class Schema extends \yii\db\Schema implements ConstraintFinderInterface
     /**
      * Loads multiple types of constraints and returns the specified ones.
      *
-     * @param string $tableName table name.
-     * @param MetadataType $returnType return type.
+     * @param string $tableName The table name.
+     * @param MetadataType $returnType Return type.
      *
-     * @return mixed constraints.
+     * @return mixed Constraints.
      */
     private function loadTableConstraints(string $tableName, MetadataType $returnType): mixed
     {
@@ -646,6 +657,13 @@ class Schema extends \yii\db\Schema implements ConstraintFinderInterface
         return $this->cacheAndReturnConstraints($tableName, $result, $returnType);
     }
 
+    /**
+     * Returns column names that should be treated as JSON type.
+     *
+     * @param TableSchema $table The table metadata.
+     *
+     * @return array List of JSON column names.
+     */
     private function getJsonColumns(TableSchema $table): array
     {
         $sql = $this->getCreateTableSql($table);

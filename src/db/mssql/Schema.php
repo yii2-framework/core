@@ -44,11 +44,11 @@ class Schema extends \yii\db\Schema implements ConstraintFinderInterface
      */
     public $columnSchemaClass = ColumnSchema::class;
     /**
-     * @var string the default schema used for the current session.
+     * @var string The default schema used for the current session.
      */
     public $defaultSchema = 'dbo';
     /**
-     * @var array mapping from physical column types (keys) to abstract column types (values)
+     * @var array Mapping from physical column types (keys) to abstract column types (values).
      */
     public $typeMap = [
         // exact numbers
@@ -103,15 +103,13 @@ class Schema extends \yii\db\Schema implements ConstraintFinderInterface
      */
     protected $columnQuoteCharacter = ['[', ']'];
 
-
     /**
-     * Resolves the table name and schema name (if any).
-     * @param string $name the table name
-     * @return TableSchema resolved table, schema, etc. names.
+     * {@inheritdoc}
      */
     protected function resolveTableName($name)
     {
         $parts = $this->getTableNameParts($name);
+
         $partCount = count($parts);
 
         $last = $partCount - 1;
@@ -140,8 +138,11 @@ class Schema extends \yii\db\Schema implements ConstraintFinderInterface
 
     /**
      * {@inheritDoc}
-     * @param string $name
-     * @return array
+     *
+     * @param string $name Table name.
+     *
+     * @return array Table name parts.
+     *
      * @since 2.0.22
      */
     protected function getTableNameParts($name)
@@ -159,6 +160,7 @@ class Schema extends \yii\db\Schema implements ConstraintFinderInterface
 
     /**
      * {@inheritdoc}
+     *
      * @see https://docs.microsoft.com/en-us/sql/relational-databases/system-catalog-views/sys-database-principals-transact-sql
      */
     protected function findSchemaNames()
@@ -176,6 +178,7 @@ class Schema extends \yii\db\Schema implements ConstraintFinderInterface
 
     /**
      * {@inheritdoc}
+     *
      * @see https://learn.microsoft.com/en-us/sql/relational-databases/system-catalog-views/sys-objects-transact-sql
      */
     protected function findTableNames($schema = '')
@@ -327,7 +330,8 @@ class Schema extends \yii\db\Schema implements ConstraintFinderInterface
 
     /**
      * Creates a query builder for the MSSQL database.
-     * @return QueryBuilder query builder interface.
+     *
+     * @return QueryBuilder Query builder instance.
      */
     public function createQueryBuilder()
     {
@@ -336,8 +340,10 @@ class Schema extends \yii\db\Schema implements ConstraintFinderInterface
 
     /**
      * Loads the column information into a [[ColumnSchema]] object.
-     * @param array $info column information
-     * @return T the column schema object
+     *
+     * @param array $info Column information.
+     *
+     * @return T The column schema object.
      */
     protected function loadColumnSchema($info)
     {
@@ -368,8 +374,10 @@ class Schema extends \yii\db\Schema implements ConstraintFinderInterface
 
     /**
      * Collects the metadata of table columns.
-     * @param TableSchema $table the table metadata
-     * @return bool whether the table exists in the database
+     *
+     * @param TableSchema $table The table metadata.
+     *
+     * @return bool Whether the table exists in the database.
      */
     protected function findColumns($table)
     {
@@ -413,7 +421,7 @@ class Schema extends \yii\db\Schema implements ConstraintFinderInterface
         ORDER BY [c].[column_id]
         SQL;
 
-        // No try/catch needed: `OBJECT_ID(:fullName)` returns `NULL` for non-existent tables ('0' rows, no exception),
+        // no try/catch needed: `OBJECT_ID(:fullName)` returns `NULL` for non-existent tables ('0' rows, no exception),
         // and `loadTableSchema()` calls `findPrimaryKeys()` before this method, which validates the connection first.
         $columns = $this->db->createCommand($sql, [':fullName' => $fullName])->queryAll();
 
@@ -448,10 +456,14 @@ class Schema extends \yii\db\Schema implements ConstraintFinderInterface
 
     /**
      * Collects the constraint details for the given table and constraint type.
-     * @param TableSchema $table
-     * @param string $type either `PK` or `UQ`
-     * @return array each entry contains index_name and field_name
+     *
+     * @param TableSchema $table The table metadata.
+     * @param string $type Either `PK` or `UQ`.
+     *
+     * @return array Each entry contains index_name and field_name.
+     *
      * @since 2.0.4
+     *
      * @see https://learn.microsoft.com/en-us/sql/relational-databases/system-catalog-views/sys-key-constraints-transact-sql
      */
     protected function findTableConstraints($table, $type)
@@ -479,7 +491,8 @@ class Schema extends \yii\db\Schema implements ConstraintFinderInterface
 
     /**
      * Collects the primary key column details for the given table.
-     * @param TableSchema $table the table metadata
+     *
+     * @param TableSchema $table The table metadata.
      */
     protected function findPrimaryKeys($table)
     {
@@ -494,7 +507,8 @@ class Schema extends \yii\db\Schema implements ConstraintFinderInterface
 
     /**
      * Collects the foreign key column details for the given table.
-     * @param TableSchema $table the table metadata
+     *
+     * @param TableSchema $table The table metadata.
      */
     protected function findForeignKeys($table)
     {
@@ -533,6 +547,7 @@ class Schema extends \yii\db\Schema implements ConstraintFinderInterface
 
     /**
      * {@inheritdoc}
+     *
      * @see https://learn.microsoft.com/en-us/sql/relational-databases/system-catalog-views/sys-views-transact-sql
      */
     protected function findViewNames($schema = '')
@@ -564,8 +579,10 @@ class Schema extends \yii\db\Schema implements ConstraintFinderInterface
      * ]
      * ```
      *
-     * @param TableSchema $table the table metadata
-     * @return array all unique indexes for the given table.
+     * @param TableSchema $table The table metadata.
+     *
+     * @return array All unique indexes for the given table.
+     *
      * @since 2.0.4
      */
     public function findUniqueIndexes($table)
@@ -580,10 +597,10 @@ class Schema extends \yii\db\Schema implements ConstraintFinderInterface
     }
 
     /**
-     * Builds a bracket-quoted fully-qualified table name, a catalog prefix for cross-database `sys.*` view queries,
-     * and a `DB_ID()` expression for `OBJECT_NAME()`/`OBJECT_SCHEMA_NAME()` calls.
+     * Builds a bracket-quoted fully-qualified table name, a catalog prefix for cross-database `sys.*` view queries, and
+     * a `DB_ID()` expression for `OBJECT_NAME()`/`OBJECT_SCHEMA_NAME()` calls.
      *
-     * @param TableSchema $resolvedName object with name, schemaName, catalogName properties.
+     * @param TableSchema $resolvedName Object with name, schemaName, catalogName properties.
      *
      * @return array{0: string, 1: string, 2: string} [fullName, catalogPrefix, dbIdExpr]
      */
@@ -611,10 +628,10 @@ class Schema extends \yii\db\Schema implements ConstraintFinderInterface
     /**
      * Loads multiple types of constraints and returns the specified ones.
      *
-     * @param string $tableName table name.
-     * @param MetadataType $returnType return type.
+     * @param string $tableName Table name.
+     * @param MetadataType $returnType Return type.
      *
-     * @return mixed constraints.
+     * @return mixed Constraints.
      */
     private function loadTableConstraints(string $tableName, MetadataType $returnType): mixed
     {
@@ -743,8 +760,9 @@ class Schema extends \yii\db\Schema implements ConstraintFinderInterface
     }
 
     /**
-     * Retrieves inserted data from a primary key request of type uniqueidentifier.
      * {@inheritdoc}
+     *
+     * Retrieves inserted data from a primary key request of type uniqueidentifier.
      */
     public function insert($table, $columns)
     {

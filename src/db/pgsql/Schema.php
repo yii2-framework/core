@@ -35,8 +35,7 @@ use function strncmp;
 use function substr;
 
 /**
- * Schema is the class for retrieving metadata from a PostgreSQL database
- * (version 12.0 and above).
+ * Schema is the class for retrieving metadata from a PostgreSQL database (version 12.0 and above).
  *
  * @author Gevik Babakhani <gevikb@gmail.com>
  * @since 2.0
@@ -51,7 +50,7 @@ class Schema extends \yii\db\Schema implements ConstraintFinderInterface
 
     public const TYPE_JSONB = 'jsonb';
     /**
-     * @var string the default schema used for the current session.
+     * @var string The default schema used for the current session.
      */
     public $defaultSchema = 'public';
     /**
@@ -59,8 +58,7 @@ class Schema extends \yii\db\Schema implements ConstraintFinderInterface
      */
     public $columnSchemaClass = ColumnSchema::class;
     /**
-     * @var array mapping from physical column types (keys) to abstract
-     * column types (values)
+     * @var array Mapping from physical column types (keys) to abstract column types (values).
      * @see https://www.postgresql.org/docs/current/datatype.html#DATATYPE-TABLE
      */
     public $typeMap = [
@@ -321,6 +319,7 @@ class Schema extends \yii\db\Schema implements ConstraintFinderInterface
 
     /**
      * {@inheritdoc}
+     *
      * @throws NotSupportedException if this method is called.
      */
     protected function loadTableDefaultValues($tableName)
@@ -330,7 +329,8 @@ class Schema extends \yii\db\Schema implements ConstraintFinderInterface
 
     /**
      * Creates a query builder for the PostgreSQL database.
-     * @return QueryBuilder query builder instance
+     *
+     * @return QueryBuilder Query builder instance.
      */
     public function createQueryBuilder()
     {
@@ -365,7 +365,7 @@ class Schema extends \yii\db\Schema implements ConstraintFinderInterface
     /**
      * Collects the foreign key column details for the given table.
      *
-     * @param TableSchema $table the table metadata
+     * @param TableSchema $table The table metadata.
      *
      * @see https://www.postgresql.org/docs/current/catalog-pg-constraint.html
      * @see https://www.postgresql.org/docs/current/catalog-pg-class.html
@@ -447,8 +447,9 @@ class Schema extends \yii\db\Schema implements ConstraintFinderInterface
     /**
      * Gets information about given table unique indexes.
      *
-     * @param TableSchema $table the table metadata
-     * @return array with index and column names
+     * @param TableSchema $table The table metadata.
+     *
+     * @return array With index and column names.
      *
      * @see https://www.postgresql.org/docs/current/catalog-pg-index.html
      * @see https://www.postgresql.org/docs/current/catalog-pg-class.html
@@ -497,8 +498,9 @@ class Schema extends \yii\db\Schema implements ConstraintFinderInterface
      * ]
      * ```
      *
-     * @param TableSchema $table the table metadata
-     * @return array all unique indexes for the given table.
+     * @param TableSchema $table The table metadata.
+     *
+     * @return array All unique indexes for the given table.
      */
     public function findUniqueIndexes($table)
     {
@@ -526,8 +528,9 @@ class Schema extends \yii\db\Schema implements ConstraintFinderInterface
     /**
      * Collects the metadata of table columns.
      *
-     * @param TableSchema $table the table metadata
-     * @return bool whether the table exists in the database
+     * @param TableSchema $table The table metadata.
+     *
+     * @return bool Whether the table exists in the database.
      *
      * @see https://www.postgresql.org/docs/current/catalog-pg-class.html
      * @see https://www.postgresql.org/docs/current/catalog-pg-attribute.html
@@ -665,8 +668,10 @@ class Schema extends \yii\db\Schema implements ConstraintFinderInterface
 
     /**
      * Loads the column information into a [[ColumnSchema]] object.
-     * @param array $info column information
-     * @return T the column schema object
+     *
+     * @param array $info Column information.
+     *
+     * @return T The column schema object.
      */
     protected function loadColumnSchema($info)
     {
@@ -749,10 +754,10 @@ class Schema extends \yii\db\Schema implements ConstraintFinderInterface
     /**
      * Loads multiple types of constraints and returns the specified ones.
      *
-     * @param string $tableName table name.
-     * @param MetadataType $returnType return type.
+     * @param string $tableName Table name.
+     * @param MetadataType $returnType Return type.
      *
-     * @return mixed constraints.
+     * @return mixed Constraints.
      *
      * @see https://www.postgresql.org/docs/current/catalog-pg-class.html
      * @see https://www.postgresql.org/docs/current/catalog-pg-constraint.html

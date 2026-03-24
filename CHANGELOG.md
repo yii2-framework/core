@@ -88,3 +88,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - refactor(db)!: move `Schema::getColumnPhpType()` to `ColumnSchema::resolvePhpType()`; all five drivers updated.
 - refactor(db/oci): move `Schema::extractColumnType()` and `extractColumnSize()` into `ColumnSchema::resolveType()`.
 - refactor(db)!: move savepoint and isolation-level operations from `Schema` to `Transaction`; replace constants with `TransactionIsolationLevel` enum.
+- chore(db): standardize PHPDoc and code style across `Schema` base class and all driver subclasses.

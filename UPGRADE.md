@@ -601,6 +601,22 @@ public function resolvePhpType(): string
 public $columnSchemaClass = \app\db\MyColumnSchema::class;
 ```
 
+### Oracle `Schema::extractColumnType()` and `extractColumnSize()` moved to `ColumnSchema::resolveType()`
+
+The `protected` methods `extractColumnType()` and `extractColumnSize()` have been removed from `yii\db\oci\Schema`.
+
+- **`extractColumnType()` logic** moved to `oci\ColumnSchema::resolveType()`. `Schema::createColumn()` now delegates
+  Oracle type inference to the instantiated `$columnSchemaClass`, so any custom column schema class used with the Oracle
+  driver must either extend `yii\db\oci\ColumnSchema` (recommended) or implement its own `resolveType()` override.
+  Without this, `$type` remains unresolved and `phpType` falls back to `'string'` for all columns.
+- **`extractColumnSize()` logic** was not moved into `resolveType()`. The size/precision/scale assignment is now inlined
+  directly in `Schema::createColumn()` before calling `resolveType()`. No action required unless you override
+  `createColumn()` itself.
+
+**Action required** if your application extends `yii\db\oci\Schema` and overrides `extractColumnType()` or
+`extractColumnSize()`: move the type resolution logic to a custom `oci\ColumnSchema::resolveType()` override and set
+`$columnSchemaClass` accordingly.
+
 ### Base `QueryBuilder` deprecated API removal
 
 The following deprecated members of `yii\db\QueryBuilder` have been removed (all deprecated since 2.0.14):

@@ -1849,12 +1849,6 @@ parameters:
 			path: src/db/oci/Schema.php
 
 		-
-			message: '#^Casting to string something that''s already string\.$#'
-			identifier: cast.useless
-			count: 3
-			path: src/db/oci/Schema.php
-
-		-
 			message: '#^Construct empty\(\) is not allowed\. Use more strict comparison\.$#'
 			identifier: empty.notAllowed
 			count: 4

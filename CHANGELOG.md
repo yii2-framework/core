@@ -86,3 +86,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - refactor(db/mysql): extract BIT size-range type resolution from `Schema::loadColumnSchema()` into `ColumnSchema::resolveType()` for MySQL; add base no-op hook in `ColumnSchema`.
 - fix(db/mssql): `dropConstraintsForColumn()` misses table-scoped CHECK constraints (`parent_column_id = 0`); extend the query with `CHARINDEX(QUOTENAME())` definition scanning to detect column references in table-level constraints.
 - refactor(db)!: move `Schema::getColumnPhpType()` to `ColumnSchema::resolvePhpType()`; all five drivers updated.
+- refactor(db/oci): move `Schema::extractColumnType()` and `extractColumnSize()` into `ColumnSchema::resolveType()`.

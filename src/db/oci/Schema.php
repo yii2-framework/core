@@ -453,26 +453,16 @@ class Schema extends \yii\db\Schema implements ConstraintFinderInterface
         $c->allowNull = $column['NULLABLE'] === 'Y';
         $c->comment = $column['COLUMN_COMMENT'] === null ? '' : $column['COLUMN_COMMENT'];
         $c->isPrimaryKey = false;
-
-        $this->extractColumnType(
-            $c,
-            $column['DATA_TYPE'],
-            $column['DATA_PRECISION'],
-            $column['DATA_SCALE'],
-            $column['DATA_LENGTH'],
-        );
-        $this->extractColumnSize(
-            $c,
-            $column['DATA_TYPE'],
-            $column['DATA_PRECISION'],
-            $column['DATA_SCALE'],
-            $column['DATA_LENGTH'],
-        );
-
-        $c->phpType = $c->resolvePhpType();
-
+        $c->dbType = $column['DATA_TYPE'];
         // store raw default for deferred resolution in `loadTableSchema()`, where `isPrimaryKey` is known
         $c->defaultValue = $column['DATA_DEFAULT'] ?? null;
+
+        $c->size = trim((string) $column['DATA_LENGTH']) === '' ? null : (int) $column['DATA_LENGTH'];
+        $c->precision = trim((string) $column['DATA_PRECISION']) === '' ? null : (int) $column['DATA_PRECISION'];
+        $c->scale = trim((string) $column['DATA_SCALE']) === '' ? null : (int) $column['DATA_SCALE'];
+
+        $c->resolveType($column['DATA_TYPE']);
+        $c->phpType = $c->resolvePhpType();
 
         return $c;
     }
@@ -616,60 +606,6 @@ class Schema extends \yii\db\Schema implements ConstraintFinderInterface
         }
 
         return $result;
-    }
-
-    /**
-     * Extracts the data types for the given column.
-     * @param ColumnSchema $column
-     * @param string $dbType DB type
-     * @param string $precision total number of digits.
-     * This parameter is available since version 2.0.4.
-     * @param string $scale number of digits on the right of the decimal separator.
-     * This parameter is available since version 2.0.4.
-     * @param string $length length for character types.
-     * This parameter is available since version 2.0.4.
-     */
-    protected function extractColumnType($column, $dbType, $precision, $scale, $length)
-    {
-        $column->dbType = $dbType;
-
-        if (strpos($dbType, 'FLOAT') !== false || strpos($dbType, 'DOUBLE') !== false) {
-            $column->type = 'double';
-        } elseif (strpos($dbType, 'NUMBER') !== false) {
-            if ($scale === null || $scale > 0) {
-                $column->type = 'decimal';
-            } else {
-                $column->type = 'integer';
-            }
-        } elseif (strpos($dbType, 'INTEGER') !== false) {
-            $column->type = 'integer';
-        } elseif (strpos($dbType, 'BLOB') !== false) {
-            $column->type = 'binary';
-        } elseif (strpos($dbType, 'CLOB') !== false) {
-            $column->type = 'text';
-        } elseif (strpos($dbType, 'TIMESTAMP') !== false) {
-            $column->type = 'timestamp';
-        } else {
-            $column->type = 'string';
-        }
-    }
-
-    /**
-     * Extracts size, precision and scale information from column's DB type.
-     * @param ColumnSchema $column
-     * @param string $dbType the column's DB type
-     * @param string $precision total number of digits.
-     * This parameter is available since version 2.0.4.
-     * @param string $scale number of digits on the right of the decimal separator.
-     * This parameter is available since version 2.0.4.
-     * @param string $length length for character types.
-     * This parameter is available since version 2.0.4.
-     */
-    protected function extractColumnSize($column, $dbType, $precision, $scale, $length)
-    {
-        $column->size = trim((string) $length) === '' ? null : (int) $length;
-        $column->precision = trim((string) $precision) === '' ? null : (int) $precision;
-        $column->scale = trim((string) $scale) === '' ? null : (int) $scale;
     }
 
     /**

@@ -259,6 +259,132 @@ abstract class BaseActiveQuery extends BaseDatabase
         );
     }
 
+    /**
+     * @see https://github.com/yiisoft/yii2/issues/8358
+     */
+    public function testJoinWithUsesCorrectAsAliasedTableFromMultipleFromTables(): void
+    {
+        $orders = Order::find()
+            ->from(['profile', 'order AS o'])
+            ->joinWith('customer')
+            ->orderBy('customer.id DESC, o.id')
+            ->all();
+
+        self::assertCount(
+            3,
+            $orders,
+            "'joinWith' should use the AS-aliased primary table 'o' for the ON clause, not 'profile'.",
+        );
+        self::assertSame(
+            2,
+            $orders[0]->id,
+            "First order should belong to customer with highest 'id'.",
+        );
+        self::assertTrue(
+            $orders[0]->isRelationPopulated('customer'),
+            "Customer relation should be eagerly loaded via 'joinWith'.",
+        );
+    }
+
+    /**
+     * Verifies the generated SQL references the model's primary table in the JOIN ON clause when multiple tables are
+     * specified in `from()`.
+     *
+     * Mirrors the exact scenario from the original issue: the model's primary table is not the first entry in `from()`,
+     * yet the ON clause must reference it — not the first table.
+     *
+     * @see https://github.com/yiisoft/yii2/issues/8358
+     */
+    public function testJoinWithMultipleFromTablesGeneratesCorrectSql(): void
+    {
+        $db = $this->getConnection();
+
+        $sql = Order::find()
+            ->from(['profile', 'category', 'order'])
+            ->joinWith('customer')
+            ->select(['order.id', 'customer.name'])
+            ->where(['customer.id' => 1])
+            ->orderBy('customer.name, order.id')
+            ->createCommand($db)
+            ->getRawSql();
+
+        self::assertStringContainsString(
+            $this->replaceQuotes('[[order]].[[customer_id]] = [[customer]].[[id]]'),
+            $sql,
+            "JOIN ON clause should reference 'order' (primary table), not 'profile' (first table in from).",
+        );
+        self::assertStringNotContainsString(
+            $this->replaceQuotes('[[profile]].[[customer_id]]'),
+            $sql,
+            "JOIN ON clause must not reference 'profile' as the source for the join condition.",
+        );
+        self::assertStringNotContainsString(
+            $this->replaceQuotes('[[category]].[[customer_id]]'),
+            $sql,
+            "JOIN ON clause must not reference 'category' as the source for the join condition.",
+        );
+    }
+
+    /**
+     * @see https://github.com/yiisoft/yii2/issues/8358
+     */
+    public function testJoinWithFallsBackToFirstTableWhenPrimaryNotInFrom(): void
+    {
+        $db = $this->getConnection();
+
+        $sql = Customer::find()
+            ->from(['order'])
+            ->joinWith('orders')
+            ->createCommand($db)
+            ->getRawSql();
+
+        self::assertStringContainsString(
+            $this->replaceQuotes('[[order]].[[id]] = [[order]].[[customer_id]]'),
+            $sql,
+            'JOIN ON clause should fall back to the first table when the primary table is not in from.',
+        );
+    }
+
+    /**
+     * @see https://github.com/yiisoft/yii2/issues/8358
+     */
+    public function testJoinWithFallsBackToFirstAliasedTableWhenPrimaryNotInFrom(): void
+    {
+        $db = $this->getConnection();
+
+        $sql = Customer::find()
+            ->from(['o' => 'order'])
+            ->joinWith('orders')
+            ->createCommand($db)
+            ->getRawSql();
+
+        self::assertStringContainsString(
+            $this->replaceQuotes('[[o]].[[id]] = [[order]].[[customer_id]]'),
+            $sql,
+            'JOIN ON clause should fall back to the first aliased table when the primary table is not in from.',
+        );
+    }
+
+    /**
+     * @see https://github.com/yiisoft/yii2/issues/8358
+     */
+    public function testJoinWithFallsBackToFirstInlineAliasedTableWhenPrimaryNotInFrom(): void
+    {
+        $db = $this->getConnection();
+
+        $sql = Customer::find()
+            ->from(['order o'])
+            ->joinWith('orders')
+            ->createCommand($db)
+            ->getRawSql();
+
+        self::assertStringContainsString(
+            $this->replaceQuotes('[[o]].[[id]] = [[order]].[[customer_id]]'),
+            $sql,
+            'JOIN ON clause should fall back to the first inline-aliased table when the primary table is not in from.',
+        );
+    }
+
     public function testOnCondition(): void
     {
         $query = new ActiveQuery(Customer::class);

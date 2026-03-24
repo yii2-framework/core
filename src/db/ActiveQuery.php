@@ -617,7 +617,7 @@ class ActiveQuery extends Query implements ActiveQueryInterface
             foreach ($this->from as $alias => $table) {
                 $fromTableName = $table;
 
-                if (is_string($table) && preg_match('/^(.*?)\s+({{\w+}}|\w+)$/', $table, $matches)) {
+                if (is_string($table) && preg_match('/^(.*?)(?:\s+AS\s+|\s+)({{\w+}}|\w+)$/i', $table, $matches)) {
                     $fromTableName = $matches[1];
                 }
 
@@ -644,7 +644,7 @@ class ActiveQuery extends Query implements ActiveQueryInterface
             }
         }
 
-        $alias = (preg_match('/^(.*?)\s+({{\w+}}|\w+)$/', $tableName, $matches))
+        $alias = (preg_match('/^(.*?)(?:\s+AS\s+|\s+)({{\w+}}|\w+)$/i', $tableName, $matches))
             ? $matches[2]
             : $tableName;
 

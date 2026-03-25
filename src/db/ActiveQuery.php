@@ -338,7 +338,7 @@ class ActiveQuery extends Query implements ActiveQueryInterface
      * Unqualified columns are considered safe (they implicitly reference the related table). Qualified columns are safe
      * only if the table prefix matches the related table name or alias.
      *
-     * @param string $column the column reference (e.g., `category_id`, `item.id`, `{{item}}.[[id]]`).
+     * @param string $column the column reference (e.g., `category_id`, `item.id`, `{{schema}}.{{item}}.[[id]]`).
      * @param string $tableName the related table name (pre-trimmed of `{}`).
      * @param string $alias the related table alias (pre-trimmed of `{}`).
      * @return bool whether the column is safe for the related table.
@@ -347,15 +347,15 @@ class ActiveQuery extends Query implements ActiveQueryInterface
     {
         $clean = Quoter::stripExpressionQuotes($column);
 
-        $dotPos = strpos($clean, '.');
+        $lastDotPos = strrpos($clean, '.');
 
-        if ($dotPos === false) {
+        if ($lastDotPos === false) {
             return true;
         }
 
-        $table = substr($clean, 0, $dotPos);
+        $qualifier = substr($clean, 0, $lastDotPos);
 
-        return $table === $tableName || $table === $alias;
+        return $qualifier === $tableName || $qualifier === $alias;
     }
 
     /**

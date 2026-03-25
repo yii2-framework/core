@@ -4443,19 +4443,19 @@ parameters:
 		-
 			message: '#^Access to an undefined property yiiunit\\data\\ar\\Customer\:\:\$orders2\.$#'
 			identifier: property.notFound
-			count: 3
+			count: 9
+			path: tests/base/db/BaseActiveRecord.php
+
+		-
+			message: '#^Access to an undefined property yiiunit\\data\\ar\\Item\:\:\$category\.$#'
+			identifier: property.notFound
+			count: 7
 			path: tests/base/db/BaseActiveRecord.php
 
 		-
 			message: '#^Access to an undefined property yiiunit\\data\\ar\\Order\:\:\$bookItems\.$#'
 			identifier: property.notFound
 			count: 1
-			path: tests/base/db/BaseActiveRecord.php
-
-		-
-			message: '#^Access to an undefined property yiiunit\\data\\ar\\Order\:\:\$books\.$#'
-			identifier: property.notFound
-			count: 12
 			path: tests/base/db/BaseActiveRecord.php
 
 		-
@@ -4507,18 +4507,6 @@ parameters:
 			path: tests/base/db/BaseActiveRecord.php
 
 		-
-			message: '#^Access to an undefined property yiiunit\\data\\ar\\Order\:\:\$customer\.$#'
-			identifier: property.notFound
-			count: 3
-			path: tests/base/db/BaseActiveRecord.php
-
-		-
-			message: '#^Access to an undefined property yiiunit\\data\\ar\\Order\:\:\$customer2\.$#'
-			identifier: property.notFound
-			count: 8
-			path: tests/base/db/BaseActiveRecord.php
-
-		-
 			message: '#^Access to an undefined property yiiunit\\data\\ar\\Order\:\:\$customerJoinedWithProfile\.$#'
 			identifier: property.notFound
 			count: 1
@@ -4528,12 +4516,6 @@ parameters:
 			message: '#^Access to an undefined property yiiunit\\data\\ar\\Order\:\:\$customerJoinedWithProfileIndexOrdered\.$#'
 			identifier: property.notFound
 			count: 1
-			path: tests/base/db/BaseActiveRecord.php
-
-		-
-			message: '#^Access to an undefined property yiiunit\\data\\ar\\Order\:\:\$items\.$#'
-			identifier: property.notFound
-			count: 31
 			path: tests/base/db/BaseActiveRecord.php
 
 		-
@@ -4552,12 +4534,6 @@ parameters:
 			message: '#^Access to an undefined property yiiunit\\data\\ar\\Order\:\:\$movieItems\.$#'
 			identifier: property.notFound
 			count: 1
-			path: tests/base/db/BaseActiveRecord.php
-
-		-
-			message: '#^Access to an undefined property yiiunit\\data\\ar\\Order\:\:\$orderItems\.$#'
-			identifier: property.notFound
-			count: 9
 			path: tests/base/db/BaseActiveRecord.php
 
 		-
@@ -4972,24 +4948,6 @@ parameters:
 			message: '#^Method yii\\db\\ActiveQueryInterface\:\:with\(\) invoked with 2 parameters, 0 required\.$#'
 			identifier: arguments.count
 			count: 2
-			path: tests/base/db/BaseActiveRecord.php
-
-		-
-			message: '#^Offset ''books'' does not exist on array\{id\: int, customer_id\: int, created_at\: int, total\: string, expensiveItemsUsingViaWithCallable\: array\<yiiunit\\data\\ar\\Item\>, cheapItemsUsingViaWithCallable\: array\<yiiunit\\data\\ar\\Item\>, itemsFor8\: array\<yiiunit\\data\\ar\\Item\>, orderItemsWithPrimaryTableCondition\: array\<yiiunit\\data\\ar\\OrderItem\>\}\.$#'
-			identifier: offsetAccess.notFound
-			count: 3
-			path: tests/base/db/BaseActiveRecord.php
-
-		-
-			message: '#^Offset ''customer2'' does not exist on array\{id\: int, customer_id\: int, created_at\: int, total\: string, expensiveItemsUsingViaWithCallable\: array\<yiiunit\\data\\ar\\Item\>, cheapItemsUsingViaWithCallable\: array\<yiiunit\\data\\ar\\Item\>, itemsFor8\: array\<yiiunit\\data\\ar\\Item\>, orderItemsWithPrimaryTableCondition\: array\<yiiunit\\data\\ar\\OrderItem\>\}\.$#'
-			identifier: offsetAccess.notFound
-			count: 6
-			path: tests/base/db/BaseActiveRecord.php
-
-		-
-			message: '#^Offset ''orderItems'' does not exist on array\{id\: int, customer_id\: int, created_at\: int, total\: string, expensiveItemsUsingViaWithCallable\: array\<yiiunit\\data\\ar\\Item\>, cheapItemsUsingViaWithCallable\: array\<yiiunit\\data\\ar\\Item\>, itemsFor8\: array\<yiiunit\\data\\ar\\Item\>, orderItemsWithPrimaryTableCondition\: array\<yiiunit\\data\\ar\\OrderItem\>\}\.$#'
-			identifier: offsetAccess.notFound
-			count: 1
 			path: tests/base/db/BaseActiveRecord.php
 
 		-

@@ -553,4 +553,260 @@ abstract class BaseActiveQuery extends BaseDatabase
         $this->assertInstanceOf(Order::class, $orders[0]);
         $this->assertEquals(2, $orders[0]->id);
     }
+
+    /**
+     * Verifies that `onCondition` with a foreign-table hash condition is filtered out during lazy loading.
+     *
+     * @see https://github.com/yiisoft/yii2/issues/9168
+     */
+    public function testOnConditionForeignTableHashFilteredInLazyLoading(): void
+    {
+        $order = Order::findOne(1);
+
+        $items = $order->orderItemsWithPrimaryTableCondition;
+
+        self::assertIsArray(
+            $items,
+            'Lazy loading with foreign-table hash onCondition should return an array.',
+        );
+        self::assertNotEmpty(
+            $items,
+            'Foreign-table hash condition should be filtered out, returning all order items.',
+        );
+    }
+
+    /**
+     * Verifies that an AND compound `onCondition` with mixed safe and foreign sub-conditions keeps only the safe part
+     * during lazy loading.
+     *
+     * @see https://github.com/yiisoft/yii2/issues/9168
+     */
+    public function testOnConditionAndCompoundMixedFilteredInLazyLoading(): void
+    {
+        $order = Order::findOne(1);
+
+        $items = $order->orderItemsWithAndConditionMixed;
+
+        self::assertIsArray(
+            $items,
+            'Lazy loading with AND compound onCondition should return an array.',
+        );
+        // The safe sub-condition ['quantity' => 1] is kept; the foreign one is removed.
+        foreach ($items as $item) {
+            self::assertEquals(
+                1,
+                $item->quantity,
+                "Order item #{$item->item_id} should have quantity=1 after filtering safe AND sub-condition.",
+            );
+        }
+    }
+
+    /**
+     * Verifies that an OR compound `onCondition` is entirely removed when one branch references a foreign table.
+     *
+     * @see https://github.com/yiisoft/yii2/issues/9168
+     */
+    public function testOnConditionOrCompoundForeignDroppedInLazyLoading(): void
+    {
+        $order = Order::findOne(1);
+
+        $items = $order->orderItemsWithOrConditionForeign;
+
+        self::assertIsArray(
+            $items,
+            'Lazy loading with OR compound containing foreign-table branch should return an array.',
+        );
+        // Entire OR is dropped (removing one branch would silently broaden results).
+        self::assertNotEmpty(
+            $items,
+            'All order items should be returned when the entire OR condition is dropped.',
+        );
+    }
+
+    /**
+     * Verifies that a NOT `onCondition` wrapping a foreign-table condition is removed during lazy loading.
+     *
+     * @see https://github.com/yiisoft/yii2/issues/9168
+     */
+    public function testOnConditionNotForeignDroppedInLazyLoading(): void
+    {
+        $order = Order::findOne(1);
+
+        $items = $order->orderItemsWithNotConditionForeign;
+
+        self::assertIsArray(
+            $items,
+            'Lazy loading with NOT wrapping foreign-table condition should return an array.',
+        );
+        self::assertNotEmpty(
+            $items,
+            'All order items should be returned when the NOT foreign condition is dropped.',
+        );
+    }
+
+    /**
+     * Verifies that an operator-format `onCondition` referencing a foreign table is removed during lazy loading.
+     *
+     * @see https://github.com/yiisoft/yii2/issues/9168
+     */
+    public function testOnConditionOperatorForeignFilteredInLazyLoading(): void
+    {
+        $order = Order::findOne(1);
+
+        $items = $order->orderItemsWithOperatorCondition;
+
+        self::assertIsArray(
+            $items,
+            'Lazy loading with operator-format foreign-table onCondition should return an array.',
+        );
+        self::assertNotEmpty(
+            $items,
+            'Foreign-table operator condition should be filtered out, returning all order items.',
+        );
+    }
+
+    /**
+     * Verifies that a string `onCondition` passes through unchanged during lazy loading.
+     *
+     * @see https://github.com/yiisoft/yii2/issues/9168
+     */
+    public function testOnConditionStringPassesThroughInLazyLoading(): void
+    {
+        $order = Order::findOne(1);
+
+        $items = $order->orderItemsWithStringCondition;
+
+        self::assertIsArray(
+            $items,
+            'Lazy loading with string onCondition should return an array.',
+        );
+        // String condition '1 = 1' passes through and is always true.
+        self::assertNotEmpty(
+            $items,
+            'String condition should pass through unchanged and return order items.',
+        );
+    }
+
+    /**
+     * Verifies that `onCondition` is applied directly to WHERE when JOINs are present in the relation query.
+     *
+     * @see https://github.com/yiisoft/yii2/issues/9168
+     */
+    public function testOnConditionAppliedToWhereWhenJoinsPresent(): void
+    {
+        $order = Order::findOne(1);
+
+        $items = $order->orderItemsWithJoinAndOnCondition;
+
+        self::assertIsArray(
+            $items,
+            'Lazy loading with manual join and onCondition should return an array.',
+        );
+        self::assertNotEmpty(
+            $items,
+            'onCondition should be applied to WHERE when JOINs are present in the relation.',
+        );
+    }
+
+    /**
+     * Verifies that an AND compound `onCondition` with all safe sub-conditions is fully preserved during lazy loading.
+     *
+     * @see https://github.com/yiisoft/yii2/issues/9168
+     */
+    public function testOnConditionAndCompoundAllSafePreservedInLazyLoading(): void
+    {
+        $order = Order::findOne(1);
+
+        $items = $order->orderItemsWithAndConditionAllSafe;
+
+        self::assertIsArray(
+            $items,
+            'Lazy loading with AND compound all-safe onCondition should return an array.',
+        );
+        // Both sub-conditions ['quantity' => 1] AND ['subtotal' => 8.0] should be applied.
+        foreach ($items as $item) {
+            self::assertEquals(
+                1,
+                $item->quantity,
+                "Order item #{$item->item_id} should have quantity=1.",
+            );
+            self::assertEquals(
+                8.0,
+                 $item->subtotal,
+                "Order item #{$item->item_id} should have subtotal=8.0.",
+            );
+        }
+    }
+
+    /**
+     * Verifies that an AND compound `onCondition` where all sub-conditions reference foreign tables is fully removed
+     * during lazy loading.
+     *
+     * @see https://github.com/yiisoft/yii2/issues/9168
+     */
+    public function testOnConditionAndCompoundAllForeignDroppedInLazyLoading(): void
+    {
+        $order = Order::findOne(1);
+
+        $items = $order->orderItemsWithAndConditionAllForeign;
+
+        self::assertIsArray(
+            $items,
+            'Lazy loading with AND compound all-foreign onCondition should return an array.',
+        );
+        self::assertNotEmpty(
+            $items,
+            'All order items should be returned when the entire AND condition is dropped.',
+        );
+    }
+
+    /**
+     * Verifies that integer-keyed sub-conditions are individually filtered during lazy loading.
+     *
+     * @see https://github.com/yiisoft/yii2/issues/9168
+     */
+    public function testOnConditionIntegerKeyedFilteredInLazyLoading(): void
+    {
+        $order = Order::findOne(1);
+
+        $items = $order->orderItemsWithIntegerKeyedConditions;
+
+        self::assertIsArray(
+            $items,
+            'Lazy loading with integer-keyed mixed conditions should return an array.',
+        );
+        // Safe sub-condition ['quantity' => 1] is kept; foreign ['order.customer_id' => 1] is removed.
+        foreach ($items as $item) {
+            self::assertEquals(
+                1,
+                 $item->quantity,
+                "Order item #{$item->item_id} should have quantity=1 after filtering integer-keyed conditions.",
+            );
+        }
+    }
+
+    /**
+     * Verifies that an operator-format `onCondition` referencing a safe column is preserved during lazy loading.
+     *
+     * @see https://github.com/yiisoft/yii2/issues/9168
+     */
+    public function testOnConditionOperatorSafePreservedInLazyLoading(): void
+    {
+        $order = Order::findOne(1);
+
+        $items = $order->orderItemsWithOperatorSafeCondition;
+
+        self::assertIsArray(
+            $items,
+            'Lazy loading with operator-format safe onCondition should return an array.',
+        );
+        // Condition ['>=', 'quantity', 1] should be preserved and filter results.
+        foreach ($items as $item) {
+            self::assertGreaterThanOrEqual(
+                1,
+                 $item->quantity,
+                "Order item #{$item->item_id} should have quantity >= 1.",
+            );
+        }
+    }
 }

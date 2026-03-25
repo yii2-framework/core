@@ -315,21 +315,34 @@ class ActiveQuery extends Query implements ActiveQueryInterface
             return $condition;
         }
 
-        $filtered = [];
+        $indexed = [];
+        $keyed = [];
 
         foreach ($condition as $key => $value) {
             if (is_int($key)) {
                 $sub = $this->filterOnConditionForRelatedTable($value, $tableName, $alias);
 
                 if ($sub !== null) {
-                    $filtered[] = $sub;
+                    $indexed[] = $sub;
                 }
             } elseif ($this->isColumnSafeForRelatedTable($key, $tableName, $alias)) {
-                $filtered[$key] = $value;
+                $keyed[$key] = $value;
             }
         }
 
-        return $filtered === [] ? null : $filtered;
+        if ($indexed === [] && $keyed === []) {
+            return null;
+        }
+
+        if ($indexed === []) {
+            return $keyed;
+        }
+
+        if ($keyed === []) {
+            return count($indexed) === 1 ? $indexed[0] : $indexed;
+        }
+
+        return [...$indexed, ...$keyed];
     }
 
     /**

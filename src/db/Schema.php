@@ -598,11 +598,7 @@ abstract class Schema extends BaseObject
      */
     public function quoteSimpleTableName($name)
     {
-        if (is_string($this->tableQuoteCharacter)) {
-            $startingCharacter = $endingCharacter = $this->tableQuoteCharacter;
-        } else {
-            [$startingCharacter, $endingCharacter] = $this->tableQuoteCharacter;
-        }
+        [$startingCharacter, $endingCharacter] = Quoter::resolveQuoteCharacter($this->tableQuoteCharacter);
 
         return strpos($name, $startingCharacter) !== false
             ? $name
@@ -620,11 +616,7 @@ abstract class Schema extends BaseObject
      */
     public function quoteSimpleColumnName($name)
     {
-        if (is_string($this->columnQuoteCharacter)) {
-            $startingCharacter = $endingCharacter = $this->columnQuoteCharacter;
-        } else {
-            [$startingCharacter, $endingCharacter] = $this->columnQuoteCharacter;
-        }
+        [$startingCharacter, $endingCharacter] = Quoter::resolveQuoteCharacter($this->columnQuoteCharacter);
 
         return $name === '*' || strpos($name, $startingCharacter) !== false
             ? $name
@@ -643,15 +635,9 @@ abstract class Schema extends BaseObject
      */
     public function unquoteSimpleTableName($name)
     {
-        if (is_string($this->tableQuoteCharacter)) {
-            $startingCharacter = $this->tableQuoteCharacter;
-        } else {
-            $startingCharacter = $this->tableQuoteCharacter[0];
-        }
+        [$startQuote, $endQuote] = Quoter::resolveQuoteCharacter($this->tableQuoteCharacter);
 
-        return strpos($name, $startingCharacter) === false
-            ? $name
-            : substr($name, 1, -1);
+        return Quoter::unquoteIdentifier($name, $startQuote, $endQuote);
     }
 
     /**
@@ -667,15 +653,31 @@ abstract class Schema extends BaseObject
      */
     public function unquoteSimpleColumnName($name)
     {
-        if (is_string($this->columnQuoteCharacter)) {
-            $startingCharacter = $this->columnQuoteCharacter;
-        } else {
-            $startingCharacter = $this->columnQuoteCharacter[0];
+        if ($name === '*') {
+            return $name;
         }
 
-        return strpos($name, $startingCharacter) === false
-            ? $name
-            : substr($name, 1, -1);
+        [$startQuote, $endQuote] = Quoter::resolveQuoteCharacter($this->columnQuoteCharacter);
+
+        return Quoter::unquoteIdentifier($name, $startQuote, $endQuote);
+    }
+
+    /**
+     * Splits a qualified identifier on `.` only outside quoted segments, then unescapes each part.
+     *
+     * Handles symmetric quotes (`` ` ``, `"`) and asymmetric quotes (`[`/`]`).
+     *
+     * @param string $name The qualified identifier (e.g., `` `schema`.`table` ``).
+     * @param string $startQuote The opening quote character.
+     * @param string $endQuote The closing quote character.
+     *
+     * @return array The unquoted parts.
+     *
+     * @since 2.0.50
+     */
+    protected function splitQuotedName(string $name, string $startQuote, string $endQuote): array
+    {
+        return Quoter::splitQuotedName($name, $startQuote, $endQuote);
     }
 
     /**

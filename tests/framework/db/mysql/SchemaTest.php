@@ -37,6 +37,18 @@ final class SchemaTest extends BaseSchema
 {
     public $driverName = 'mysql';
 
+    #[DataProviderExternal(SchemaProvider::class, 'unquoteSimpleTableName')]
+    public function testUnquoteSimpleTableName(string $input, string $expected): void
+    {
+        parent::testUnquoteSimpleTableName($input, $expected);
+    }
+
+    #[DataProviderExternal(SchemaProvider::class, 'unquoteSimpleColumnName')]
+    public function testUnquoteSimpleColumnName(string $input, string $expected): void
+    {
+        parent::testUnquoteSimpleColumnName($input, $expected);
+    }
+
     public function testLoadDefaultDatetimeColumn(): void
     {
         $db = $this->getConnection(false, true);

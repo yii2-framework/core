@@ -10,6 +10,11 @@ declare(strict_types=1);
 
 namespace yiiunit\framework\db\pgsql\providers;
 
+use yii\db\CheckConstraint;
+use yii\db\Constraint;
+use yii\db\ForeignKeyConstraint;
+use yii\db\IndexConstraint;
+
 /**
  * Data provider for {@see \yiiunit\framework\db\pgsql\SchemaTest} test cases.
  *
@@ -20,6 +25,9 @@ namespace yiiunit\framework\db\pgsql\providers;
  */
 final class SchemaProvider extends \yiiunit\base\db\providers\SchemaProvider
 {
+    /**
+     * @phpstan-return array<int, array{array<string, array<string, mixed>>}>
+     */
     public static function expectedColumns(): array
     {
         $result = parent::expectedColumns();
@@ -159,6 +167,16 @@ final class SchemaProvider extends \yiiunit\base\db\providers\SchemaProvider
         return $result;
     }
 
+    /**
+     * @phpstan-return array<
+     *   string,
+     *   array{
+     *     string,
+     *     string,
+     *     Constraint|Constraint[]|CheckConstraint[]|ForeignKeyConstraint[]|IndexConstraint[]|null,
+     * },
+     * >
+     */
     public static function constraints(): array
     {
         $result = parent::constraints();
@@ -170,6 +188,9 @@ final class SchemaProvider extends \yiiunit\base\db\providers\SchemaProvider
         return $result;
     }
 
+    /**
+     * @phpstan-return array<int, array{int}>
+     */
     public static function bigintValue(): array
     {
         return [
@@ -180,6 +201,32 @@ final class SchemaProvider extends \yiiunit\base\db\providers\SchemaProvider
             [922337203685477580],
             [9223372036854775807],
             [-9223372036854775808],
+        ];
+    }
+
+    /**
+     * @phpstan-return array<string, array{string, string}>
+     */
+    public static function unquoteSimpleTableName(): array
+    {
+        return [
+            ...parent::unquoteSimpleTableName(),
+            'embedded double quote' => ['"a""b"', 'a"b'],
+            'multiple embedded double quotes' => ['"a""b""c"', 'a"b"c'],
+            'quoted' => ['"myTable"', 'myTable'],
+        ];
+    }
+
+    /**
+     * @phpstan-return array<string, array{string, string}>
+     */
+    public static function unquoteSimpleColumnName(): array
+    {
+        return [
+            ...parent::unquoteSimpleColumnName(),
+            'embedded double quote' => ['"a""b"', 'a"b'],
+            'multiple embedded double quotes' => ['"a""b""c"', 'a"b"c'],
+            'quoted' => ['"myColumn"', 'myColumn'],
         ];
     }
 }

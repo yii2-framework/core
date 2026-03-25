@@ -608,9 +608,10 @@ PATTERN;
      */
     private function ensureNameQuoted($name)
     {
-        $name = str_replace(["'", '"', '`', '[', ']'], '', $name);
-        if ($name && !preg_match('/^{{.*}}$/', $name)) {
-            return '{{' . $name . '}}';
+        $name = Quoter::unquoteAny($name);
+
+        if ($name !== '' && !str_starts_with($name, '{{')) {
+            return "{{{$name}}}";
         }
 
         return $name;

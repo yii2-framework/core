@@ -150,7 +150,7 @@ class Schema extends \yii\db\Schema implements ConstraintFinderInterface
      */
     protected function resolveTableName($name)
     {
-        $parts = explode('.', str_replace('"', '', $name));
+        $parts = $this->splitQuotedName($name, '"', '"');
 
         $tableName = $parts[1] ?? $parts[0];
 

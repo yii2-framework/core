@@ -10,6 +10,10 @@ declare(strict_types=1);
 
 namespace yiiunit\framework\db\mysql\providers;
 
+use yii\db\CheckConstraint;
+use yii\db\Constraint;
+use yii\db\ForeignKeyConstraint;
+use yii\db\IndexConstraint;
 use yiiunit\framework\db\AnyCaseValue;
 
 /**
@@ -22,6 +26,9 @@ use yiiunit\framework\db\AnyCaseValue;
  */
 final class SchemaProvider extends \yiiunit\base\db\providers\SchemaProvider
 {
+    /**
+     * @phpstan-return array<int, array{array<string, array<string, mixed>>}>
+     */
     public static function expectedColumns(): array
     {
         $result = parent::expectedColumns();
@@ -131,6 +138,16 @@ final class SchemaProvider extends \yiiunit\base\db\providers\SchemaProvider
         return $result;
     }
 
+    /**
+     * @phpstan-return array<
+     *   string,
+     *   array{
+     *     string,
+     *     string,
+     *     Constraint|Constraint[]|CheckConstraint[]|ForeignKeyConstraint[]|IndexConstraint[]|null,
+     * },
+     * >
+     */
     public static function constraints(): array
     {
         $result = parent::constraints();
@@ -141,5 +158,29 @@ final class SchemaProvider extends \yiiunit\base\db\providers\SchemaProvider
         $result['3: foreign key'][2][0]->foreignTableName = new AnyCaseValue('T_constraints_2');
 
         return $result;
+    }
+
+    /**
+     * @phpstan-return array<string, array{string, string}>
+     */
+    public static function unquoteSimpleTableName(): array
+    {
+        return array_merge(parent::unquoteSimpleTableName(), [
+            'quoted' => ['`myTable`', 'myTable'],
+            'embedded backtick' => ['`a``b`', 'a`b'],
+            'multiple embedded backticks' => ['`a``b``c`', 'a`b`c'],
+        ]);
+    }
+
+    /**
+     * @phpstan-return array<string, array{string, string}>
+     */
+    public static function unquoteSimpleColumnName(): array
+    {
+        return array_merge(parent::unquoteSimpleColumnName(), [
+            'quoted' => ['`myColumn`', 'myColumn'],
+            'embedded backtick' => ['`a``b`', 'a`b'],
+            'multiple embedded backticks' => ['`a``b``c`', 'a`b`c'],
+        ]);
     }
 }

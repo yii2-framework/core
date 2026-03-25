@@ -23,7 +23,6 @@ use yii\db\ViewFinderTrait;
 use yii\helpers\ArrayHelper;
 
 use function count;
-use function is_array;
 
 /**
  * Schema is the class for retrieving metadata from MS SQL Server databases (version 2017 and later).
@@ -147,15 +146,7 @@ class Schema extends \yii\db\Schema implements ConstraintFinderInterface
      */
     protected function getTableNameParts($name)
     {
-        $parts = [$name];
-
-        preg_match_all('/([^.\[\]]+)|\[([^\[\]]+)\]/', $name, $matches);
-
-        if (isset($matches[0]) && is_array($matches[0]) && !empty($matches[0])) {
-            $parts = $matches[0];
-        }
-
-        return str_replace(['[', ']'], '', $parts);
+        return $this->splitQuotedName($name, '[', ']');
     }
 
     /**

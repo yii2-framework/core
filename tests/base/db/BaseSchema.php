@@ -46,6 +46,30 @@ abstract class BaseSchema extends BaseDatabase
      */
     protected $expectedSchemas;
 
+    #[DataProviderExternal(SchemaProvider::class, 'unquoteSimpleTableName')]
+    public function testUnquoteSimpleTableName(string $input, string $expected): void
+    {
+        $db = $this->getConnection(false, true);
+
+        self::assertSame(
+            $expected,
+            $db->schema->unquoteSimpleTableName($input),
+            "Should return '$expected'.",
+        );
+    }
+
+    #[DataProviderExternal(SchemaProvider::class, 'unquoteSimpleColumnName')]
+    public function testUnquoteSimpleColumnName(string $input, string $expected): void
+    {
+        $db = $this->getConnection(false, true);
+
+        self::assertSame(
+            $expected,
+            $db->schema->unquoteSimpleColumnName($input),
+            "Should return '$expected'.",
+        );
+    }
+
     public function testGetSchemaNames(): void
     {
         $db = $this->getConnection(false, true);

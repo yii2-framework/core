@@ -101,7 +101,7 @@ class Schema extends \yii\db\Schema implements ConstraintFinderInterface
      */
     protected function resolveTableName($name)
     {
-        $parts = explode('.', str_replace('`', '', $name));
+        $parts = $this->splitQuotedName($name, '`', '`');
 
         $tableName = $parts[1] ?? $parts[0];
 
@@ -476,9 +476,15 @@ class Schema extends \yii\db\Schema implements ConstraintFinderInterface
 
             if (preg_match_all($regexp, $sql, $matches, PREG_SET_ORDER)) {
                 foreach ($matches as $match) {
-                    $fks = array_map('trim', explode(',', str_replace(['`', '"'], '', $match[1])));
-                    $pks = array_map('trim', explode(',', str_replace(['`', '"'], '', $match[3])));
-                    $constraint = [str_replace(['`', '"'], '', $match[2])];
+                    $fks = array_map(
+                        fn ($col) => $this->unquoteSimpleColumnName(trim($col)),
+                        explode(',', $match[1]),
+                    );
+                    $pks = array_map(
+                        fn ($col) => $this->unquoteSimpleColumnName(trim($col)),
+                        explode(',', $match[3]),
+                    );
+                    $constraint = [$this->unquoteSimpleTableName(trim($match[2]))];
 
                     foreach ($fks as $k => $name) {
                         $constraint[$name] = $pks[$k];

@@ -10,7 +10,10 @@ declare(strict_types=1);
 
 namespace yiiunit\framework\db\sqlite\providers;
 
+use yii\db\CheckConstraint;
 use yii\db\Constraint;
+use yii\db\ForeignKeyConstraint;
+use yii\db\IndexConstraint;
 use yiiunit\framework\db\AnyValue;
 
 /**
@@ -23,6 +26,9 @@ use yiiunit\framework\db\AnyValue;
  */
 final class SchemaProvider extends \yiiunit\base\db\providers\SchemaProvider
 {
+    /**
+     * @phpstan-return array<int, array{array<string, array<string, mixed>>}>
+     */
     public static function expectedColumns(): array
     {
         $result = parent::expectedColumns();
@@ -46,6 +52,16 @@ final class SchemaProvider extends \yiiunit\base\db\providers\SchemaProvider
         return $result;
     }
 
+    /**
+     * @phpstan-return array<
+     *   string,
+     *   array{
+     *     string,
+     *     string,
+     *     Constraint|Constraint[]|CheckConstraint[]|ForeignKeyConstraint[]|IndexConstraint[]|null,
+     *   },
+     * >
+     */
     public static function constraints(): array
     {
         $result = parent::constraints();
@@ -76,6 +92,9 @@ final class SchemaProvider extends \yiiunit\base\db\providers\SchemaProvider
         return $result;
     }
 
+    /**
+     * @phpstan-return array<int, array{string, string}>
+     */
     public static function quoteTableName(): array
     {
         return [
@@ -85,6 +104,32 @@ final class SchemaProvider extends \yiiunit\base\db\providers\SchemaProvider
             ['test.`test`.test', '`test`.`test`.`test`'],
             ['test.test', '`test`.`test`'],
             ['test.test.test', '`test`.`test`.`test`'],
+        ];
+    }
+
+    /**
+     * @phpstan-return array<string, array{string, string}>
+     */
+    public static function unquoteSimpleTableName(): array
+    {
+        return [
+            ...parent::unquoteSimpleTableName(),
+            'embedded backtick' => ['`a``b`', 'a`b'],
+            'multiple embedded backticks' => ['`a``b``c`', 'a`b`c'],
+            'quoted' => ['`myTable`', 'myTable'],
+        ];
+    }
+
+    /**
+     * @phpstan-return array<string, array{string, string}>
+     */
+    public static function unquoteSimpleColumnName(): array
+    {
+        return [
+            ...parent::unquoteSimpleColumnName(),
+            'embedded backtick' => ['`a``b`', 'a`b'],
+            'multiple embedded backticks' => ['`a``b``c`', 'a`b`c'],
+            'quoted' => ['`myColumn`', 'myColumn'],
         ];
     }
 }

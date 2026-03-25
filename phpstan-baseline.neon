@@ -1477,12 +1477,6 @@ parameters:
 			path: src/db/Query.php
 
 		-
-			message: '#^Only booleans are allowed in &&, string given on the left side\.$#'
-			identifier: booleanAnd.leftNotBoolean
-			count: 1
-			path: src/db/Query.php
-
-		-
 			message: '#^Only booleans are allowed in a ternary operator condition, int\<\-1, 1\> given\.$#'
 			identifier: ternary.condNotBoolean
 			count: 1
@@ -1797,7 +1791,7 @@ parameters:
 		-
 			message: '#^Construct empty\(\) is not allowed\. Use more strict comparison\.$#'
 			identifier: empty.notAllowed
-			count: 2
+			count: 1
 			path: src/db/mssql/Schema.php
 
 		-

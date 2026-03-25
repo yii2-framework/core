@@ -29,6 +29,9 @@ use yiiunit\framework\db\AnyValue;
  */
 class SchemaProvider
 {
+    /**
+     * @phpstan-return array<int, array{array<int, bool>}>
+     */
     public static function pdoAttributes(): array
     {
         return [
@@ -37,6 +40,9 @@ class SchemaProvider
         ];
     }
 
+    /**
+     * @phpstan-return array<string, array{string, string, string, string}>
+     */
     public static function tableSchemaCachePrefixes(): array
     {
         $configs = [
@@ -82,6 +88,9 @@ class SchemaProvider
         return $data;
     }
 
+    /**
+     * @phpstan-return array<int, array{int|string, bool}>
+     */
     public static function columnSchemaDbTypecastBooleanPhpType(): array
     {
         return [
@@ -104,6 +113,9 @@ class SchemaProvider
         ];
     }
 
+    /**
+     * @phpstan-return array<int, array{array<string, array<string, mixed>>}>
+     */
     public static function expectedColumns(): array
     {
         return [
@@ -330,6 +342,9 @@ class SchemaProvider
         ];
     }
 
+    /**
+     * @phpstan-return array<string, array{mixed, int}>
+     */
     public static function pdoType(): array
     {
         return [
@@ -344,6 +359,12 @@ class SchemaProvider
         ];
     }
 
+    /**
+     * @phpstan-return array<
+     *   string,
+     *   array{string, string, Constraint|Constraint[]|CheckConstraint[]|ForeignKeyConstraint[]|IndexConstraint[]|null},
+     * >
+     */
     public static function constraints(): array
     {
         return [
@@ -487,6 +508,27 @@ class SchemaProvider
                 ],
             ],
             '4: check' => ['T_constraints_4', 'checks', []],
+        ];
+    }
+
+    /**
+     * @phpstan-return array<string, array{string, string}>
+     */
+    public static function unquoteSimpleTableName(): array
+    {
+        return [
+            'unquoted' => ['myTable', 'myTable'],
+        ];
+    }
+
+    /**
+     * @phpstan-return array<string, array{string, string}>
+     */
+    public static function unquoteSimpleColumnName(): array
+    {
+        return [
+            'unquoted' => ['myColumn', 'myColumn'],
+            'asterisk' => ['*', '*'],
         ];
     }
 }

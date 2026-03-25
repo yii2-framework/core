@@ -33,6 +33,18 @@ final class SchemaTest extends BaseSchema
 {
     protected $driverName = 'sqlite';
 
+    #[DataProviderExternal(SchemaProvider::class, 'unquoteSimpleTableName')]
+    public function testUnquoteSimpleTableName(string $input, string $expected): void
+    {
+        parent::testUnquoteSimpleTableName($input, $expected);
+    }
+
+    #[DataProviderExternal(SchemaProvider::class, 'unquoteSimpleColumnName')]
+    public function testUnquoteSimpleColumnName(string $input, string $expected): void
+    {
+        parent::testUnquoteSimpleColumnName($input, $expected);
+    }
+
     #[DataProviderExternal(SchemaProvider::class, 'expectedColumns')]
     public function testColumnSchema(array $columns): void
     {

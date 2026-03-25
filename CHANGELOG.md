@@ -92,3 +92,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - fix(db): `loadDefaultValues()` ignores default values for non-autoincrement composite primary key columns; check `autoIncrement` before nullifying defaults in all five drivers.
 - fix(widgets): clear stale AJAX validation errors for dependent fields when later responses omit previously invalid attributes.
 - fix(db): `getTableNameAndAlias()` always returns the first table from `from()` instead of the model's primary table when multiple tables are specified; `joinWith()` now generates correct JOIN ON clauses.
+- fix(db): identifier unquoting strips embedded quote characters; add `Quoter` helper, fix all drivers and `Query`.

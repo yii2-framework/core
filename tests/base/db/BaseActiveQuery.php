@@ -394,27 +394,26 @@ abstract class BaseActiveQuery extends BaseDatabase
     public function testJoinWithUsesCorrectTableWhenPrimaryUsesDefaultFormat(): void
     {
         $oldTableName = Order::$tableName;
+
         Order::$tableName = '{{%order}}';
 
-        try {
-            $orders = Order::find()
-                ->from(['profile', '{{%order}}'])
-                ->joinWith('customer')
-                ->orderBy('customer.id DESC, {{%order}}.id')
-                ->all();
+        $orders = Order::find()
+            ->from(['profile', '{{%order}}'])
+            ->joinWith('customer')
+            ->orderBy('customer.id DESC, {{%order}}.id')
+            ->all();
 
-            self::assertCount(
-                3,
-                $orders,
-                "'joinWith' should match '{{%order}}' in from against '{{%order}}' from tableName().",
-            );
-            self::assertTrue(
-                $orders[0]->isRelationPopulated('customer'),
-                "Customer relation should be eagerly loaded via 'joinWith'.",
-            );
-        } finally {
-            Order::$tableName = $oldTableName;
-        }
+        self::assertCount(
+            3,
+            $orders,
+            "'joinWith' should match '{{%order}}' in from against '{{%order}}' from tableName().",
+        );
+        self::assertTrue(
+            $orders[0]->isRelationPopulated('customer'),
+            "Customer relation should be eagerly loaded via 'joinWith'.",
+        );
+
+        Order::$tableName = $oldTableName;
     }
 
     public function testOnCondition(): void

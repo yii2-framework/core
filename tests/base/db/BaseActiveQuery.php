@@ -385,6 +385,38 @@ abstract class BaseActiveQuery extends BaseDatabase
         );
     }
 
+    /**
+     * Verifies that `getTableNameAndAlias()` matches the primary table even when `tableName()` returns the default
+     * `{{%table}}` format and `from()` contains the plain table name.
+     *
+     * @see https://github.com/yiisoft/yii2/issues/8358
+     */
+    public function testJoinWithUsesCorrectTableWhenPrimaryUsesDefaultFormat(): void
+    {
+        $oldTableName = Order::$tableName;
+        Order::$tableName = '{{%order}}';
+
+        try {
+            $orders = Order::find()
+                ->from(['profile', '{{%order}}'])
+                ->joinWith('customer')
+                ->orderBy('customer.id DESC, {{%order}}.id')
+                ->all();
+
+            self::assertCount(
+                3,
+                $orders,
+                "'joinWith' should match '{{%order}}' in from against '{{%order}}' from tableName().",
+            );
+            self::assertTrue(
+                $orders[0]->isRelationPopulated('customer'),
+                "Customer relation should be eagerly loaded via 'joinWith'.",
+            );
+        } finally {
+            Order::$tableName = $oldTableName;
+        }
+    }
+
     public function testOnCondition(): void
     {
         $query = new ActiveQuery(Customer::class);

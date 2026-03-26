@@ -330,16 +330,6 @@ final class HtmlActiveTest extends TestCase
         );
     }
 
-    public function testGetAttributeValueInvalidArgumentException(): void
-    {
-        $this->expectException(InvalidArgumentException::class);
-        $this->expectExceptionMessage('Attribute name must contain word characters only.');
-
-        $model = new HtmlTestModel();
-
-        Html::getAttributeValue($model, '-');
-    }
-
     public function testGetAttributeValue(): void
     {
         $model = new HtmlTestModel();
@@ -479,5 +469,15 @@ final class HtmlActiveTest extends TestCase
             MyHtml::activeTextInput($model, 'name', ['placeholder' => true]),
             'Overridden placeholder does not match.',
         );
+    }
+
+    public function testThrowInvalidArgumentExceptionForGetAttributeValue(): void
+    {
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('Attribute name must contain word characters only.');
+
+        $model = new HtmlTestModel();
+
+        Html::getAttributeValue($model, '-');
     }
 }

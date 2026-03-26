@@ -242,38 +242,8 @@ final class HtmlAttributeTest extends TestCase
         self::assertSame(
             $expected,
             Html::getAttributeName($name),
-            "Attribute name '$name' was normalized incorrectly.",
+            "Attribute name '$name' does not match.",
         );
-    }
-
-    #[DataProviderExternal(HtmlAttributeProvider::class, 'invalidAttributeNames')]
-    public function testAttributeNameException(string $name): void
-    {
-        $this->expectException('yii\base\InvalidArgumentException');
-
-        Html::getAttributeName($name);
-    }
-
-    public function testGetInputNameInvalidArgumentExceptionAttribute(): void
-    {
-        $model = new HtmlTestModel();
-
-        $this->expectException(InvalidArgumentException::class);
-        $this->expectExceptionMessage('Attribute name must contain word characters only.');
-
-        Html::getInputName($model, '-');
-    }
-
-    public function testGetInputNameInvalidArgumentExceptionFormName(): void
-    {
-        $model = $this->getMockBuilder(Model::class)->getMock();
-
-        $model->method('formName')->willReturn('');
-
-        $this->expectException(InvalidArgumentException::class);
-        $this->expectExceptionMessage('cannot be empty for tabular inputs.');
-
-        Html::getInputName($model, '[foo]bar');
     }
 
     public function testGetInputName(): void
@@ -319,6 +289,16 @@ final class HtmlAttributeTest extends TestCase
         );
     }
 
+    #[DataProviderExternal(HtmlAttributeProvider::class, 'getInputNameWithoutBrackets')]
+    public function testGetInputNameWithoutBrackets(string $name, string $expectedName): void
+    {
+        self::assertSame(
+            $expectedName,
+            Html::getInputNameWithoutBrackets($name),
+            "Input name '$name' does not match.",
+        );
+    }
+
     public function testEscapeJsRegularExpression(): void
     {
         self::assertSame(
@@ -338,5 +318,35 @@ final class HtmlAttributeTest extends TestCase
             Html::escapeJsRegularExpression('/([a-z0-9-]+)/dugimex'),
             'JS regular expression should keep only allowed modifiers.',
         );
+    }
+
+    #[DataProviderExternal(HtmlAttributeProvider::class, 'invalidAttributeNames')]
+    public function testThrowInvalidArgumentExceptionForAttributeName(string $name): void
+    {
+        $this->expectException('yii\base\InvalidArgumentException');
+
+        Html::getAttributeName($name);
+    }
+
+    public function testThrowInvalidArgumentExceptionForInputNameAttribute(): void
+    {
+        $model = new HtmlTestModel();
+
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('Attribute name must contain word characters only.');
+
+        Html::getInputName($model, '-');
+    }
+
+    public function testThrowInvalidArgumentExceptionForInputNameFormName(): void
+    {
+        $model = $this->getMockBuilder(Model::class)->getMock();
+
+        $model->method('formName')->willReturn('');
+
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('cannot be empty for tabular inputs.');
+
+        Html::getInputName($model, '[foo]bar');
     }
 }

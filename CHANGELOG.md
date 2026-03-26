@@ -95,3 +95,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - fix(db): identifier unquoting strips embedded quote characters; add `Quoter` helper, fix all drivers and `Query`.
 - fix(db): `onCondition` added to WHERE in lazy/eager-loaded queries; filter foreign-table columns when no JOINs are present.
 - chore(tests): split monolithic `HtmlTest` into six focused test classes (`HtmlTagTest`, `HtmlFormTest`, `HtmlInputTest`, `HtmlListTest`, `HtmlAttributeTest`, `HtmlActiveTest`) with dedicated providers and keyed datasets.
+- fix(grid): `CheckboxColumn` now submits an empty unselect value by default when all row checkboxes are cleared, aligns hidden-input `form`/`disabled` attributes with checkbox options, and allows opt-out via `unselect = null`.

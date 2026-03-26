@@ -389,4 +389,18 @@ final class HtmlAttributeProvider
             'underscore mixed case' => ['Foo_Bar', 'dynamicmodel-foo_bar'],
         ];
     }
+
+    /**
+     * @phpstan-return array<string, array{string, string}>
+     */
+    public static function getInputNameWithoutBrackets(): array
+    {
+        return [
+            'nested with trailing empty brackets' => ['MyForm[grid1][key][]', 'MyForm[grid1][key]'],
+            'simple name with brackets' => ['selection[]', 'selection'],
+            'simple name' => ['selection', 'selection'],
+            'trailing empty brackets' => ['MyForm[grid1][]', 'MyForm[grid1]'],
+            'trailing keyed brackets' => ['MyForm[grid1][key]', 'MyForm[grid1][key]'],
+        ];
+    }
 }

@@ -15,6 +15,9 @@ use yii\db\ActiveRecordInterface;
 use yii\validators\StringValidator;
 use yii\web\Request;
 
+use function array_key_exists;
+use function call_user_func;
+
 /**
  * BaseHtml provides concrete implementation for [[Html]].
  *
@@ -860,10 +863,11 @@ class BaseHtml
 
     /**
      * Generates a list box.
-     * @param string $name the input name
-     * @param string|bool|array|null $selection the selected value(s). String for single or array for multiple
+     *
+     * @param string $name The input name.
+     * @param string|bool|array|null $selection The selected value(s). String for single or array for multiple
      * selection(s).
-     * @param array $items the option data items. The array keys are option values, and the array values
+     * @param array $items The option data items. The array keys are option values, and the array values
      * are the corresponding option labels. The array can also be nested (i.e. some array values are arrays too).
      * For each sub-array, an option group will be generated whose label is the key associated with the sub-array.
      * If you have a list of data models, you may convert them into the format described above using
@@ -871,7 +875,7 @@ class BaseHtml
      *
      * Note, the values and labels will be automatically HTML-encoded by this method, and the blank spaces in
      * the labels will also be HTML-encoded.
-     * @param array $options the tag options in terms of name-value pairs. The following options are specially handled:
+     * @param array $options The tag options in terms of name-value pairs. The following options are specially handled:
      *
      * - prompt: string, a prompt text to be displayed as the first option. Since version 2.0.11 you can use an array
      *   to override the value and to set other tag attributes:
@@ -906,45 +910,56 @@ class BaseHtml
      * be HTML-encoded using [[encode()]]. If a value is null, the corresponding attribute will not be rendered.
      * See [[renderTagAttributes()]] for details on how attributes are being rendered.
      *
-     * @return string the generated list box tag
+     * @return string The generated list box tag.
      */
     public static function listBox($name, $selection = null, $items = [], $options = [])
     {
         if (!array_key_exists('size', $options)) {
             $options['size'] = 4;
         }
+
         if (!empty($options['multiple']) && !empty($name) && substr_compare($name, '[]', -2, 2)) {
             $name .= '[]';
         }
+
         $options['name'] = $name;
+
         if (isset($options['unselect'])) {
             // add a hidden field so that if the list box has no option being selected, it still submits a value
-            if (!empty($name) && substr_compare($name, '[]', -2, 2) === 0) {
-                $name = substr($name, 0, -2);
+            if ($name !== '' && $name !== null) {
+                $name = static::getInputNameWithoutBrackets($name);
             }
+
             $hiddenOptions = [];
+
             // make sure disabled input is not sending any value
             if (!empty($options['disabled'])) {
                 $hiddenOptions['disabled'] = $options['disabled'];
             }
+
             $hidden = static::hiddenInput($name, $options['unselect'], $hiddenOptions);
+
             unset($options['unselect']);
         } else {
             $hidden = '';
         }
+
         $selectOptions = static::renderSelectOptions($selection, $items, $options);
-        return $hidden . static::tag('select', "\n" . $selectOptions . "\n", $options);
+
+        return $hidden . static::tag('select', "\n{$selectOptions}\n", $options);
     }
 
     /**
      * Generates a list of checkboxes.
+     *
      * A checkbox list allows multiple selection, like [[listBox()]].
      * As a result, the corresponding submitted value is an array.
-     * @param string $name the name attribute of each checkbox.
-     * @param string|array|null $selection the selected value(s). String for single or array for multiple selection(s).
-     * @param array $items the data item used to generate the checkboxes.
+     *
+     * @param string $name The name attribute of each checkbox.
+     * @param string|array|null $selection The selected value(s). String for single or array for multiple selection(s).
+     * @param array $items The data item used to generate the checkboxes.
      * The array keys are the checkbox values, while the array values are the corresponding labels.
-     * @param array $options options (name => config) for the checkbox list container tag.
+     * @param array $options Options (name => config) for the checkbox list container tag.
      * The following options are specially handled:
      *
      * - tag: string|false, the tag name of the container element. False to render checkbox without container.
@@ -972,13 +987,14 @@ class BaseHtml
      *
      * See [[renderTagAttributes()]] for details on how attributes are being rendered.
      *
-     * @return string the generated checkbox list
+     * @return string The generated checkbox list.
      */
     public static function checkboxList($name, $selection = null, $items = [], $options = [])
     {
         if (substr($name, -2) !== '[]') {
             $name .= '[]';
         }
+
         if (ArrayHelper::isTraversable($selection)) {
             $selection = array_map('strval', ArrayHelper::toArray($selection));
         }
@@ -992,30 +1008,46 @@ class BaseHtml
 
         $lines = [];
         $index = 0;
+
         foreach ($items as $value => $label) {
-            $checked = $selection !== null &&
-                (!ArrayHelper::isTraversable($selection) && !strcmp($value, $selection)
-                    || ArrayHelper::isTraversable($selection) && ArrayHelper::isIn((string)$value, $selection, $strict));
+            $checked = $selection !== null
+                && (
+                    !ArrayHelper::isTraversable($selection)
+                    && !strcmp($value, $selection)
+                    || ArrayHelper::isTraversable($selection)
+                    && ArrayHelper::isIn((string)$value, $selection, $strict)
+                );
+
             if ($formatter !== null) {
                 $lines[] = call_user_func($formatter, $index, $label, $name, $checked, $value);
             } else {
-                $lines[] = static::checkbox($name, $checked, array_merge([
-                    'value' => $value,
-                    'label' => $encode ? static::encode($label) : $label,
-                ], $itemOptions));
+                $lines[] = static::checkbox(
+                    $name,
+                    $checked,
+                    [
+                        'value' => $value,
+                        'label' => $encode ? static::encode($label) : $label,
+                        ...$itemOptions,
+                    ],
+                );
             }
+
             $index++;
         }
 
         if (isset($options['unselect'])) {
             // add a hidden field so that if the list box has no option being selected, it still submits a value
-            $name2 = substr($name, -2) === '[]' ? substr($name, 0, -2) : $name;
+            $name2 = static::getInputNameWithoutBrackets($name);
+
             $hiddenOptions = [];
+
             // make sure disabled input is not sending any value
             if (!empty($options['disabled'])) {
                 $hiddenOptions['disabled'] = $options['disabled'];
             }
+
             $hidden = static::hiddenInput($name2, $options['unselect'], $hiddenOptions);
+
             unset($options['unselect'], $options['disabled']);
         } else {
             $hidden = '';
@@ -1024,7 +1056,7 @@ class BaseHtml
         $visibleContent = implode($separator, $lines);
 
         if ($tag === false) {
-            return $hidden . $visibleContent;
+            return "{$hidden}{$visibleContent}";
         }
 
         return $hidden . static::tag($tag, $visibleContent, $options);
@@ -2353,6 +2385,25 @@ class BaseHtml
         }
 
         throw new InvalidArgumentException(get_class($model) . '::formName() cannot be empty for tabular inputs.');
+    }
+
+    /**
+     * Returns input name without trailing square brackets.
+     *
+     * For example, if `$name` is `Post[content][]`, this method will return `Post[content]`.
+     *
+     * @param string $name The input name.
+     * @return string The input name without trailing `[]`.
+     *
+     * @since 2.2
+     */
+    public static function getInputNameWithoutBrackets($name)
+    {
+        if (substr_compare($name, '[]', -2, 2) === 0) {
+            return substr($name, 0, -2);
+        }
+
+        return $name;
     }
 
     /**

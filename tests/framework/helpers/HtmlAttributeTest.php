@@ -246,36 +246,6 @@ final class HtmlAttributeTest extends TestCase
         );
     }
 
-    #[DataProviderExternal(HtmlAttributeProvider::class, 'invalidAttributeNames')]
-    public function testAttributeNameException(string $name): void
-    {
-        $this->expectException('yii\base\InvalidArgumentException');
-
-        Html::getAttributeName($name);
-    }
-
-    public function testGetInputNameInvalidArgumentExceptionAttribute(): void
-    {
-        $model = new HtmlTestModel();
-
-        $this->expectException(InvalidArgumentException::class);
-        $this->expectExceptionMessage('Attribute name must contain word characters only.');
-
-        Html::getInputName($model, '-');
-    }
-
-    public function testGetInputNameInvalidArgumentExceptionFormName(): void
-    {
-        $model = $this->getMockBuilder(Model::class)->getMock();
-
-        $model->method('formName')->willReturn('');
-
-        $this->expectException(InvalidArgumentException::class);
-        $this->expectExceptionMessage('cannot be empty for tabular inputs.');
-
-        Html::getInputName($model, '[foo]bar');
-    }
-
     public function testGetInputName(): void
     {
         $model = $this->getMockBuilder(Model::class)->getMock();
@@ -348,5 +318,35 @@ final class HtmlAttributeTest extends TestCase
             Html::escapeJsRegularExpression('/([a-z0-9-]+)/dugimex'),
             'JS regular expression should keep only allowed modifiers.',
         );
+    }
+
+    #[DataProviderExternal(HtmlAttributeProvider::class, 'invalidAttributeNames')]
+    public function testThrowInvalidArgumentExceptionForAttributeName(string $name): void
+    {
+        $this->expectException('yii\base\InvalidArgumentException');
+
+        Html::getAttributeName($name);
+    }
+
+    public function testThrowInvalidArgumentExceptionForInputNameAttribute(): void
+    {
+        $model = new HtmlTestModel();
+
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('Attribute name must contain word characters only.');
+
+        Html::getInputName($model, '-');
+    }
+
+    public function testThrowInvalidArgumentExceptionForInputNameFormName(): void
+    {
+        $model = $this->getMockBuilder(Model::class)->getMock();
+
+        $model->method('formName')->willReturn('');
+
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('cannot be empty for tabular inputs.');
+
+        Html::getInputName($model, '[foo]bar');
     }
 }

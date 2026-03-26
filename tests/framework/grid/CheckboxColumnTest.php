@@ -12,6 +12,7 @@ namespace yiiunit\framework\grid;
 
 use PHPUnit\Framework\Attributes\Group;
 use Yii;
+use yii\base\InvalidConfigException;
 use yii\data\ArrayDataProvider;
 use yii\grid\CheckboxColumn;
 use yii\grid\GridView;
@@ -389,6 +390,73 @@ class CheckboxColumnTest extends TestCase
             $secondRow,
             'Second row should not contain hidden input.',
         );
+    }
+
+    public function testCustomHeaderWithUnselectHiddenInput(): void
+    {
+        $column = new CheckboxColumn(
+            [
+                'header' => 'Select',
+                'grid' => $this->getGrid(),
+            ],
+        );
+
+        self::assertSame(
+            '<th><input type="hidden" name="selection" value="">Select</th>',
+            $column->renderHeaderCell(),
+            'Header cell with custom header text does not match.',
+        );
+    }
+
+    public function testSingleModeHeaderWithUnselectHiddenInput(): void
+    {
+        $column = new CheckboxColumn(
+            [
+                'multiple' => false,
+                'grid' => $this->getGrid(),
+            ],
+        );
+
+        self::assertSame(
+            '<th><input type="hidden" name="selection" value="">&nbsp;</th>',
+            $column->renderHeaderCell(),
+            'Header cell in single mode does not match.',
+        );
+    }
+
+    public function testCssClassIsAppliedToCheckbox(): void
+    {
+        $column = new CheckboxColumn(
+            [
+                'cssClass' => 'custom-check',
+                'grid' => $this->getGrid(
+                    [
+                        'dataProvider' => new ArrayDataProvider(
+                            [
+                                'allModels' => [['id' => 1]],
+                                'key' => 'id',
+                            ]
+                        ),
+                    ],
+                ),
+            ],
+        );
+
+        self::assertSame(
+            <<<HTML
+            <td><input type="checkbox" class="custom-check" name="selection[]" value="1"></td>
+            HTML,
+            $column->renderDataCell(['id' => 1], 1, 0),
+            'Data cell should include custom CSS class on checkbox.',
+        );
+    }
+
+    public function testThrowInvalidConfigExceptionForEmptyName(): void
+    {
+        $this->expectException(InvalidConfigException::class);
+        $this->expectExceptionMessage('The "name" property must be set.');
+
+        new CheckboxColumn(['name' => '', 'grid' => $this->getGrid()]);
     }
 
     protected function getGrid(array $config = []): GridView

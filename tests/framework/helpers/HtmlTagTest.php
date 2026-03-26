@@ -347,7 +347,7 @@ final class HtmlTagTest extends TestCase
         );
     }
 
-    public function testCsrfMetaTagsEnableCsrfValidationWithoutCookieValidationKey(): void
+    public function testThrowInvalidConfigExceptionForCsrfMetaTagsEnableCsrfValidationWithoutCookieValidationKey(): void
     {
         $this->mockApplication(
             [

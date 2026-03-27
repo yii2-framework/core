@@ -42,15 +42,13 @@ class CaptchaValidator extends Validator
      */
     public $captchaAction = 'site/captcha';
     /**
-     * @var array|ClientValidatorScriptInterface|false|null The client-side script implementation.
+     * @var array|ClientValidatorScriptInterface|null The client-side script implementation.
      *
-     * `null` (default) defers resolution: when [[Application::$useJquery]] is `true`, automatically set to
-     * `yii\jquery\captcha\CaptchaValidatorJqueryClientScript`. Set to `false` to provide no script implementation
-     * while keeping the client-validation hook active. To fully disable client-side validation, set
-     * [[Validator::$enableClientValidation]] to `false` instead.
+     * When `null` (default), no client script is registered unless a bootstrap package (for example,
+     * `yii2-framework/jquery`) configures one via the DI container. To fully disable client-side validation,
+     * set [[Validator::$enableClientValidation]] to `false` instead.
      */
-    public $clientScript = null;
-
+    public array|ClientValidatorScriptInterface|null $clientScript = null;
 
     /**
      * {@inheritdoc}
@@ -62,15 +60,7 @@ class CaptchaValidator extends Validator
             $this->message = Yii::t('yii', 'The verification code is incorrect.');
         }
 
-        if ($this->clientScript === null && (Yii::$app->useJquery ?? false)) {
-            $this->clientScript = ['class' => 'yii\jquery\captcha\CaptchaValidatorJqueryClientScript'];
-        }
-
-        if (
-            $this->clientScript !== null
-            && $this->clientScript !== false
-            && !$this->clientScript instanceof ClientValidatorScriptInterface
-        ) {
+        if ($this->clientScript !== null && !$this->clientScript instanceof ClientValidatorScriptInterface) {
             $this->clientScript = Yii::createObject($this->clientScript);
         }
     }

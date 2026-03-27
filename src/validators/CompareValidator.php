@@ -26,7 +26,7 @@ use function is_array;
  * CompareValidator supports different comparison operators, specified via the [[operator]] property.
  *
  * The default comparison function is based on string values, which means the values are compared byte by byte. When
- * comparing numbers, make sure to set the [[$type]] to [[TYPE_NUMBER]] to enable numeric comparison.
+ * comparing numbers, make sure to set the [[type]] to [[TYPE_NUMBER]] to enable numeric comparison.
  *
  * @author Qiang Xue <qiang.xue@gmail.com>
  * @since 2.0
@@ -72,7 +72,7 @@ class CompareValidator extends Validator
      */
     public $compareValue;
     /**
-     * @var string The type of the values being compared. The follow types are supported:
+     * @var string The type of the values being compared. The following types are supported:
      *
      * - [[TYPE_STRING|string]]: The values are being compared as strings. No conversion will be done before comparison.
      * - [[TYPE_NUMBER|number]]: The values are being compared as numbers. String values will be converted into numbers
@@ -106,9 +106,13 @@ class CompareValidator extends Validator
      */
     public $message;
     /**
-     * @var array|ClientValidatorScriptInterface|false|null The client-side validation script implementation.
+     * @var array|ClientValidatorScriptInterface|null The client-side validation script implementation.
+     *
+     * When `null` (default), no client script is registered unless a bootstrap package (for example,
+     * `yii2-framework/jquery`) configures one via the DI container. To fully disable client-side validation, set
+     * [[Validator::$enableClientValidation]] to `false` instead.
      */
-    public $clientScript = null;
+    public array|ClientValidatorScriptInterface|null $clientScript = null;
 
     /**
      * {@inheritdoc}
@@ -162,15 +166,7 @@ class CompareValidator extends Validator
                 );
         }
 
-        if ($this->clientScript === null && (Yii::$app->useJquery ?? false)) {
-            $this->clientScript = ['class' => 'yii\jquery\validators\CompareValidatorJqueryClientScript'];
-        }
-
-        if (
-            $this->clientScript !== null
-            && $this->clientScript !== false
-            && !$this->clientScript instanceof ClientValidatorScriptInterface
-        ) {
+        if ($this->clientScript !== null && !$this->clientScript instanceof ClientValidatorScriptInterface) {
             $this->clientScript = Yii::createObject($this->clientScript);
         }
     }

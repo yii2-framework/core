@@ -209,13 +209,12 @@ class ActiveForm extends Widget
      */
     public $attributes = [];
     /**
-     * @var array|ClientScriptInterface|false|null The client-side script implementation.
+     * @var array|ClientScriptInterface|null The client-side script implementation.
      *
-     * When [[Application::$useJquery]] is `true` and [[enableClientScript]] is `true`, defaults to
-     * [[ActiveFormJqueryClientScript]].
-     * Set to `false` to disable client-side script registration for this form.
+     * When `null` (default), no client script is registered unless a bootstrap package (for example,
+     * `yii2-framework/jquery`) configures one via the DI container. Only active when [[enableClientScript]] is `true`.
      */
-    public $clientScript = null;
+    public array|ClientScriptInterface|null $clientScript = null;
 
     /**
      * @var ActiveField[] The ActiveField objects that are currently active.
@@ -234,15 +233,7 @@ class ActiveForm extends Widget
         $this->options['id'] ??= $this->getId();
 
         if ($this->enableClientScript) {
-            if ($this->clientScript === null && (Yii::$app->useJquery ?? false)) {
-                $this->clientScript = ['class' => 'yii\jquery\widgets\ActiveFormJqueryClientScript'];
-            }
-
-            if (
-                $this->clientScript !== null
-                && $this->clientScript !== false
-                && !$this->clientScript instanceof ClientScriptInterface
-            ) {
+            if ($this->clientScript !== null && !$this->clientScript instanceof ClientScriptInterface) {
                 $this->clientScript = Yii::createObject($this->clientScript);
             }
         }

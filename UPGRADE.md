@@ -81,9 +81,9 @@ The jQuery integration layer has been moved to the separate package [`yii2-frame
 (`ValidationAsset`, `ActiveFormAsset`, `GridViewAsset`, `PjaxAsset`, `MaskedInputAsset`, `CaptchaAsset`) are no longer
 shipped with core.
 
-`Application::$useJquery` (default: `true`) remains in core and continues to control whether jQuery-based client
-scripts are registered. However, the flag alone does not provide the jQuery implementation — the `yii2-framework/jquery`
-package must be installed separately for jQuery-backed features to function.
+Core no longer contains any jQuery class references or auto-wiring logic. The `Application::$useJquery` property has
+been removed. The `yii2-framework/jquery` package's `Bootstrap` class now configures all `$clientScript` defaults via
+the DI container (`Yii::$container->set()`).
 
 **Action required** for applications that use jQuery-backed client validation, `ActiveForm`, `GridView`, `Pjax`,
 `MaskedInput`, or `Captcha` widgets:
@@ -98,8 +98,8 @@ Register the bootstrap class in `config/web.php`:
 'bootstrap' => [\yii\jquery\Bootstrap::class],
 ```
 
-**No action required** for applications that do not use any of the above widgets or that set `Application::$useJquery`
-to `false`. The `$clientScript` extension points and all other core behavior remain unchanged.
+**No action required** for applications that do not use any of the above widgets. The `$clientScript` extension points
+and all other core behavior remain unchanged.
 
 #### New interfaces
 
@@ -108,7 +108,6 @@ to `false`. The `$clientScript` extension points and all other core behavior rem
 
 #### New properties
 
-- `\yii\base\Application::$useJquery` master switch for jQuery client scripts (default: `true`).
 - `Validator::$clientScript` on all 13 validators that support client validation (`BooleanValidator`,
   `CompareValidator`, `EmailValidator`, `FileValidator`, `ImageValidator`, `IpValidator`, `NumberValidator`,
   `RangeValidator`, `RegularExpressionValidator`, `RequiredValidator`, `StringValidator`, `TrimValidator`,
@@ -120,21 +119,15 @@ to `false`. The `$clientScript` extension points and all other core behavior rem
 - `Validator::getFormattedClientMessage(string, array): string` public wrapper around the protected
   `formatMessage()`, used by extracted client script classes.
 
-#### Opting out of jQuery
+#### Without `yii2-framework/jquery`
 
-```php
-// In application configuration
-'useJquery' => false,
-```
+When the `yii2-framework/jquery` package is not installed (or its `Bootstrap` is not registered), no `$clientScript`
+defaults are configured:
 
-When `useJquery` is `false` and no custom `clientScript` strategy is configured:
-
-- `clientValidateAttribute()` returns `null` on built-in jQuery-backed validators.
-- `getClientOptions()` returns `[]` on built-in jQuery-backed validators.
-- `ActiveForm`, `GridView`, and `CheckboxColumn` do not register the built-in jQuery plugins.
-- No built-in `JqueryAsset`, `ValidationAsset`, `ActiveFormAsset`, or `GridViewAsset` bundles are registered.
-
-> **Note:** Custom `clientScript` strategies are always instantiated regardless of `useJquery`.
+- `clientValidateAttribute()` returns `null` on all built-in validators.
+- `getClientOptions()` returns `[]` on all built-in validators.
+- `ActiveForm`, `GridView`, and `CheckboxColumn` do not register any client-side plugins.
+- No `JqueryAsset`, `ValidationAsset`, `ActiveFormAsset`, or `GridViewAsset` bundles are registered.
 
 #### Custom client script strategy
 

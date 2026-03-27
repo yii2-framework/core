@@ -62,14 +62,13 @@ class FilterValidator extends Validator
      */
     public $skipOnEmpty = false;
     /**
-     * @var array|ClientValidatorScriptInterface|false|null The client-side script implementation.
+     * @var array|ClientValidatorScriptInterface|null The client-side script implementation.
      *
-     * `null` (default) defers resolution: when [[Application::$useJquery]] is `true` and the filter is `'trim'`,
-     * automatically set to `yii\jquery\validators\FilterValidatorJqueryClientScript`. Set to `false` to provide
-     * no script implementation while keeping the client-validation hook active. To fully disable client-side
-     * validation, set [[Validator::$enableClientValidation]] to `false` instead.
+     * When `null` (default), no client script is registered unless a bootstrap package (for example,
+     * `yii2-framework/jquery`) configures one via the DI container. To fully disable client-side validation, set
+     * [[Validator::$enableClientValidation]] to `false` instead.
      */
-    public $clientScript = null;
+    public array|ClientValidatorScriptInterface|null $clientScript = null;
 
     /**
      * {@inheritdoc}
@@ -81,19 +80,7 @@ class FilterValidator extends Validator
             throw new InvalidConfigException('The "filter" property must be set.');
         }
 
-        if (
-            $this->filter === 'trim'
-            && $this->clientScript === null
-            && (Yii::$app->useJquery ?? false)
-        ) {
-            $this->clientScript = ['class' => 'yii\jquery\validators\FilterValidatorJqueryClientScript'];
-        }
-
-        if (
-            $this->clientScript !== null
-            && $this->clientScript !== false
-            && !$this->clientScript instanceof ClientValidatorScriptInterface
-        ) {
+        if ($this->clientScript !== null && !$this->clientScript instanceof ClientValidatorScriptInterface) {
             $this->clientScript = Yii::createObject($this->clientScript);
         }
     }

@@ -34,9 +34,13 @@ class RegularExpressionValidator extends Validator
      */
     public $not = false;
     /**
-     * @var array|ClientValidatorScriptInterface|false|null The client-side validation script implementation.
+     * @var array|ClientValidatorScriptInterface|null The client-side validation script implementation.
+     *
+     * When `null` (default), no client script is registered unless a bootstrap package (for example,
+     * `yii2-framework/jquery`) configures one via the DI container. To fully disable client-side validation, set
+     * [[Validator::$enableClientValidation]] to `false` instead.
      */
-    public $clientScript = null;
+    public array|ClientValidatorScriptInterface|null $clientScript = null;
 
     /**
      * {@inheritdoc}
@@ -54,15 +58,7 @@ class RegularExpressionValidator extends Validator
             '{attribute} is invalid.',
         );
 
-        if ($this->clientScript === null && (Yii::$app->useJquery ?? false)) {
-            $this->clientScript = ['class' => 'yii\jquery\validators\RegularExpressionValidatorJqueryClientScript'];
-        }
-
-        if (
-            $this->clientScript !== null
-            && $this->clientScript !== false
-            && !$this->clientScript instanceof ClientValidatorScriptInterface)
-        {
+        if ($this->clientScript !== null && !$this->clientScript instanceof ClientValidatorScriptInterface) {
             $this->clientScript = Yii::createObject($this->clientScript);
         }
     }

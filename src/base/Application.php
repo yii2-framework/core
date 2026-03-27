@@ -84,15 +84,6 @@ abstract class Application extends Module
      */
     public const STATE_END = 6;
     /**
-     * @var bool whether to use jQuery for client-side validation and widget scripts.
-     * When set to `true`, validators and widgets use jQuery-based client scripts from the
-     * `yii2-framework/jquery` package, which must be installed and bootstrapped separately.
-     * When set to `false` (default), no jQuery assets are registered.
-     * This allows replacing jQuery with an alternative JS framework or disabling client scripts entirely.
-     * @since 2.2
-     */
-    public $useJquery = false;
-    /**
      * @var string the namespace that controller classes are located in.
      * This namespace will be used to load controller classes by prepending it to the controller class name.
      * The default namespace is `app\controllers`.

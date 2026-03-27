@@ -95,10 +95,6 @@ class ImageValidator extends FileValidator
      */
     public function init()
     {
-        if ($this->clientScript === null && (Yii::$app->useJquery ?? false)) {
-            $this->clientScript = ['class' => 'yii\jquery\validators\ImageValidatorJqueryClientScript'];
-        }
-
         parent::init();
 
         $this->notImage ??= Yii::t(

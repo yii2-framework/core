@@ -77,12 +77,12 @@ class Captcha extends InputWidget
      */
     public $imageOptions = [];
     /**
-     * @var array|ClientScriptInterface|false|null The client-side script implementation.
+     * @var array|ClientScriptInterface|null The client-side script implementation.
      *
-     * When [[Application::$useJquery]] is `true`, defaults to `yii\jquery\captcha\CaptchaJqueryClientScript`. Set to
-     * `false` to disable client-side script registration for this widget.
+     * When `null` (default), no client script is registered unless a bootstrap package (for example,
+     * `yii2-framework/jquery`) configures one via the DI container.
      */
-    public $clientScript = null;
+    public array|ClientScriptInterface|null $clientScript = null;
     /**
      * @var string The template for arranging the CAPTCHA image tag and the text input tag.
      *
@@ -111,15 +111,7 @@ class Captcha extends InputWidget
             $this->imageOptions['id'] = $this->options['id'] . '-image';
         }
 
-        if ($this->clientScript === null && (Yii::$app->useJquery ?? false)) {
-            $this->clientScript = ['class' => 'yii\jquery\captcha\CaptchaJqueryClientScript'];
-        }
-
-        if (
-            $this->clientScript !== null
-            && $this->clientScript !== false
-            && !$this->clientScript instanceof ClientScriptInterface)
-        {
+        if ($this->clientScript !== null && !$this->clientScript instanceof ClientScriptInterface) {
             $this->clientScript = Yii::createObject($this->clientScript);
         }
     }

@@ -9,10 +9,8 @@
 namespace yii\validators;
 
 use Yii;
-use yii\helpers\Json;
 use yii\helpers\StringHelper;
 use yii\validators\client\ClientValidatorScriptInterface;
-use yii\web\JsExpression;
 
 use function is_array;
 use function is_bool;
@@ -23,8 +21,7 @@ use function is_scalar;
  * NumberValidator validates that the attribute value is a number.
  *
  * The format of the number must match the regular expression specified in [[integerPattern]] or [[numberPattern]].
- * Optionally, you may configure the [[max]] and [[min]] properties to ensure the number
- * is within certain range.
+ * Optionally, you may configure the [[max]] and [[min]] properties to ensure the number is within certain range.
  *
  * @author Qiang Xue <qiang.xue@gmail.com>
  * @since 2.0
@@ -32,21 +29,24 @@ use function is_scalar;
 class NumberValidator extends Validator
 {
     /**
-     * @var bool whether to allow array type attribute. Defaults to false.
+     * @var bool Whether to allow array type attribute. Defaults to false.
+     *
      * @since 2.0.42
      */
     public $allowArray = false;
     /**
-     * @var bool whether the attribute value can only be an integer. Defaults to false.
+     * @var bool Whether the attribute value can only be an integer. Defaults to false.
      */
     public $integerOnly = false;
     /**
-     * @var int|float|null upper limit of the number. Defaults to null, meaning no upper limit.
+     * @var int|float|null Upper limit of the number. Defaults to null, meaning no upper limit.
+     *
      * @see tooBig for the customized message used when the number is too big.
      */
     public $max;
     /**
-     * @var int|float|null lower limit of the number. Defaults to null, meaning no lower limit.
+     * @var int|float|null Lower limit of the number. Defaults to null, meaning no lower limit.
+     *
      * @see tooSmall for the customized message used when the number is too small.
      */
     public $min;
@@ -63,12 +63,12 @@ class NumberValidator extends Validator
      */
     public $integerPattern = '/^[+-]?\d+$/';
     /**
-     * @var string the regular expression for matching numbers. It defaults to a pattern
-     * that matches floating numbers with optional exponential part (e.g. -1.23e-10).
+     * @var string The regular expression for matching numbers. It defaults to a pattern that matches floating numbers
+     * with optional exponential part (e.g. -1.23e-10).
      */
     public $numberPattern = '/^[-+]?[0-9]*\.?[0-9]+([eE][-+]?[0-9]+)?$/';
     /**
-     * @var array|ClientValidatorScriptInterface|null the client-side validation script implementation.
+     * @var array|ClientValidatorScriptInterface|false|null The client-side validation script implementation.
      */
     public $clientScript = null;
 
@@ -95,7 +95,11 @@ class NumberValidator extends Validator
             $this->clientScript = ['class' => 'yii\jquery\validators\NumberValidatorJqueryClientScript'];
         }
 
-        if ($this->clientScript !== null && !$this->clientScript instanceof ClientValidatorScriptInterface) {
+        if (
+            $this->clientScript !== null
+            && $this->clientScript !== false
+            && !$this->clientScript instanceof ClientValidatorScriptInterface
+        ) {
             $this->clientScript = Yii::createObject($this->clientScript);
         }
     }
@@ -200,7 +204,7 @@ class NumberValidator extends Validator
     }
 
     /**
-     * @param mixed $value the data value to be checked.
+     * @param mixed $value The data value to be checked.
      */
     private function isNotNumber($value)
     {

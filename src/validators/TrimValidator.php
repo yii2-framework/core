@@ -9,7 +9,6 @@
 namespace yii\validators;
 
 use Yii;
-use yii\helpers\Json;
 use yii\validators\client\ClientValidatorScriptInterface;
 
 use function is_array;
@@ -23,11 +22,13 @@ class TrimValidator extends Validator
 {
     /**
      * @var string The list of characters to strip, with `..` can specify a range of characters.
+     *
      * For example, set '\/ ' to normalize path or namespace.
      */
     public $chars;
     /**
      * @var bool Whether the filter should be skipped if an array input is given.
+     *
      * If true and an array input is given, the filter will not be applied.
      */
     public $skipOnArray = false;
@@ -36,7 +37,7 @@ class TrimValidator extends Validator
      */
     public $skipOnEmpty = false;
     /**
-     * @var array|ClientValidatorScriptInterface|null the client-side validation script implementation.
+     * @var array|ClientValidatorScriptInterface|false|null the client-side validation script implementation.
      */
     public $clientScript = null;
 
@@ -51,7 +52,11 @@ class TrimValidator extends Validator
             $this->clientScript = ['class' => 'yii\jquery\validators\TrimValidatorJqueryClientScript'];
         }
 
-        if ($this->clientScript !== null && !$this->clientScript instanceof ClientValidatorScriptInterface) {
+        if (
+            $this->clientScript !== null
+            && $this->clientScript !== false
+            && !$this->clientScript instanceof ClientValidatorScriptInterface
+        ) {
             $this->clientScript = Yii::createObject($this->clientScript);
         }
     }

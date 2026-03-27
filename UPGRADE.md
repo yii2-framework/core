@@ -81,6 +81,10 @@ The jQuery integration layer has been moved to the separate package [`yii2-frame
 (`ValidationAsset`, `ActiveFormAsset`, `GridViewAsset`, `PjaxAsset`, `MaskedInputAsset`, `CaptchaAsset`) are no longer
 shipped with core.
 
+`Application::$useJquery` (default: `true`) remains in core and continues to control whether jQuery-based client
+scripts are registered. However, the flag alone does not provide the jQuery implementation — the `yii2-framework/jquery`
+package must be installed separately for jQuery-backed features to function.
+
 **Action required** for applications that use jQuery-backed client validation, `ActiveForm`, `GridView`, `Pjax`,
 `MaskedInput`, or `Captcha` widgets:
 
@@ -94,16 +98,8 @@ Register the bootstrap class in `config/web.php`:
 'bootstrap' => [\yii\jquery\Bootstrap::class],
 ```
 
-No other changes are required. The `Application::$useJquery` flag and all `$clientScript` extension points remain in
-core and continue to work as before.
-
-### jQuery is now optional (strategy pattern)
-
-jQuery is no longer hardcoded in validators and widgets. A new `Application::$useJquery` property (default: `true`)
-controls whether jQuery-based client scripts are registered. When set to `false`, no jQuery assets are loaded and
-`clientValidateAttribute()` returns `null` for all built-in validators.
-
-**No action required** for existing applications. The default behavior is fully backward-compatible.
+**No action required** for applications that do not use any of the above widgets or that set `Application::$useJquery`
+to `false`. The `$clientScript` extension points and all other core behavior remain unchanged.
 
 #### New interfaces
 

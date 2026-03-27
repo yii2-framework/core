@@ -11,8 +11,6 @@ namespace yii\validators;
 use Closure;
 use Yii;
 use yii\base\InvalidConfigException;
-use yii\helpers\Html;
-use yii\helpers\Json;
 use yii\validators\client\ClientValidatorScriptInterface;
 
 use function call_user_func;
@@ -21,19 +19,14 @@ use function is_array;
 /**
  * CompareValidator compares the specified attribute value with another value.
  *
- * The value being compared with can be another attribute value
- * (specified via [[compareAttribute]]) or a constant (specified via
- * [[compareValue]]). When both are specified, the latter takes
- * precedence. If neither is specified, the attribute will be compared
- * with another attribute whose name is by appending "_repeat" to the source
- * attribute name.
+ * The value being compared with can be another attribute value (specified via [[compareAttribute]]) or a constant
+ * (specified via [[compareValue]]). When both are specified, the latter takes precedence. If neither is specified, the
+ * attribute will be compared with another attribute whose name is by appending "_repeat" to the source attribute name.
  *
- * CompareValidator supports different comparison operators, specified
- * via the [[operator]] property.
+ * CompareValidator supports different comparison operators, specified via the [[operator]] property.
  *
- * The default comparison function is based on string values, which means the values
- * are compared byte by byte. When comparing numbers, make sure to set the [[$type]]
- * to [[TYPE_NUMBER]] to enable numeric comparison.
+ * The default comparison function is based on string values, which means the values are compared byte by byte. When
+ * comparing numbers, make sure to set the [[$type]] to [[TYPE_NUMBER]] to enable numeric comparison.
  *
  * @author Qiang Xue <qiang.xue@gmail.com>
  * @since 2.0
@@ -42,29 +35,31 @@ class CompareValidator extends Validator
 {
     /**
      * Constant for specifying the comparison [[type]] by numeric values.
+     *
      * @since 2.0.11
      * @see type
      */
     public const TYPE_STRING = 'string';
     /**
      * Constant for specifying the comparison [[type]] by numeric values.
+     *
      * @since 2.0.11
      * @see type
      */
     public const TYPE_NUMBER = 'number';
     /**
-     * @var string the name of the attribute to be compared with. When both this property
-     * and [[compareValue]] are set, the latter takes precedence. If neither is set,
-     * it assumes the comparison is against another attribute whose name is formed by
-     * appending '_repeat' to the attribute being validated. For example, if 'password' is
-     * being validated, then the attribute to be compared would be 'password_repeat'.
+     * @var string The name of the attribute to be compared with. When both this property and [[compareValue]] are set,
+     * the latter takes precedence. If neither is set, it assumes the comparison is against another attribute whose name
+     * is formed by appending '_repeat' to the attribute being validated. For example, if 'password' is being validated,
+     * then the attribute to be compared would be 'password_repeat'.
+     *
      * @see compareValue
      */
     public $compareAttribute;
     /**
-     * @var mixed the constant value to be compared with or an anonymous function
-     * that returns the constant value. When both this property and
-     * [[compareAttribute]] are set, this property takes precedence.
+     * @var mixed The constant value to be compared with or an anonymous function that returns the constant value. When
+     * both this property and [[compareAttribute]] are set, this property takes precedence.
+     *
      * The signature of the anonymous function should be as follows,
      *
      * ```
@@ -77,14 +72,15 @@ class CompareValidator extends Validator
      */
     public $compareValue;
     /**
-     * @var string the type of the values being compared. The follow types are supported:
+     * @var string The type of the values being compared. The follow types are supported:
      *
-     * - [[TYPE_STRING|string]]: the values are being compared as strings. No conversion will be done before comparison.
-     * - [[TYPE_NUMBER|number]]: the values are being compared as numbers. String values will be converted into numbers before comparison.
+     * - [[TYPE_STRING|string]]: The values are being compared as strings. No conversion will be done before comparison.
+     * - [[TYPE_NUMBER|number]]: The values are being compared as numbers. String values will be converted into numbers
+     *   before comparison.
      */
     public $type = self::TYPE_STRING;
     /**
-     * @var string the operator for comparison. The following operators are supported:
+     * @var string The operator for comparison. The following operators are supported:
      *
      * - `==`: check if two values are equal. The comparison is done is non-strict mode.
      * - `===`: check if two values are equal. The comparison is done is strict mode.
@@ -99,18 +95,18 @@ class CompareValidator extends Validator
      */
     public $operator = '==';
     /**
-     * @var string the user-defined error message. It may contain the following placeholders which
-     * will be replaced accordingly by the validator:
+     * @var string The user-defined error message. It may contain the following placeholders which will be replaced
+     * accordingly by the validator:
      *
-     * - `{attribute}`: the label of the attribute being validated
-     * - `{value}`: the value of the attribute being validated
-     * - `{compareValue}`: the value or the attribute label to be compared with
-     * - `{compareAttribute}`: the label of the attribute to be compared with
-     * - `{compareValueOrAttribute}`: the value or the attribute label to be compared with
+     * - `{attribute}`: The label of the attribute being validated
+     * - `{value}`: The value of the attribute being validated
+     * - `{compareValue}`: The value or the attribute label to be compared with
+     * - `{compareAttribute}`: The label of the attribute to be compared with
+     * - `{compareValueOrAttribute}`: The value or the attribute label to be compared with
      */
     public $message;
     /**
-     * @var array|ClientValidatorScriptInterface|null the client-side validation script implementation.
+     * @var array|ClientValidatorScriptInterface|false|null The client-side validation script implementation.
      */
     public $clientScript = null;
 
@@ -170,7 +166,11 @@ class CompareValidator extends Validator
             $this->clientScript = ['class' => 'yii\jquery\validators\CompareValidatorJqueryClientScript'];
         }
 
-        if ($this->clientScript !== null && !$this->clientScript instanceof ClientValidatorScriptInterface) {
+        if (
+            $this->clientScript !== null
+            && $this->clientScript !== false
+            && !$this->clientScript instanceof ClientValidatorScriptInterface
+        ) {
             $this->clientScript = Yii::createObject($this->clientScript);
         }
     }
@@ -258,11 +258,13 @@ class CompareValidator extends Validator
 
     /**
      * Compares two values with the specified operator.
-     * @param string $operator the comparison operator
-     * @param string $type the type of the values being compared
-     * @param mixed $value the value being compared
-     * @param mixed $compareValue another value being compared
-     * @return bool whether the comparison using the specified operator is true.
+     *
+     * @param string $operator The comparison operator
+     * @param string $type The type of the values being compared
+     * @param mixed $value The value being compared
+     * @param mixed $compareValue Another value being compared
+     *
+     * @return bool Whether the comparison using the specified operator is true.
      */
     protected function compareValues($operator, $type, $value, $compareValue)
     {

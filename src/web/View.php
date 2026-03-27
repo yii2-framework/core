@@ -83,12 +83,12 @@ class View extends \yii\base\View
     public const POS_END = 3;
     /**
      * The location of registered JavaScript code block.
-     * This means the JavaScript code block will be enclosed within `jQuery(document).ready()`.
+     * This means the JavaScript code block will be enclosed within a `DOMContentLoaded` event listener.
      */
     public const POS_READY = 4;
     /**
      * The location of registered JavaScript code block.
-     * This means the JavaScript code block will be enclosed within `jQuery(window).load()`.
+     * This means the JavaScript code block will be enclosed within a `window` load event listener.
      */
     public const POS_LOAD = 5;
     /**
@@ -593,10 +593,8 @@ class View extends \yii\base\View
      * - [[POS_HEAD]]: in the head section. This is the default value.
      * - [[POS_BEGIN]]: at the beginning of the body section.
      * - [[POS_END]]: at the end of the body section.
-     * - [[POS_LOAD]]: enclosed within jQuery(window).load().
-     *   Note that by using this position, the method will automatically register the jQuery js file.
-     * - [[POS_READY]]: enclosed within jQuery(document).ready().
-     *   Note that by using this position, the method will automatically register the jQuery js file.
+     * - [[POS_LOAD]]: enclosed within a `window` load event listener.
+     * - [[POS_READY]]: enclosed within a `DOMContentLoaded` event listener.
      *
      * @since 2.0.14
      */

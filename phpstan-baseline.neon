@@ -531,7 +531,7 @@ parameters:
 		-
 			message: '#^Construct empty\(\) is not allowed\. Use more strict comparison\.$#'
 			identifier: empty.notAllowed
-			count: 2
+			count: 1
 			path: src/captcha/Captcha.php
 
 		-
@@ -4035,12 +4035,6 @@ parameters:
 		-
 			message: '#^Construct empty\(\) is not allowed\. Use more strict comparison\.$#'
 			identifier: empty.notAllowed
-			count: 8
-			path: src/widgets/MaskedInput.php
-
-		-
-			message: '#^Construct empty\(\) is not allowed\. Use more strict comparison\.$#'
-			identifier: empty.notAllowed
 			count: 3
 			path: src/widgets/Menu.php
 
@@ -4055,12 +4049,6 @@ parameters:
 			identifier: booleanAnd.rightNotBoolean
 			count: 1
 			path: src/widgets/Menu.php
-
-		-
-			message: '#^Only booleans are allowed in &&, string\|null given on the left side\.$#'
-			identifier: booleanAnd.leftNotBoolean
-			count: 1
-			path: src/widgets/Pjax.php
 
 		-
 			message: '#^Call to function in_array\(\) requires parameter \#3 to be true\.$#'
@@ -4082,6 +4070,12 @@ parameters:
 
 		-
 			message: '#^Dynamic call to static method PHPUnit\\Framework\\Assert\:\:assertStringContainsString\(\)\.$#'
+			identifier: staticMethod.dynamicCall
+			count: 1
+			path: tests/TestCase.php
+
+		-
+			message: '#^Dynamic call to static method PHPUnit\\Framework\\Assert\:\:markTestSkipped\(\)\.$#'
 			identifier: staticMethod.dynamicCall
 			count: 1
 			path: tests/TestCase.php

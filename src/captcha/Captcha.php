@@ -15,6 +15,8 @@ use yii\helpers\Url;
 use yii\web\client\ClientScriptInterface;
 use yii\widgets\InputWidget;
 
+use function is_array;
+
 /**
  * Captcha renders a CAPTCHA image and an input field that takes user-entered verification code.
  *
@@ -47,8 +49,8 @@ use yii\widgets\InputWidget;
  * ]);
  * ```
  *
- * You can also use this widget in an [[\yii\widgets\ActiveForm|ActiveForm]] using the [[\yii\widgets\ActiveField::widget()|widget()]]
- * method, for example like this:
+ * You can also use this widget in an [[\yii\widgets\ActiveForm|ActiveForm]] using the
+ * [[\yii\widgets\ActiveField::widget()|widget()]] method, for example like this:
  *
  * ```
  * <?= $form->field($model, 'captcha')->widget(\yii\captcha\Captcha::classname(), [
@@ -62,31 +64,35 @@ use yii\widgets\InputWidget;
 class Captcha extends InputWidget
 {
     /**
-     * @var string|array the route of the action that generates the CAPTCHA images.
+     * @var string|array The route of the action that generates the CAPTCHA images.
+     *
      * The action represented by this route must be an action of [[CaptchaAction]].
      * Please refer to [[\yii\helpers\Url::toRoute()]] for acceptable formats.
      */
     public $captchaAction = 'site/captcha';
     /**
      * @var array HTML attributes to be applied to the CAPTCHA image tag.
+     *
      * @see \yii\helpers\Html::renderTagAttributes() for details on how attributes are being rendered.
      */
     public $imageOptions = [];
     /**
-     * @var array|ClientScriptInterface|null the client-side script implementation.
-     * When [[Application::$useJquery]] is `true`, defaults to
-     * `yii\jquery\captcha\CaptchaJqueryClientScript`. Set to `null` to disable
-     * client-side script registration for this widget.
+     * @var array|ClientScriptInterface|false|null The client-side script implementation.
+     *
+     * When [[Application::$useJquery]] is `true`, defaults to `yii\jquery\captcha\CaptchaJqueryClientScript`. Set to
+     * `false` to disable client-side script registration for this widget.
      */
     public $clientScript = null;
     /**
-     * @var string the template for arranging the CAPTCHA image tag and the text input tag.
+     * @var string The template for arranging the CAPTCHA image tag and the text input tag.
+     *
      * In this template, the token `{image}` will be replaced with the actual image tag,
      * while `{input}` will be replaced with the text input tag.
      */
     public $template = '{image} {input}';
     /**
-     * @var array the HTML attributes for the input tag.
+     * @var array The HTML attributes for the input tag.
+     *
      * @see \yii\helpers\Html::renderTagAttributes() for details on how attributes are being rendered.
      */
     public $options = ['class' => 'form-control'];
@@ -109,7 +115,11 @@ class Captcha extends InputWidget
             $this->clientScript = ['class' => 'yii\jquery\captcha\CaptchaJqueryClientScript'];
         }
 
-        if ($this->clientScript !== null && !$this->clientScript instanceof ClientScriptInterface) {
+        if (
+            $this->clientScript !== null
+            && $this->clientScript !== false
+            && !$this->clientScript instanceof ClientScriptInterface)
+        {
             $this->clientScript = Yii::createObject($this->clientScript);
         }
     }
@@ -121,17 +131,18 @@ class Captcha extends InputWidget
     {
         $this->registerClientScript();
         $input = $this->renderInputHtml('text');
+
         $route = $this->captchaAction;
+
         if (is_array($route)) {
             $route['v'] = uniqid('', true);
         } else {
             $route = [$route, 'v' => uniqid('', true)];
         }
+
         $image = Html::img($route, $this->imageOptions);
-        echo strtr($this->template, [
-            '{input}' => $input,
-            '{image}' => $image,
-        ]);
+
+        echo strtr($this->template, ['{input}' => $input, '{image}' => $image]);
     }
 
     /**
@@ -148,11 +159,13 @@ class Captcha extends InputWidget
 
     /**
      * Returns the options for the captcha JS widget.
-     * @return array the options
+     *
+     * @return array The options.
      */
     public function getClientOptions()
     {
         $route = $this->captchaAction;
+
         if (is_array($route)) {
             $route[CaptchaAction::REFRESH_GET_VAR] = 1;
         } else {
@@ -169,9 +182,12 @@ class Captcha extends InputWidget
 
     /**
      * Checks if there is graphic extension available to generate CAPTCHA images.
+     *
      * This method will check the existence of ImageMagick and GD extensions.
-     * @return string the name of the graphic extension, either "imagick" or "gd".
+     *
      * @throws InvalidConfigException if neither ImageMagick nor GD is installed.
+     *
+     * @return string The name of the graphic extension, either "imagick" or "gd".
      */
     public static function checkRequirements()
     {
@@ -181,12 +197,16 @@ class Captcha extends InputWidget
                 return 'imagick';
             }
         }
+
         if (extension_loaded('gd')) {
             $gdInfo = gd_info();
             if (!empty($gdInfo['FreeType Support'])) {
                 return 'gd';
             }
         }
-        throw new InvalidConfigException('Either GD PHP extension with FreeType support or ImageMagick PHP extension with PNG support is required.');
+
+        throw new InvalidConfigException(
+            'Either GD PHP extension with FreeType support or ImageMagick PHP extension with PNG support is required.',
+        );
     }
 }

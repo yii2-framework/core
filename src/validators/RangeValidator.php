@@ -12,7 +12,6 @@ use Closure;
 use Yii;
 use yii\base\InvalidConfigException;
 use yii\helpers\ArrayHelper;
-use yii\helpers\Json;
 use yii\validators\client\ClientValidatorScriptInterface;
 
 use function call_user_func;
@@ -22,8 +21,7 @@ use function is_array;
  * RangeValidator validates that the attribute value is among a list of values.
  *
  * The range can be specified via the [[range]] property.
- * If the [[not]] property is set true, the validator will ensure the attribute value
- * is NOT among the specified range.
+ * If the [[not]] property is set true, the validator will ensure the attribute value is NOT among the specified range.
  *
  * @author Qiang Xue <qiang.xue@gmail.com>
  * @since 2.0
@@ -31,7 +29,7 @@ use function is_array;
 class RangeValidator extends Validator
 {
     /**
-     * @var array|\Traversable|\Closure a list of valid values that the attribute value should be among or an anonymous
+     * @var array|\Traversable|\Closure A list of valid values that the attribute value should be among or an anonymous
      * function that returns such a list. The signature of the anonymous function should be as follows,
      *
      * ```
@@ -43,20 +41,20 @@ class RangeValidator extends Validator
      */
     public $range;
     /**
-     * @var bool whether the comparison is strict (both type and value must be the same)
+     * @var bool Whether the comparison is strict (both type and value must be the same).
      */
     public $strict = false;
     /**
-     * @var bool whether to invert the validation logic. Defaults to false. If set to true,
-     * the attribute value should NOT be among the list of values defined via [[range]].
+     * @var bool Whether to invert the validation logic. Defaults to false. If set to true, the attribute value should
+     * NOT be among the list of values defined via [[range]].
      */
     public $not = false;
     /**
-     * @var bool whether to allow array type attribute.
+     * @var bool Whether to allow array type attribute.
      */
     public $allowArray = false;
     /**
-     * @var array|ClientValidatorScriptInterface|null the client-side validation script implementation.
+     * @var array|ClientValidatorScriptInterface|false|null The client-side validation script implementation.
      */
     public $clientScript = null;
 
@@ -69,7 +67,7 @@ class RangeValidator extends Validator
 
         if (
             !is_array($this->range)
-            && !($this->range instanceof \Closure)
+            && !($this->range instanceof Closure)
             && !($this->range instanceof \Traversable)
         ) {
             throw new InvalidConfigException('The "range" property must be set.');
@@ -84,7 +82,11 @@ class RangeValidator extends Validator
             $this->clientScript = ['class' => 'yii\jquery\validators\RangeValidatorJqueryClientScript'];
         }
 
-        if ($this->clientScript !== null && !$this->clientScript instanceof ClientValidatorScriptInterface) {
+        if (
+            $this->clientScript !== null
+            && $this->clientScript !== false
+            && !$this->clientScript instanceof ClientValidatorScriptInterface)
+        {
             $this->clientScript = Yii::createObject($this->clientScript);
         }
     }

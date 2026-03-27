@@ -10,9 +10,7 @@ namespace yii\validators;
 
 use Yii;
 use yii\base\InvalidConfigException;
-use yii\helpers\Json;
 use yii\validators\client\ClientValidatorScriptInterface;
-use yii\web\JsExpression;
 
 use function is_string;
 use function strlen;
@@ -29,31 +27,30 @@ use function strlen;
 class UrlValidator extends Validator
 {
     /**
-     * @var string the regular expression used to validate the attribute value.
-     * The pattern may contain a `{schemes}` token that will be replaced
-     * by a regular expression which represents the [[validSchemes]].
+     * @var string The regular expression used to validate the attribute value.
+     *
+     * The pattern may contain a `{schemes}` token that will be replaced by a regular expression which represents the
+     * [[validSchemes]].
      */
     public $pattern = '/^{schemes}:\/\/(([A-Z0-9][A-Z0-9_-]*)(\.[A-Z0-9][A-Z0-9_-]*)+)(?::\d{1,5})?(?:$|[?\/#])/i';
     /**
-     * @var array list of URI schemes which should be considered valid. By default, http and https
-     * are considered to be valid schemes.
+     * @var array List of URI schemes which should be considered valid. By default, http and https are considered to be
+     * valid schemes.
      */
     public $validSchemes = ['http', 'https'];
     /**
-     * @var string|null the default URI scheme. If the input doesn't contain the scheme part, the default
-     * scheme will be prepended to it (thus changing the input). Defaults to null, meaning a URL must
-     * contain the scheme part.
+     * @var string|null The default URI scheme. If the input doesn't contain the scheme part, the default scheme will be
+     * prepended to it (thus changing the input). Defaults to null, meaning a URL must contain the scheme part.
      */
     public $defaultScheme;
     /**
-     * @var bool whether validation process should take into account IDN (internationalized
-     * domain names). Defaults to false meaning that validation of URLs containing IDN will always
-     * fail. Note that in order to use IDN validation you have to install and enable `intl` PHP
-     * extension, otherwise an exception would be thrown.
+     * @var bool Whether validation process should take into account IDN (internationalized domain names). Defaults to
+     * false meaning that validation of URLs containing IDN will always fail. Note that in order to use IDN validation
+     * you have to install and enable `intl` PHP extension, otherwise an exception would be thrown.
      */
     public $enableIDN = false;
     /**
-     * @var array|ClientValidatorScriptInterface|null the client-side validation script implementation.
+     * @var array|ClientValidatorScriptInterface|false|null The client-side validation script implementation.
      */
     public $clientScript = null;
 
@@ -65,7 +62,9 @@ class UrlValidator extends Validator
         parent::init();
 
         if ($this->enableIDN && !function_exists('idn_to_ascii')) {
-            throw new InvalidConfigException('In order to use IDN validation intl extension must be installed and enabled.');
+            throw new InvalidConfigException(
+                'In order to use IDN validation intl extension must be installed and enabled.',
+            );
         }
 
         $this->message ??= Yii::t(
@@ -77,7 +76,11 @@ class UrlValidator extends Validator
             $this->clientScript = ['class' => 'yii\jquery\validators\UrlValidatorJqueryClientScript'];
         }
 
-        if ($this->clientScript !== null && !$this->clientScript instanceof ClientValidatorScriptInterface) {
+        if (
+            $this->clientScript !== null
+            && $this->clientScript !== false
+            && !$this->clientScript instanceof ClientValidatorScriptInterface
+        ) {
             $this->clientScript = Yii::createObject($this->clientScript);
         }
     }

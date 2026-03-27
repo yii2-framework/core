@@ -16,9 +16,8 @@ use yii\validators\client\ClientValidatorScriptInterface;
  * FilterValidator converts the attribute value according to a filter.
  *
  * FilterValidator is actually not a validator but a data processor.
- * It invokes the specified filter callback to process the attribute value
- * and save the processed value back to the attribute. The filter must be
- * a valid PHP callback with the following signature:
+ * It invokes the specified filter callback to process the attribute value and save the processed value back to the
+ * attribute. The filter must be a valid PHP callback with the following signature:
  *
  * ```
  * function foo($value) {
@@ -28,8 +27,8 @@ use yii\validators\client\ClientValidatorScriptInterface;
  * ```
  *
  * Many PHP functions qualify this signature (e.g. `trim()`).
- * If the callback function requires non-null argument (important since PHP 8.1)
- * remember to set [[skipOnEmpty]] to `true` otherwise you may trigger an error.
+ * If the callback function requires non-null argument (important since PHP 8.1) remember to set [[skipOnEmpty]] to
+ * `true` otherwise you may trigger an error.
  *
  * To specify the filter, set [[filter]] property to be the callback.
  *
@@ -39,7 +38,8 @@ use yii\validators\client\ClientValidatorScriptInterface;
 class FilterValidator extends Validator
 {
     /**
-     * @var callable the filter. This can be a global function name, anonymous function, etc.
+     * @var callable The filter. This can be a global function name, anonymous function, etc.
+     *
      * The function signature must be as follows,
      *
      * ```
@@ -51,23 +51,25 @@ class FilterValidator extends Validator
      */
     public $filter;
     /**
-     * @var bool whether the filter should be skipped if an array input is given.
+     * @var bool Whether the filter should be skipped if an array input is given.
+     *
      * If true and an array input is given, the filter will not be applied.
      */
     public $skipOnArray = false;
     /**
-     * @var bool this property is overwritten to be false so that this validator will
-     * be applied when the value being validated is empty.
+     * @var bool This property is overwritten to be false so that this validator will be applied when the value being
+     * validated is empty.
      */
     public $skipOnEmpty = false;
     /**
-     * @var array|ClientValidatorScriptInterface|null the client-side script implementation.
-     * When [[Application::$useJquery]] is `true` and the filter is `'trim'`, defaults to
-     * `yii\jquery\validators\FilterValidatorJqueryClientScript`. Set to `null` to disable
-     * client-side script registration.
+     * @var array|ClientValidatorScriptInterface|false|null The client-side script implementation.
+     *
+     * `null` (default) defers resolution: when [[Application::$useJquery]] is `true` and the filter is `'trim'`,
+     * automatically set to `yii\jquery\validators\FilterValidatorJqueryClientScript`. Set to `false` to provide
+     * no script implementation while keeping the client-validation hook active. To fully disable client-side
+     * validation, set [[Validator::$enableClientValidation]] to `false` instead.
      */
     public $clientScript = null;
-
 
     /**
      * {@inheritdoc}
@@ -79,11 +81,19 @@ class FilterValidator extends Validator
             throw new InvalidConfigException('The "filter" property must be set.');
         }
 
-        if ($this->clientScript === null && (Yii::$app->useJquery ?? false)) {
+        if (
+            $this->filter === 'trim'
+            && $this->clientScript === null
+            && (Yii::$app->useJquery ?? false)
+        ) {
             $this->clientScript = ['class' => 'yii\jquery\validators\FilterValidatorJqueryClientScript'];
         }
 
-        if ($this->clientScript !== null && !$this->clientScript instanceof ClientValidatorScriptInterface) {
+        if (
+            $this->clientScript !== null
+            && $this->clientScript !== false
+            && !$this->clientScript instanceof ClientValidatorScriptInterface
+        ) {
             $this->clientScript = Yii::createObject($this->clientScript);
         }
     }
@@ -94,6 +104,7 @@ class FilterValidator extends Validator
     public function validateAttribute($model, $attribute)
     {
         $value = $model->$attribute;
+
         if (!$this->skipOnArray || !is_array($value)) {
             $model->$attribute = call_user_func($this->filter, $value);
         }

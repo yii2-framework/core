@@ -9,7 +9,6 @@
 namespace yii\validators;
 
 use Yii;
-use yii\helpers\Json;
 use yii\validators\client\ClientValidatorScriptInterface;
 
 use function is_string;
@@ -23,20 +22,22 @@ use function is_string;
 class RequiredValidator extends Validator
 {
     /**
-     * @var bool whether to skip this validator if the value being validated is empty.
+     * @var bool Whether to skip this validator if the value being validated is empty.
      */
     public $skipOnEmpty = false;
     /**
-     * @var mixed the desired value that the attribute must have.
+     * @var mixed The desired value that the attribute must have.
+     *
      * If this is null, the validator will validate that the specified attribute is not empty.
-     * If this is set as a value that is not null, the validator will validate that
-     * the attribute has a value that is the same as this property value.
+     * If this is set as a value that is not null, the validator will validate that the attribute has a value that is
+     * the same as this property value.
      * Defaults to null.
      * @see strict
      */
     public $requiredValue;
     /**
-     * @var bool whether the comparison between the attribute value and [[requiredValue]] is strict.
+     * @var bool Whether the comparison between the attribute value and [[requiredValue]] is strict.
+     *
      * When this is true, both the values and types must match.
      * Defaults to false, meaning only the values need to match.
      *
@@ -47,16 +48,16 @@ class RequiredValidator extends Validator
      */
     public $strict = false;
     /**
-     * @var string the user-defined error message. It may contain the following placeholders which
-     * will be replaced accordingly by the validator:
+     * @var string The user-defined error message. It may contain the following placeholders which will be replaced
+     * accordingly by the validator:
      *
-     * - `{attribute}`: the label of the attribute being validated
-     * - `{value}`: the value of the attribute being validated
-     * - `{requiredValue}`: the value of [[requiredValue]]
+     * - `{attribute}`: The label of the attribute being validated
+     * - `{value}`: The value of the attribute being validated
+     * - `{requiredValue}`: The value of [[requiredValue]]
      */
     public $message;
     /**
-     * @var array|ClientValidatorScriptInterface|null the client-side validation script implementation.
+     * @var array|ClientValidatorScriptInterface|false|null The client-side validation script implementation.
      */
     public $clientScript = null;
 
@@ -75,7 +76,11 @@ class RequiredValidator extends Validator
             $this->clientScript = ['class' => 'yii\jquery\validators\RequiredValidatorJqueryClientScript'];
         }
 
-        if ($this->clientScript !== null && !$this->clientScript instanceof ClientValidatorScriptInterface) {
+        if (
+            $this->clientScript !== null
+            && $this->clientScript !== false
+            && !$this->clientScript instanceof ClientValidatorScriptInterface
+        ) {
             $this->clientScript = Yii::createObject($this->clientScript);
         }
     }

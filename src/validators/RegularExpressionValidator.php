@@ -10,10 +10,7 @@ namespace yii\validators;
 
 use Yii;
 use yii\base\InvalidConfigException;
-use yii\helpers\Html;
-use yii\helpers\Json;
 use yii\validators\client\ClientValidatorScriptInterface;
-use yii\web\JsExpression;
 
 use function is_array;
 
@@ -28,16 +25,16 @@ use function is_array;
 class RegularExpressionValidator extends Validator
 {
     /**
-     * @var string the regular expression to be matched with
+     * @var string The regular expression to be matched with.
      */
     public $pattern;
     /**
-     * @var bool whether to invert the validation logic. Defaults to false. If set to true,
-     * the regular expression defined via [[pattern]] should NOT match the attribute value.
+     * @var bool Whether to invert the validation logic. Defaults to false. If set to true, the regular expression
+     * defined via [[pattern]] should NOT match the attribute value.
      */
     public $not = false;
     /**
-     * @var array|ClientValidatorScriptInterface|null the client-side validation script implementation.
+     * @var array|ClientValidatorScriptInterface|false|null The client-side validation script implementation.
      */
     public $clientScript = null;
 
@@ -61,7 +58,11 @@ class RegularExpressionValidator extends Validator
             $this->clientScript = ['class' => 'yii\jquery\validators\RegularExpressionValidatorJqueryClientScript'];
         }
 
-        if ($this->clientScript !== null && !$this->clientScript instanceof ClientValidatorScriptInterface) {
+        if (
+            $this->clientScript !== null
+            && $this->clientScript !== false
+            && !$this->clientScript instanceof ClientValidatorScriptInterface)
+        {
             $this->clientScript = Yii::createObject($this->clientScript);
         }
     }

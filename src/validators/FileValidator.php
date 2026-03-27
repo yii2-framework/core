@@ -10,11 +10,8 @@ namespace yii\validators;
 
 use Yii;
 use yii\helpers\FileHelper;
-use yii\helpers\Html;
-use yii\helpers\Json;
 use yii\helpers\StringHelper;
 use yii\validators\client\ClientValidatorScriptInterface;
-use yii\web\JsExpression;
 use yii\web\UploadedFile;
 
 use function count;
@@ -35,23 +32,25 @@ use function is_string;
 class FileValidator extends Validator
 {
     /**
-     * @var array|string|null a list of file name extensions that are allowed to be uploaded.
-     * This can be either an array or a string consisting of file extension names
-     * separated by space or comma (e.g. "gif, jpg").
-     * Extension names are case-insensitive. Defaults to null, meaning all file name
-     * extensions are allowed.
+     * @var array|string|null A list of file name extensions that are allowed to be uploaded.
+     *
+     * This can be either an array or a string consisting of file extension names separated by space or comma
+     * (for example, "gif, jpg").
+     *
+     * Extension names are case-insensitive. Defaults to null, meaning all file name extensions are allowed.
      * @see wrongExtension for the customized message for wrong file type.
      */
     public $extensions;
     /**
-     * @var bool whether to check file type (extension) with mime-type. If extension produced by
-     * file mime-type check differs from uploaded file extension, the file will be considered as invalid.
+     * @var bool Whether to check file type (extension) with mime-type. If extension produced by file mime-type check
+     * differs from uploaded file extension, the file will be considered as invalid.
      */
     public $checkExtensionByMimeType = true;
     /**
-     * @var array|string|null a list of file MIME types that are allowed to be uploaded.
-     * This can be either an array or a string consisting of file MIME types
-     * separated by space or comma (e.g. "text/plain, image/png").
+     * @var array|string|null A list of file MIME types that are allowed to be uploaded.
+     *
+     * This can be either an array or a string consisting of file MIME types separated by space or comma
+     * (for example, "text/plain, image/png").
      * The mask with the special character `*` can be used to match groups of mime types.
      * For example `image/*` will pass all mime types, that begin with `image/` (e.g. `image/jpeg`, `image/png`).
      * Mime type names are case-insensitive. Defaults to null, meaning all MIME types are allowed.
@@ -59,13 +58,15 @@ class FileValidator extends Validator
      */
     public $mimeTypes;
     /**
-     * @var int|null the minimum number of bytes required for the uploaded file.
+     * @var int|null The minimum number of bytes required for the uploaded file.
+     *
      * Defaults to null, meaning no limit.
      * @see tooSmall for the customized message for a file that is too small.
      */
     public $minSize;
     /**
-     * @var int|null the maximum number of bytes required for the uploaded file.
+     * @var int|null The maximum number of bytes required for the uploaded file.
+     *
      * Defaults to null, meaning no limit.
      * Note, the size limit is also affected by `upload_max_filesize` and `post_max_size` INI setting
      * and the 'MAX_FILE_SIZE' hidden field value. See [[getSizeLimit()]] for details.
@@ -76,7 +77,8 @@ class FileValidator extends Validator
      */
     public $maxSize;
     /**
-     * @var int the maximum file count the given attribute can hold.
+     * @var int The maximum file count the given attribute can hold.
+     *
      * Defaults to 1, meaning single file upload. By defining a higher number,
      * multiple uploads become possible. Setting it to `0` means there is no limit on
      * the number of files that can be uploaded simultaneously.
@@ -89,7 +91,8 @@ class FileValidator extends Validator
      */
     public $maxFiles = 1;
     /**
-     * @var int the minimum file count the given attribute can hold.
+     * @var int The minimum file count the given attribute can hold.
+     *
      * Defaults to 0. Higher value means at least that number of files should be uploaded.
      *
      * @see tooFew for the customized message when too few files are uploaded.
@@ -97,76 +100,80 @@ class FileValidator extends Validator
      */
     public $minFiles = 0;
     /**
-     * @var string the error message used when a file is not uploaded correctly.
+     * @var string The error message used when a file is not uploaded correctly.
      */
     public $message;
     /**
-     * @var string the error message used when no file is uploaded.
-     * Note that this is the text of the validation error message. To make uploading files required,
-     * you have to set [[skipOnEmpty]] to `false`.
+     * @var string The error message used when no file is uploaded.
+     *
+     * Note that this is the text of the validation error message. To make uploading files required, you have to set
+     * [[skipOnEmpty]] to `false`.
      */
     public $uploadRequired;
     /**
-     * @var string the error message used when the uploaded file is too large.
+     * @var string The error message used when the uploaded file is too large.
+     *
      * You may use the following tokens in the message:
      *
-     * - {attribute}: the attribute name
-     * - {file}: the uploaded file name
-     * - {limit}: the maximum size allowed (see [[getSizeLimit()]])
-     * - {formattedLimit}: the maximum size formatted
+     * - {attribute}: The attribute name
+     * - {file}: The uploaded file name
+     * - {limit}: The maximum size allowed (see [[getSizeLimit()]])
+     * - {formattedLimit}: The maximum size formatted
      *   with [[\yii\i18n\Formatter::asShortSize()|Formatter::asShortSize()]]
      */
     public $tooBig;
     /**
-     * @var string the error message used when the uploaded file is too small.
+     * @var string The error message used when the uploaded file is too small.
+     *
      * You may use the following tokens in the message:
      *
-     * - {attribute}: the attribute name
-     * - {file}: the uploaded file name
-     * - {limit}: the value of [[minSize]]
-     * - {formattedLimit}: the value of [[minSize]] formatted
-     *   with [[\yii\i18n\Formatter::asShortSize()|Formatter::asShortSize()]
+     * - {attribute}: The attribute name
+     * - {file}: The uploaded file name
+     * - {limit}: The value of [[minSize]]
+     * - {formattedLimit}: The value of [[minSize]] formatted
+     *   with [[\yii\i18n\Formatter::asShortSize()|Formatter::asShortSize()]]
      */
     public $tooSmall;
     /**
-     * @var string the error message used if the count of multiple uploads exceeds limit.
+     * @var string The error message used if the count of multiple uploads exceeds limit.
+     *
      * You may use the following tokens in the message:
      *
-     * - {attribute}: the attribute name
-     * - {limit}: the value of [[maxFiles]]
+     * - {attribute}: The attribute name
+     * - {limit}: The value of [[maxFiles]]
      */
     public $tooMany;
     /**
-     * @var string the error message used if the count of multiple uploads less that minFiles.
+     * @var string The error message used if the count of multiple uploads less that minFiles.
+     *
      * You may use the following tokens in the message:
      *
-     * - {attribute}: the attribute name
-     * - {limit}: the value of [[minFiles]]
+     * - {attribute}: The attribute name
+     * - {limit}: The value of [[minFiles]]
      *
      * @since 2.0.14
      */
     public $tooFew;
     /**
-     * @var string the error message used when the uploaded file has an extension name
-     * that is not listed in [[extensions]]. You may use the following tokens in the message:
+     * @var string The error message used when the uploaded file has an extension name that is not listed in
+     * [[extensions]]. You may use the following tokens in the message:
      *
-     * - {attribute}: the attribute name
-     * - {file}: the uploaded file name
-     * - {extensions}: the list of the allowed extensions.
+     * - {attribute}: The attribute name
+     * - {file}: The uploaded file name
+     * - {extensions}: The list of the allowed extensions.
      */
     public $wrongExtension;
     /**
-     * @var string the error message used when the file has an mime type
-     * that is not allowed by [[mimeTypes]] property.
+     * @var string The error message used when the file has an mime type that is not allowed by [[mimeTypes]] property.
      * You may use the following tokens in the message:
      *
-     * - {attribute}: the attribute name
-     * - {file}: the uploaded file name
-     * - {mimeTypes}: the value of [[mimeTypes]]
+     * - {attribute}: The attribute name
+     * - {file}: The uploaded file name
+     * - {mimeTypes}: The value of [[mimeTypes]]
      */
     public $wrongMimeType;
     /**
-     * @var array|ClientValidatorScriptInterface|null the client-side validation script implementation.
+     * @var array|ClientValidatorScriptInterface|false|null The client-side validation script implementation.
      */
     public $clientScript = null;
 
@@ -227,7 +234,11 @@ class FileValidator extends Validator
             $this->clientScript = ['class' => 'yii\jquery\validators\FileValidatorJqueryClientScript'];
         }
 
-        if ($this->clientScript !== null && !$this->clientScript instanceof ClientValidatorScriptInterface) {
+        if (
+            $this->clientScript !== null
+            && $this->clientScript !== false
+            && !$this->clientScript instanceof ClientValidatorScriptInterface
+        ) {
             $this->clientScript = Yii::createObject($this->clientScript);
         }
     }
@@ -284,7 +295,9 @@ class FileValidator extends Validator
 
     /**
      * Files filter.
+     *
      * @param array $files
+     *
      * @return UploadedFile[]
      */
     private function filterFiles(array $files)
@@ -413,6 +426,7 @@ class FileValidator extends Validator
 
     /**
      * {@inheritdoc}
+     *
      * @param bool $trim
      */
     public function isEmpty($value, $trim = false)
@@ -424,7 +438,9 @@ class FileValidator extends Validator
 
     /**
      * Checks if given uploaded file have correct type (extension) according current validator settings.
+     *
      * @param UploadedFile $file
+     *
      * @return bool
      */
     protected function validateExtension($file)
@@ -498,8 +514,11 @@ class FileValidator extends Validator
      * Checks the mimeType of the $file against the list in the [[mimeTypes]] property.
      *
      * @param UploadedFile $file
-     * @return bool whether the $file mimeType is allowed
+     *
      * @throws \yii\base\InvalidConfigException
+     *
+     * @return bool whether the $file mimeType is allowed
+     *
      * @see mimeTypes
      * @since 2.0.8
      */
@@ -531,8 +550,11 @@ class FileValidator extends Validator
      * Get MIME type by file path
      *
      * @param string $filePath
-     * @return string|null
+     *
      * @throws \yii\base\InvalidConfigException
+     *
+     * @return string|null
+     *
      * @since 2.0.26
      */
     protected function getMimeTypeByFile($filePath)

@@ -97,12 +97,12 @@ class CheckboxColumn extends Column
      */
     public $cssClass;
     /**
-     * @var array|ClientScriptInterface|null The client-side script implementation.
+     * @var array|string|ClientScriptInterface|null The client-side script implementation.
      *
      * When `null` (default), no client script is registered unless a bootstrap package (for example,
      * `yii2-framework/jquery`) configures one via the DI container.
      */
-    public array|ClientScriptInterface|null $clientScript = null;
+    public array|string|ClientScriptInterface|null $clientScript = null;
 
     /**
      * @var bool Whether unselect hidden input is already rendered.

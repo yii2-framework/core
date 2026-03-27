@@ -34,13 +34,13 @@ class RegularExpressionValidator extends Validator
      */
     public $not = false;
     /**
-     * @var array|ClientValidatorScriptInterface|null The client-side validation script implementation.
+     * @var array|string|ClientValidatorScriptInterface|null The client-side validation script implementation.
      *
      * When `null` (default), no client script is registered unless a bootstrap package (for example,
      * `yii2-framework/jquery`) configures one via the DI container. To fully disable client-side validation, set
      * [[Validator::$enableClientValidation]] to `false` instead.
      */
-    public array|ClientValidatorScriptInterface|null $clientScript = null;
+    public array|string|ClientValidatorScriptInterface|null $clientScript = null;
 
     /**
      * {@inheritdoc}

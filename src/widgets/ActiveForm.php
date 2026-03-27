@@ -147,7 +147,8 @@ class ActiveForm extends Widget
     public $enableClientScript = true;
     /**
      * @var array|string|null The URL for performing AJAX-based validation. This property will be processed by
-     * [[Url::to()]]. Please refer to [[Url::to()]] for more details on how to configure this property.
+     * [[\yii\helpers\Url::to()]]. Please refer to [[\yii\helpers\Url::to()]] for more details on how to configure this
+     * property.
      *
      * If this property is not set, it will take the value of the form's action attribute.
      */
@@ -209,12 +210,12 @@ class ActiveForm extends Widget
      */
     public $attributes = [];
     /**
-     * @var array|ClientScriptInterface|null The client-side script implementation.
+     * @var array|string|ClientScriptInterface|null The client-side script implementation.
      *
      * When `null` (default), no client script is registered unless a bootstrap package (for example,
      * `yii2-framework/jquery`) configures one via the DI container. Only active when [[enableClientScript]] is `true`.
      */
-    public array|ClientScriptInterface|null $clientScript = null;
+    public array|string|ClientScriptInterface|null $clientScript = null;
 
     /**
      * @var ActiveField[] The ActiveField objects that are currently active.

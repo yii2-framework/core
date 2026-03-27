@@ -288,12 +288,12 @@ class GridView extends BaseListView
      */
     public $filterOnFocusOut = true;
     /**
-     * @var array|ClientScriptInterface|null The client-side script implementation.
+     * @var array|string|ClientScriptInterface|null The client-side script implementation.
      *
      * When `null` (default), no client script is registered unless a bootstrap package (for example,
      * `yii2-framework/jquery`) configures one via the DI container.
      */
-    public array|ClientScriptInterface|null $clientScript = null;
+    public array|string|ClientScriptInterface|null $clientScript = null;
     /**
      * @var string The layout that determines how different sections of the grid view should be organized.
      * The following tokens will be replaced with the corresponding section contents:

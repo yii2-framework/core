@@ -87,7 +87,6 @@ class AssetController extends Controller
      *     'css' => 'css/all-shared-{hash}.css',
      *     'depends' => [
      *         // Include all assets shared between 'backend' and 'frontend'
-     *         'yii\web\YiiAsset',
      *         'app\assets\SharedAsset',
      *     ],
      * ],
@@ -718,8 +717,7 @@ return [
     // The list of asset bundles to compress:
     'bundles' => [
         // 'app\assets\AppAsset',
-        // 'yii\web\YiiAsset',
-        // 'yii\web\JqueryAsset',
+        // 'app\assets\AppAsset',
     ],
     // Asset bundle for compression output:
     'targets' => [

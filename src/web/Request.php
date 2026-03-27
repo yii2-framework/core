@@ -110,8 +110,8 @@ class Request extends \yii\base\Request
      * You may use [[\yii\helpers\Html::beginForm()]] to generate his hidden input.
      *
      * In JavaScript, you may get the values of [[csrfParam]] and [[csrfToken]] via `yii.getCsrfParam()` and
-     * `yii.getCsrfToken()`, respectively. The [[\yii\web\YiiAsset]] asset must be registered.
-     * You also need to include CSRF meta tags in your pages by using [[\yii\helpers\Html::csrfMetaTags()]].
+     * `yii.getCsrfToken()`, respectively. The `yii.js` asset must be registered (for example, via
+     * `yii2-framework/jquery`). You also need to include CSRF meta tags by using [[\yii\helpers\Html::csrfMetaTags()]].
      *
      * For SPA, you can use CSRF validation by custom header with a random or an empty value.
      * Include a header with the name specified by [[csrfHeader]] to requests that must be validated.

@@ -399,7 +399,6 @@ return [
   'yii\web\View' => YII2_PATH . '/web/View.php',
   'yii\web\ViewAction' => YII2_PATH . '/web/ViewAction.php',
   'yii\web\XmlResponseFormatter' => YII2_PATH . '/web/XmlResponseFormatter.php',
-  'yii\web\YiiAsset' => YII2_PATH . '/web/YiiAsset.php',
   'yii\widgets\ActiveField' => YII2_PATH . '/widgets/ActiveField.php',
   'yii\widgets\ActiveForm' => YII2_PATH . '/widgets/ActiveForm.php',
   'yii\widgets\BaseListView' => YII2_PATH . '/widgets/BaseListView.php',

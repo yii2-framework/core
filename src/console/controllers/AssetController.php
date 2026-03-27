@@ -717,7 +717,6 @@ return [
     // The list of asset bundles to compress:
     'bundles' => [
         // 'app\assets\AppAsset',
-        // 'app\assets\AppAsset',
     ],
     // Asset bundle for compression output:
     'targets' => [

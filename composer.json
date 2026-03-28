@@ -1,13 +1,15 @@
 {
     "name": "yii2-framework/core",
     "type": "library",
-    "description": "_____",
+    "description": "Yii2 Framework Core",
     "keywords": [
-        "_____"
+        "yii2",
+        "framework",
+        "core",
+        "mvc",
+        "php"
     ],
     "license": "BSD-3-Clause",
-    "minimum-stability": "dev",
-    "prefer-stable": true,
     "require": {
         "php": ">=8.2",
         "ext-mbstring": "*",
@@ -54,7 +56,7 @@
     },
     "extra": {
         "branch-alias": {
-            "dev-main": "1.0.x-dev"
+            "dev-main": "0.1.x-dev"
         }
     },
     "config": {

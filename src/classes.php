@@ -332,7 +332,6 @@ return [
   'yii\validators\InlineValidator' => YII2_PATH . '/validators/InlineValidator.php',
   'yii\validators\IpValidator' => YII2_PATH . '/validators/IpValidator.php',
   'yii\validators\NumberValidator' => YII2_PATH . '/validators/NumberValidator.php',
-  'yii\validators\PunycodeAsset' => YII2_PATH . '/validators/PunycodeAsset.php',
   'yii\validators\RangeValidator' => YII2_PATH . '/validators/RangeValidator.php',
   'yii\validators\RegularExpressionValidator' => YII2_PATH . '/validators/RegularExpressionValidator.php',
   'yii\validators\RequiredValidator' => YII2_PATH . '/validators/RequiredValidator.php',

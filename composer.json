@@ -1,13 +1,15 @@
 {
     "name": "yii2-framework/core",
     "type": "library",
-    "description": "_____",
+    "description": "Yii2 Framework Core",
     "keywords": [
-        "_____"
+        "yii2",
+        "framework",
+        "core",
+        "mvc",
+        "php"
     ],
     "license": "BSD-3-Clause",
-    "minimum-stability": "dev",
-    "prefer-stable": true,
     "require": {
         "php": ">=8.2",
         "ext-mbstring": "*",
@@ -54,7 +56,7 @@
     },
     "extra": {
         "branch-alias": {
-            "dev-main": "1.0.x-dev"
+            "dev-main": "0.1.x-dev"
         }
     },
     "config": {
@@ -73,6 +75,21 @@
         "mutation-static": "./vendor/bin/infection --threads=4 --ignore-msi-with-no-mutations --min-msi=100 --min-covered-msi=100 --static-analysis-tool=phpstan --static-analysis-tool-options='--memory-limit=-1'",
         "rector": "./vendor/bin/rector process",
         "static": "./vendor/bin/phpstan --memory-limit=-1",
+        "sync-metadata": [
+            "curl -fsSL -o .editorconfig https://raw.githubusercontent.com/yii2-extensions/template/main/.editorconfig",
+            "curl -fsSL -o .gitattributes https://raw.githubusercontent.com/yii2-extensions/template/main/.gitattributes",
+            "curl -fsSL -o .gitignore https://raw.githubusercontent.com/yii2-extensions/template/main/.gitignore",
+            "curl -fsSL -o .styleci.yml https://raw.githubusercontent.com/yii2-extensions/template/main/.styleci.yml",
+            "curl -fsSL -o infection.json5 https://raw.githubusercontent.com/yii2-extensions/template/main/infection.json5",
+            "curl -fsSL -o phpstan.neon https://raw.githubusercontent.com/yii2-extensions/template/main/phpstan.neon",
+            "curl -fsSL -o phpunit.xml.dist https://raw.githubusercontent.com/yii2-extensions/template/main/phpunit.xml.dist"
+        ],
         "tests": "./vendor/bin/phpunit"
-    }
+    },
+    "repositories": [
+        {
+            "type": "composer",
+            "url": "https://asset-packagist.org"
+        }
+    ]
 }

@@ -36,8 +36,6 @@ composer require yii2-framework/core
 ## Package information
 
 [![PHP](https://img.shields.io/badge/%3E%3D8.2-777BB4.svg?style=for-the-badge&logo=php&logoColor=white)](https://www.php.net/releases/8.2/en.php)
-[![Yii 2.0.x](https://img.shields.io/badge/2.0.54-0073AA.svg?style=for-the-badge&logo=yii&logoColor=white)](https://github.com/yiisoft/yii2/tree/2.0.54)
-[![Yii 2.0.x](https://img.shields.io/badge/2.0.x-0073AA.svg?style=for-the-badge&logo=yii&logoColor=white)](https://github.com/yiisoft/yii2/tree/2.0)
 [![Latest Stable Version](https://img.shields.io/packagist/v/yii2-framework/core.svg?style=for-the-badge&logo=packagist&logoColor=white&label=Stable)](https://packagist.org/packages/yii2-framework/core)
 [![Total Downloads](https://img.shields.io/packagist/dt/yii2-framework/core.svg?style=for-the-badge&logo=composer&logoColor=white&label=Downloads)](https://packagist.org/packages/yii2-framework/core)
 

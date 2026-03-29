@@ -2500,6 +2500,164 @@ abstract class BaseActiveRecord extends BaseDatabase
         }]);
         $this->assertTrue($customer->orders[0]->id > $customer->orders[1]->id, 'Related models should be sorted by ID in descending order.');
     }
+    /**
+     * @see https://github.com/yiisoft/yii2/issues/9251
+     */
+    public function testFilterByModelsWithCompositeKeysSkipsNullValues(): void
+    {
+        $db = ActiveRecord::$db;
+
+        // insert rows with `NULL` composite key values into `order_item_with_null_fk`.
+        $db->createCommand()
+            ->insert(
+                'order_item_with_null_fk',
+                [
+                    'order_id' => null,
+                    'item_id' => 1,
+                    'quantity' => 1,
+                    'subtotal' => 10.0,
+                ],
+            )
+            ->execute();
+        $db->createCommand()
+            ->insert(
+                'order_item_with_null_fk',
+                [
+                    'order_id' => 1,
+                    'item_id' => null,
+                    'quantity' => 1,
+                    'subtotal' => 20.0,
+                ],
+            )
+            ->execute();
+        $db->createCommand()
+            ->insert(
+                'order_item_with_null_fk',
+                [
+                    'order_id' => null,
+                    'item_id' => null,
+                    'quantity' => 1,
+                    'subtotal' => 30.0,
+                ],
+            )
+            ->execute();
+
+        // eager load composite relation: rows with `NULL` in any key column must be skipped in the `IN` condition.
+        $rows = OrderItemWithNullFK::find()->with('orderItem')->all();
+
+        $withRelation = 0;
+        $withoutRelation = 0;
+
+        foreach ($rows as $row) {
+            if ($row->order_id === null || $row->item_id === null) {
+                self::assertNull(
+                    $row->orderItem,
+                    'Composite key eager loading should not match related records for rows with `null` key values.',
+                );
+                $withoutRelation++;
+            } else {
+                $withRelation++;
+            }
+        }
+
+        self::assertGreaterThan(
+            0,
+            $withRelation,
+            'Fixture should contain rows with valid (non-null) composite keys.',
+        );
+        self::assertGreaterThan(
+            0,
+            $withoutRelation,
+            'Fixture should contain rows with `null` composite key values.',
+        );
+    }
+
+    /**
+     * @see https://github.com/yiisoft/yii2/issues/9251
+     */
+    public function testFilterByModelsWithAllNullCompositeKeysReturnsEmpty(): void
+    {
+        $db = ActiveRecord::$db;
+
+        // clear existing data and insert only rows with `NULL` composite key values.
+        $db->createCommand()
+            ->delete('order_item_with_null_fk')
+            ->execute();
+        $db->createCommand()
+            ->insert(
+                'order_item_with_null_fk',
+                [
+                    'order_id' => null,
+                    'item_id' => null,
+                    'quantity' => 1,
+                    'subtotal' => 10.0,
+                ],
+            )
+            ->execute();
+        $db->createCommand()
+            ->insert(
+                'order_item_with_null_fk',
+                [
+                    'order_id' => null,
+                    'item_id' => 2,
+                    'quantity' => 1,
+                    'subtotal' => 20.0,
+                ],
+            )
+            ->execute();
+
+        // when all parent models have `NULL` in composite key columns, no query should be executed.
+        $rows = OrderItemWithNullFK::find()->with('orderItem')->all();
+
+        self::assertCount(
+            2,
+            $rows,
+            'Query should return all rows regardless of `null` key values.',
+        );
+
+        foreach ($rows as $row) {
+            self::assertNull(
+                $row->orderItem,
+                'Composite key eager loading should return `null` when all models have `null` in at least one key column.',
+            );
+        }
+    }
+
+    /**
+     * @see https://github.com/yiisoft/yii2/issues/9251
+     */
+    public function testFilterByModelsWithCompositeKeysDeduplicatesValues(): void
+    {
+        // `order_item_with_null_fk` has duplicate `(2,5)` rows in fixture data.
+        // eager loading should deduplicate composite key value sets.
+        $rows = OrderItemWithNullFK::find()
+            ->where(['order_id' => 2, 'item_id' => 5])
+            ->with('orderItem')
+            ->all();
+
+        self::assertCount(
+            2,
+            $rows,
+            'Fixture should have two rows with order_id=2 and item_id=5.',
+        );
+
+        foreach ($rows as $row) {
+            self::assertNotNull(
+                $row->orderItem,
+                'Composite key eager loading should resolve related record for duplicate key pairs.',
+            );
+            self::assertEquals(
+                2,
+                $row->orderItem->order_id,
+                'Related record should have matching order_id.',
+            );
+            self::assertEquals(
+                5,
+                $row->orderItem->item_id,
+                'Related record should have matching item_id.',
+            );
+        }
+    }
 }
 
 class LabelTestModel1 extends \yii\db\ActiveRecord

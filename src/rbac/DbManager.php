@@ -141,14 +141,17 @@ class DbManager extends BaseManager
     public function init()
     {
         parent::init();
-        $this->db = Instance::ensure($this->db, Connection::className());
+
+        $this->db = Instance::ensure($this->db, Connection::class);
+
         if ($this->cache !== null) {
             $this->cache = Instance::ensure($this->cache, 'yii\caching\CacheInterface');
         }
 
         $driver = $this->db->getDriverName();
         $class = $this->cascadeStrategyMap[$driver] ?? DefaultCascadeStrategy::class;
-        $this->cascadeStrategy = new $class();
+
+        $this->cascadeStrategy = Yii::createObject($class);
     }
 
     /**
@@ -318,12 +321,18 @@ class DbManager extends BaseManager
     {
         $this->db->transaction(
             function () use ($item): void {
-                $this->cascadeStrategy->removeItem(
-                    $this->db,
-                    $item->name,
-                    $this->itemChildTable,
-                    $this->assignmentTable,
-                );
+                $this->db->createCommand()
+                    ->delete(
+                        $this->itemChildTable,
+                        ['or', ['parent' => $item->name], ['child' => $item->name]],
+                    )
+                    ->execute();
+                $this->db->createCommand()
+                    ->delete(
+                        $this->assignmentTable,
+                        ['item_name' => $item->name],
+                    )
+                    ->execute();
 
                 $this->db->createCommand()
                     ->delete(
@@ -439,7 +448,7 @@ class DbManager extends BaseManager
                             'data' => serialize($rule),
                             'updated_at' => $rule->updatedAt,
                         ],
-                        ['name' => $name]
+                        ['name' => $name],
                     )
                     ->execute();
 
@@ -461,11 +470,13 @@ class DbManager extends BaseManager
     {
         $this->db->transaction(
             function () use ($rule): void {
-                $this->cascadeStrategy->removeRule(
-                    $this->db,
-                    $rule->name,
-                    $this->itemTable,
-                );
+                $this->db->createCommand()
+                    ->update(
+                        $this->itemTable,
+                        ['rule_name' => null],
+                        ['rule_name' => $rule->name],
+                    )
+                    ->execute();
 
                 $this->db->createCommand()
                     ->delete(
@@ -507,7 +518,7 @@ class DbManager extends BaseManager
      */
     protected function populateItem($row)
     {
-        $class = $row['type'] == Item::TYPE_PERMISSION ? Permission::className() : Role::className();
+        $class = $row['type'] == Item::TYPE_PERMISSION ? Permission::class : Role::class;
 
         if (!isset($row['data']) || ($data = @unserialize(is_resource($row['data']) ? stream_get_contents($row['data']) : $row['data'])) === false) {
             $data = null;
@@ -1028,13 +1039,29 @@ class DbManager extends BaseManager
     {
         $this->db->transaction(
             function () use ($type): void {
-                $this->cascadeStrategy->removeAllItems(
-                    $this->db,
-                    $type,
-                    $this->itemTable,
-                    $this->itemChildTable,
-                    $this->assignmentTable,
-                );
+                $names = (new Query())
+                    ->select(['name'])
+                    ->from($this->itemTable)
+                    ->where(['type' => $type])
+                    ->column($this->db);
+
+                if ($names !== []) {
+                    // permissions only appear as children; roles only as parents.
+                    $key = $type === Item::TYPE_PERMISSION ? 'child' : 'parent';
+
+                    $this->db->createCommand()
+                        ->delete(
+                            $this->itemChildTable,
+                            [$key => $names],
+                        )
+                        ->execute();
+                    $this->db->createCommand()
+                        ->delete(
+                            $this->assignmentTable,
+                            ['item_name' => $names],
+                        )
+                        ->execute();
+                }
 
                 $this->db->createCommand()
                     ->delete(
@@ -1055,10 +1082,13 @@ class DbManager extends BaseManager
     {
         $this->db->transaction(
             function (): void {
-                $this->cascadeStrategy->removeAllRules(
-                    $this->db,
-                    $this->itemTable,
-                );
+                $this->db->createCommand()
+                    ->update(
+                        $this->itemTable,
+                        ['rule_name' => null],
+                        ['not', ['rule_name' => null]],
+                    )
+                    ->execute();
 
                 $this->db->createCommand()
                     ->delete($this->ruleTable)

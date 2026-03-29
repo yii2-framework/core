@@ -99,3 +99,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - build!: extract jQuery integration layer into the `yii2-framework/jquery` package; `JqueryAsset`, all validator and widget client scripts, and jQuery-specific assets are no longer shipped with core.
 - fix: add `@template` generics to `ClientScriptInterface<T of BaseObject>` and `ClientValidatorScriptInterface<T of Validator>` for PHPStan inference in implementations.
 - chore: update `composer.json` metadata, scripts, and `README.md` to match standardized package structure; remove `PunycodeAsset` and its class-map entry.
+- refactor(rbac)!: simplify `CascadeStrategyInterface` from 6 methods to 2 (`updateItem`, `updateRule`); inline shared delete-cascade logic directly in `DbManager`.

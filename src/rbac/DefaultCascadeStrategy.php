@@ -37,25 +37,4 @@ final class DefaultCascadeStrategy implements CascadeStrategyInterface
     {
         return null;
     }
-
-    public function removeItem(Connection $db, string $name, string $itemChildTable, string $assignmentTable): void
-    {
-    }
-
-    public function removeRule(Connection $db, string $name, string $itemTable): void
-    {
-    }
-
-    public function removeAllItems(
-        Connection $db,
-        int $type,
-        string $itemTable,
-        string $itemChildTable,
-        string $assignmentTable,
-    ): void {
-    }
-
-    public function removeAllRules(Connection $db, string $itemTable): void
-    {
-    }
 }

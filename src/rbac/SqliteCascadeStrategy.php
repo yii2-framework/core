@@ -11,12 +11,11 @@ declare(strict_types=1);
 namespace yii\rbac;
 
 use yii\db\Connection;
-use yii\db\Query;
 
 /**
  * Cascade strategy for SQLite, which does not enforce foreign key constraints by default.
  *
- * Performs manual UPDATE/DELETE on referencing rows before the parent row is modified.
+ * Performs manual UPDATE on referencing rows before the parent row is renamed.
  * Because SQLite does not enforce FK constraints, the update order does not matter.
  *
  * @author Wilmer Arambula <terabytesoftw@gmail.com>
@@ -68,76 +67,5 @@ final class SqliteCascadeStrategy implements CascadeStrategyInterface
             ->execute();
 
         return null;
-    }
-
-    public function removeItem(Connection $db, string $name, string $itemChildTable, string $assignmentTable): void
-    {
-        $db->createCommand()
-            ->delete(
-                $itemChildTable,
-                ['or', '[[parent]]=:parent', '[[child]]=:child'],
-                [':parent' => $name, ':child' => $name],
-            )
-            ->execute();
-        $db->createCommand()
-            ->delete(
-                $assignmentTable,
-                ['item_name' => $name],
-            )
-            ->execute();
-    }
-
-    public function removeRule(Connection $db, string $name, string $itemTable): void
-    {
-        $db->createCommand()
-            ->update(
-                $itemTable,
-                ['rule_name' => null],
-                ['rule_name' => $name],
-            )
-            ->execute();
-    }
-
-    public function removeAllItems(
-        Connection $db,
-        int $type,
-        string $itemTable,
-        string $itemChildTable,
-        string $assignmentTable,
-    ): void {
-        $names = (new Query())
-            ->select(['name'])
-            ->from($itemTable)
-            ->where(['type' => $type])
-            ->column($db);
-
-        if ($names === []) {
-            return;
-        }
-
-        $key = $type === Item::TYPE_PERMISSION ? 'child' : 'parent';
-
-        $db->createCommand()
-            ->delete(
-                $itemChildTable,
-                [$key => $names],
-            )
-            ->execute();
-        $db->createCommand()
-            ->delete(
-                $assignmentTable,
-                ['item_name' => $names],
-            )
-            ->execute();
-    }
-
-    public function removeAllRules(Connection $db, string $itemTable): void
-    {
-        $db->createCommand()
-            ->update(
-                $itemTable,
-                ['rule_name' => null],
-            )
-            ->execute();
     }
 }

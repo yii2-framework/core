@@ -13,11 +13,10 @@ namespace yii\rbac;
 use yii\db\Connection;
 
 /**
- * Encapsulates driver-specific referential-integrity actions for the RBAC tables.
+ * Encapsulates driver-specific rename-cascade actions for the RBAC tables.
  *
- * Databases that support `ON UPDATE CASCADE` and `ON DELETE CASCADE` (MySQL, PostgreSQL) can use the no-op
- * {@see DefaultCascadeStrategy}. Databases that lack native cascade support (SQLite, Oracle, MSSQL) provide their own
- * implementations.
+ * Databases that support `ON UPDATE CASCADE` (MySQL, PostgreSQL) can use the no-op {@see DefaultCascadeStrategy}.
+ * Databases that lack native cascade support (SQLite, Oracle, MSSQL) provide their own implementations.
  *
  * @author Wilmer Arambula <terabytesoftw@gmail.com>
  * @since 2.2
@@ -64,56 +63,4 @@ interface CascadeStrategyInterface
      * post-update step is needed.
      */
     public function updateRule(Connection $db, string $oldName, string $newName, string $itemTable): callable|null;
-
-    /**
-     * Removes referencing rows before an auth item is deleted.
-     *
-     * Called **before** the item row is deleted from `auth_item`.
-     *
-     * @param Connection $db the database connection.
-     * @param string $name the item name being removed.
-     * @param string $itemChildTable the auth item child table name.
-     * @param string $assignmentTable the auth assignment table name.
-     */
-    public function removeItem(Connection $db, string $name, string $itemChildTable, string $assignmentTable): void;
-
-    /**
-     * Clears rule references before a rule is deleted.
-     *
-     * Called **before** the rule row is deleted from `auth_rule`.
-     *
-     * @param Connection $db the database connection.
-     * @param string $name the rule name being removed.
-     * @param string $itemTable the auth item table name.
-     */
-    public function removeRule(Connection $db, string $name, string $itemTable): void;
-
-    /**
-     * Removes referencing rows before all items of a given type are deleted.
-     *
-     * Called **before** the item rows are deleted from `auth_item`.
-     *
-     * @param Connection $db the database connection.
-     * @param int $type the auth item type ({@see Item::TYPE_PERMISSION} or {@see Item::TYPE_ROLE}).
-     * @param string $itemTable the auth item table name.
-     * @param string $itemChildTable the auth item child table name.
-     * @param string $assignmentTable the auth assignment table name.
-     */
-    public function removeAllItems(
-        Connection $db,
-        int $type,
-        string $itemTable,
-        string $itemChildTable,
-        string $assignmentTable,
-    ): void;
-
-    /**
-     * Clears all rule references before all rules are deleted.
-     *
-     * Called **before** the rule rows are deleted from `auth_rule`.
-     *
-     * @param Connection $db the database connection.
-     * @param string $itemTable the auth item table name.
-     */
-    public function removeAllRules(Connection $db, string $itemTable): void;
 }

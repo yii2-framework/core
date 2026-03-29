@@ -2646,14 +2646,14 @@ abstract class BaseActiveRecord extends BaseDatabase
                 $row->orderItem,
                 'Composite key eager loading should resolve related record for duplicate key pairs.',
             );
-            self::assertSame(
+            self::assertEquals(
                 2,
-                (int) $row->orderItem->order_id,
+                $row->orderItem->order_id,
                 'Related record should have matching order_id.',
             );
-            self::assertSame(
+            self::assertEquals(
                 5,
-                (int) $row->orderItem->item_id,
+                $row->orderItem->item_id,
                 'Related record should have matching item_id.',
             );
         }

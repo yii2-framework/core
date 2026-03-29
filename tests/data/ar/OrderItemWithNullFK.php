@@ -19,6 +19,7 @@ use yii\db\ActiveQuery;
  * @property int $item_id
  * @property int $quantity
  * @property string $subtotal
+ * @property-read OrderItem|null $orderItem
  */
 class OrderItemWithNullFK extends ActiveRecord
 {

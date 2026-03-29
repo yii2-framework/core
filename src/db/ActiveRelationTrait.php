@@ -11,6 +11,10 @@ namespace yii\db;
 use yii\base\InvalidArgumentException;
 use yii\base\InvalidConfigException;
 
+use function count;
+use function is_object;
+use function is_scalar;
+
 /**
  * ActiveRelationTrait implements the common methods and properties for active record relational queries.
  *
@@ -624,8 +628,13 @@ trait ActiveRelationTrait
         if (count($attributes) === 1) {
             // single key
             $attribute = reset($this->link);
+
             foreach ($models as $model) {
-                $value = isset($model[$attribute]) || (is_object($model) && property_exists($model, $attribute)) ? $model[$attribute] : null;
+                $value = isset($model[$attribute])
+                    || (is_object($model)
+                    && property_exists($model, $attribute))
+                    ? $model[$attribute]
+                    : null;
                 if ($value !== null) {
                     if (is_array($value)) {
                         $values = array_merge($values, $value);
@@ -636,29 +645,41 @@ trait ActiveRelationTrait
                     }
                 }
             }
+
             if (empty($values)) {
                 $this->emulateExecution();
             }
         } else {
             // composite keys
-
             // ensure keys of $this->link are prefixed the same way as $attributes
             $prefixedLink = array_combine($attributes, $this->link);
+
             foreach ($models as $model) {
                 $v = [];
+                $nullFound = false;
                 foreach ($prefixedLink as $attribute => $link) {
-                    $v[$attribute] = $model[$link];
+                    $value = $model[$link];
+                    if ($value === null) {
+                        $nullFound = true;
+                        break;
+                    }
+                    $v[$attribute] = $value;
+                }
+                if ($nullFound) {
+                    continue;
                 }
                 $values[] = $v;
-                if (empty($v)) {
-                    $this->emulateExecution();
-                }
+            }
+
+            if (empty($values)) {
+                $this->emulateExecution();
             }
         }
 
         if (!empty($values)) {
             $scalarValues = [];
             $nonScalarValues = [];
+
             foreach ($values as $value) {
                 if (is_scalar($value)) {
                     $scalarValues[] = $value;
@@ -668,7 +689,9 @@ trait ActiveRelationTrait
             }
 
             $scalarValues = array_unique($scalarValues);
-            $values = array_merge($scalarValues, $nonScalarValues);
+            $nonScalarValues = array_unique($nonScalarValues, SORT_REGULAR);
+
+            $values = [...$scalarValues, ...$nonScalarValues];
         }
 
         $this->andWhere(['in', $attributes, $values]);

@@ -114,45 +114,41 @@ class Schema extends \yii\db\Schema implements ConstraintFinderInterface
     {
         if ($schema === '') {
             $sql = <<<SQL
-                SELECT "t"."TABLE_NAME"
+                SELECT "t"."TABLE_NAME" AS "table_name"
                 FROM "USER_TABLES" "t"
                 UNION ALL
-                SELECT "v"."VIEW_NAME" AS "TABLE_NAME"
+                SELECT "v"."VIEW_NAME" AS "table_name"
                 FROM "USER_VIEWS" "v"
                 UNION ALL
-                SELECT "m"."MVIEW_NAME" AS "TABLE_NAME"
+                SELECT "m"."MVIEW_NAME" AS "table_name"
                 FROM "USER_MVIEWS" "m"
-                ORDER BY "TABLE_NAME"
+                ORDER BY "table_name"
                 SQL;
             $command = $this->db->createCommand($sql);
         } else {
             $sql = <<<SQL
-                SELECT "t"."TABLE_NAME"
+                SELECT "t"."TABLE_NAME" AS "table_name"
                 FROM "ALL_TABLES" "t"
                 WHERE "t"."OWNER" = :schema
                 UNION ALL
-                SELECT "v"."VIEW_NAME" AS "TABLE_NAME"
+                SELECT "v"."VIEW_NAME" AS "table_name"
                 FROM "ALL_VIEWS" "v"
                 WHERE "v"."OWNER" = :schema
                 UNION ALL
-                SELECT "m"."MVIEW_NAME" AS "TABLE_NAME"
+                SELECT "m"."MVIEW_NAME" AS "table_name"
                 FROM "ALL_MVIEWS" "m"
                 WHERE "m"."OWNER" = :schema
-                ORDER BY "TABLE_NAME"
+                ORDER BY "table_name"
                 SQL;
             $command = $this->db->createCommand($sql, [':schema' => $schema]);
         }
 
-        $rows = $command->queryAll();
+        $rows = $this->normalizePdoRowKeyCase($command->queryAll(), true);
 
         $names = [];
 
         foreach ($rows as $row) {
-            if ($this->db->slavePdo->getAttribute(PDO::ATTR_CASE) === PDO::CASE_LOWER) {
-                $row = array_change_key_case($row, CASE_UPPER);
-            }
-
-            $names[] = $row['TABLE_NAME'];
+            $names[] = $row['table_name'];
         }
 
         return $names;
@@ -317,18 +313,18 @@ class Schema extends \yii\db\Schema implements ConstraintFinderInterface
     {
         $sql = <<<SQL
             SELECT
-                "a"."COLUMN_NAME",
-                "a"."DATA_TYPE",
-                "a"."DATA_PRECISION",
-                "a"."DATA_SCALE",
+                "a"."COLUMN_NAME" AS "column_name",
+                "a"."DATA_TYPE" AS "data_type",
+                "a"."DATA_PRECISION" AS "data_precision",
+                "a"."DATA_SCALE" AS "data_scale",
                 (
                     CASE "a"."CHAR_USED" WHEN 'C' THEN "a"."CHAR_LENGTH"
                         ELSE "a"."DATA_LENGTH"
                     END
-                ) AS "DATA_LENGTH",
-                "a"."NULLABLE",
-                "a"."DATA_DEFAULT",
-                "com"."COMMENTS" AS "COLUMN_COMMENT"
+                ) AS "data_length",
+                "a"."NULLABLE" AS "nullable",
+                "a"."DATA_DEFAULT" AS "data_default",
+                "com"."COMMENTS" AS "column_comment"
             FROM "ALL_TAB_COLUMNS" "a"
             INNER JOIN "ALL_OBJECTS" "b"
                 ON "b"."OWNER" = "a"."OWNER"
@@ -355,11 +351,9 @@ class Schema extends \yii\db\Schema implements ConstraintFinderInterface
             return false;
         }
 
-        foreach ($columns as $column) {
-            if ($this->db->slavePdo->getAttribute(PDO::ATTR_CASE) === PDO::CASE_LOWER) {
-                $column = array_change_key_case($column, CASE_UPPER);
-            }
+        $columns = $this->normalizePdoRowKeyCase($columns, true);
 
+        foreach ($columns as $column) {
             $c = $this->createColumn($column);
 
             $table->columns[$c->name] = $c;
@@ -444,19 +438,19 @@ class Schema extends \yii\db\Schema implements ConstraintFinderInterface
     {
         $c = $this->createColumnSchema();
 
-        $c->name = $column['COLUMN_NAME'];
-        $c->allowNull = $column['NULLABLE'] === 'Y';
-        $c->comment = $column['COLUMN_COMMENT'] === null ? '' : $column['COLUMN_COMMENT'];
+        $c->name = $column['column_name'];
+        $c->allowNull = $column['nullable'] === 'Y';
+        $c->comment = $column['column_comment'] === null ? '' : $column['column_comment'];
         $c->isPrimaryKey = false;
-        $c->dbType = $column['DATA_TYPE'];
+        $c->dbType = $column['data_type'];
         // store raw default for deferred resolution in `loadTableSchema()`, where `isPrimaryKey` is known
-        $c->defaultValue = $column['DATA_DEFAULT'] ?? null;
+        $c->defaultValue = $column['data_default'] ?? null;
 
-        $c->size = trim((string) $column['DATA_LENGTH']) === '' ? null : (int) $column['DATA_LENGTH'];
-        $c->precision = trim((string) $column['DATA_PRECISION']) === '' ? null : (int) $column['DATA_PRECISION'];
-        $c->scale = trim((string) $column['DATA_SCALE']) === '' ? null : (int) $column['DATA_SCALE'];
+        $c->size = trim((string) $column['data_length']) === '' ? null : (int) $column['data_length'];
+        $c->precision = trim((string) $column['data_precision']) === '' ? null : (int) $column['data_precision'];
+        $c->scale = trim((string) $column['data_scale']) === '' ? null : (int) $column['data_scale'];
 
-        $c->resolveType($column['DATA_TYPE']);
+        $c->resolveType($column['data_type']);
         $c->phpType = $c->resolvePhpType();
 
         return $c;
@@ -474,14 +468,14 @@ class Schema extends \yii\db\Schema implements ConstraintFinderInterface
     {
         $sql = <<<SQL
             SELECT
-                "d"."CONSTRAINT_NAME",
-                "d"."CONSTRAINT_TYPE",
-                "c"."COLUMN_NAME",
-                "c"."POSITION",
-                "d"."R_CONSTRAINT_NAME",
-                "e"."TABLE_NAME" AS "TABLE_REF",
-                "f"."COLUMN_NAME" AS "COLUMN_REF",
-                "c"."TABLE_NAME"
+                "d"."CONSTRAINT_NAME" AS "constraint_name",
+                "d"."CONSTRAINT_TYPE" AS "constraint_type",
+                "c"."COLUMN_NAME" AS "column_name",
+                "c"."POSITION" AS "position",
+                "d"."R_CONSTRAINT_NAME" AS "r_constraint_name",
+                "e"."TABLE_NAME" AS "table_ref",
+                "f"."COLUMN_NAME" AS "column_ref",
+                "c"."TABLE_NAME" AS "table_name"
             FROM "ALL_CONS_COLUMNS" "c"
             INNER JOIN "ALL_CONSTRAINTS" "d"
                 ON "d"."OWNER" = "c"."OWNER"
@@ -507,37 +501,34 @@ class Schema extends \yii\db\Schema implements ConstraintFinderInterface
         );
 
         $constraints = [];
+        $rows = $this->normalizePdoRowKeyCase($command->queryAll(), true);
 
-        foreach ($command->queryAll() as $row) {
-            if ($this->db->slavePdo->getAttribute(PDO::ATTR_CASE) === PDO::CASE_LOWER) {
-                $row = array_change_key_case($row, CASE_UPPER);
-            }
-
-            if ($row['CONSTRAINT_TYPE'] === 'P') {
-                $table->columns[$row['COLUMN_NAME']]->isPrimaryKey = true;
-                $table->primaryKey[] = $row['COLUMN_NAME'];
+        foreach ($rows as $row) {
+            if ($row['constraint_type'] === 'P') {
+                $table->columns[$row['column_name']]->isPrimaryKey = true;
+                $table->primaryKey[] = $row['column_name'];
 
                 if (empty($table->sequenceName)) {
                     $table->sequenceName = $this->getTableSequenceName($table->name, $table->schemaName);
                 }
             }
 
-            if ($row['CONSTRAINT_TYPE'] !== 'R') {
+            if ($row['constraint_type'] !== 'R') {
                 // this condition is not checked in SQL WHERE because of an Oracle Bug:
                 // see https://github.com/yiisoft/yii2/pull/8844
                 continue;
             }
 
-            $name = $row['CONSTRAINT_NAME'];
+            $name = $row['constraint_name'];
 
             if (!isset($constraints[$name])) {
                 $constraints[$name] = [
-                    'tableName' => $row['TABLE_REF'],
+                    'tableName' => $row['table_ref'],
                     'columns' => [],
                 ];
             }
 
-            $constraints[$name]['columns'][$row['COLUMN_NAME']] = $row['COLUMN_REF'];
+            $constraints[$name]['columns'][$row['column_name']] = $row['column_ref'];
         }
 
         foreach ($constraints as $name => $constraint) {

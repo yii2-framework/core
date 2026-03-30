@@ -102,3 +102,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - refactor(rbac)!: simplify `CascadeStrategyInterface` from 6 methods to 2 (`updateItem`, `updateRule`); inline shared delete-cascade logic directly in `DbManager`.
 - fix(db): skip `null` values in composite-key eager loading (`filterByModels`) to avoid useless `IS NULL` conditions and improve query performance; deduplicate composite key value sets.
 - fix(db): unify OCI Schema `PDO::ATTR_CASE` handling via `normalizePdoRowKeyCase()` and lowercase SQL aliases; remove unsafe direct `slavePdo` access.
+- feat(helpers): add `Url::addQueryParams()` to merge query parameters into arbitrary URL strings; supports override, `null` removal, fragments, and nested arrays.

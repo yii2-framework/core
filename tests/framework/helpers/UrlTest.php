@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 /**
  * @link https://www.yiiframework.com/
  * @copyright Copyright (c) 2008 Yii Software LLC
@@ -8,63 +10,82 @@
 
 namespace yiiunit\framework\helpers;
 
+use PHPUnit\Framework\Attributes\Group;
 use Yii;
 use yii\base\Action;
+use yii\base\InvalidParamException;
 use yii\base\Module;
 use yii\helpers\Url;
+use yii\web\Application;
 use yii\web\Controller;
+use yii\web\Request;
+use yii\web\UrlManager;
 use yii\widgets\Menu;
 use yiiunit\framework\filters\stubs\UserIdentity;
 use yiiunit\TestCase;
 
 /**
- * UrlTest.
- * @group helpers
+ * Unit tests for {@see Url} helper methods.
+ *
+ * @author Alexander Makarov <sam@rmcreative.ru>
+ * @since 2.0
  */
+#[Group('helpers')]
 class UrlTest extends TestCase
 {
     protected function setUp(): void
     {
         parent::setUp();
-        $this->mockApplication([
-            'components' => [
-                'request' => [
-                    'class' => 'yii\web\Request',
-                    'cookieValidationKey' => '123',
-                    'scriptUrl' => '/base/index.php',
-                    'hostInfo' => 'http://example.com/',
-                    'url' => '/base/index.php&r=site%2Fcurrent&id=42',
-                ],
-                'urlManager' => [
-                    'class' => 'yii\web\UrlManager',
-                    'baseUrl' => '/base',
-                    'scriptUrl' => '/base/index.php',
-                    'hostInfo' => 'http://example.com/',
-                ],
-                'user' => [
-                    'identityClass' => UserIdentity::class,
+
+        $this->mockApplication(
+            [
+                'components' => [
+                    'request' => [
+                        'class' => Request::class,
+                        'cookieValidationKey' => '123',
+                        'scriptUrl' => '/base/index.php',
+                        'hostInfo' => 'http://example.com/',
+                        'url' => '/base/index.php&r=site%2Fcurrent&id=42',
+                    ],
+                    'urlManager' => [
+                        'class' => 'yii\web\UrlManager',
+                        'baseUrl' => '/base',
+                        'scriptUrl' => '/base/index.php',
+                        'hostInfo' => 'http://example.com/',
+                    ],
+                    'user' => [
+                        'identityClass' => UserIdentity::class,
+                    ],
                 ],
             ],
-        ], '\yii\web\Application');
+            Application::class
+        );
     }
 
     protected function tearDown(): void
     {
-        Yii::$app->getSession()->removeAll();
+        $session = Yii::$app->getSession();
+
+        if ($session->getIsActive()) {
+            $session->removeAll();
+        }
+
         parent::tearDown();
     }
 
     /**
      * Mocks controller action with parameters.
      *
-     * @param string $controllerId
-     * @param string $actionID
-     * @param string $moduleID
-     * @param array  $params
+     * @phpstan-param array<string, mixed> $params Action parameters to be set in controller.
      */
-    protected function mockAction($controllerId, $actionID, $moduleID = null, $params = [])
-    {
+    protected function mockAction(
+        string $controllerId,
+        string $actionID,
+        string|null $moduleID = null,
+        array $params = [],
+    ): void {
         Yii::$app->controller = $controller = new Controller($controllerId, Yii::$app);
+
         $controller->actionParams = $params;
         $controller->action = new Action($actionID, $controller);
 
@@ -73,7 +94,7 @@ class UrlTest extends TestCase
         }
     }
 
-    protected function removeMockedAction()
+    protected function removeMockedAction(): void
     {
         Yii::$app->controller = null;
     }
@@ -82,160 +103,446 @@ class UrlTest extends TestCase
     {
         $this->mockAction('page', 'view', null, ['id' => 10]);
 
-        // If the route is an empty string, the current route will be used;
-        $this->assertEquals('/base/index.php?r=page%2Fview', Url::toRoute(''));
-        // a slash will be an absolute route representing the default route
-        $this->assertEquals('/base/index.php?r=', Url::toRoute('/'));
-        $this->assertEquals('http://example.com/base/index.php?r=page%2Fview', Url::toRoute('', true));
-        $this->assertEquals('https://example.com/base/index.php?r=page%2Fview', Url::toRoute('', 'https'));
-        $this->assertEquals('//example.com/base/index.php?r=page%2Fview', Url::toRoute('', ''));
+        self::assertSame(
+            '/base/index.php?r=page%2Fview',
+            Url::toRoute(''),
+            "Empty 'route' should resolve to current 'route'.",
+        );
+        self::assertSame(
+            '/base/index.php?r=',
+            Url::toRoute('/'),
+            "Slash 'route' should resolve to default 'route'.",
+        );
+        self::assertSame(
+            'http://example.com/base/index.php?r=page%2Fview',
+            Url::toRoute('', true),
+            "Empty 'route' with absolute 'scheme' should include 'host' info.",
+        );
+        self::assertSame(
+            'https://example.com/base/index.php?r=page%2Fview',
+            Url::toRoute('', 'https'),
+            "Empty 'route' with 'https' scheme should use 'https'.",
+        );
+        self::assertSame(
+            '//example.com/base/index.php?r=page%2Fview',
+            Url::toRoute('', ''),
+            "Empty 'route' with empty 'scheme' should produce 'protocol-relative' URL.",
+        );
 
-        // If the route contains no slashes at all, it is considered to be an action ID of the current controller and
-        // will be prepended with uniqueId;
-        $this->assertEquals('/base/index.php?r=page%2Fedit', Url::toRoute('edit'));
-        $this->assertEquals('/base/index.php?r=page%2Fedit&id=20', Url::toRoute(['edit', 'id' => 20]));
-        $this->assertEquals('http://example.com/base/index.php?r=page%2Fedit&id=20', Url::toRoute(['edit', 'id' => 20], true));
-        $this->assertEquals('https://example.com/base/index.php?r=page%2Fedit&id=20', Url::toRoute(['edit', 'id' => 20], 'https'));
-        $this->assertEquals('//example.com/base/index.php?r=page%2Fedit&id=20', Url::toRoute(['edit', 'id' => 20], ''));
+        self::assertSame(
+            '/base/index.php?r=page%2Fedit',
+            Url::toRoute('edit'),
+            "Action-only 'route' should prepend controller 'uniqueId'.",
+        );
+        self::assertSame(
+            '/base/index.php?r=page%2Fedit&id=20',
+            Url::toRoute(['edit', 'id' => 20]),
+            "Action 'route' with 'params' should include 'query' parameters.",
+        );
+        self::assertSame(
+            'http://example.com/base/index.php?r=page%2Fedit&id=20',
+            Url::toRoute(['edit', 'id' => 20], true),
+            "Action 'route' with 'params' and absolute 'scheme' should include 'host' info.",
+        );
+        self::assertSame(
+            'https://example.com/base/index.php?r=page%2Fedit&id=20',
+            Url::toRoute(['edit', 'id' => 20], 'https'),
+            "Action 'route' with 'params' and 'https' scheme should use 'https'.",
+        );
+        self::assertSame(
+            '//example.com/base/index.php?r=page%2Fedit&id=20',
+            Url::toRoute(['edit', 'id' => 20], ''),
+            "Action 'route' with 'params' and empty 'scheme' should produce 'protocol-relative' URL.",
+        );
 
-        // If the route has no leading slash, it is considered to be a route relative
-        // to the current module and will be prepended with the module's uniqueId.
         $this->mockAction('default', 'index', 'stats');
-        $this->assertEquals('/base/index.php?r=stats%2Fuser%2Fview', Url::toRoute('user/view'));
-        $this->assertEquals('/base/index.php?r=stats%2Fuser%2Fview&id=42', Url::toRoute(['user/view', 'id' => 42]));
-        $this->assertEquals('http://example.com/base/index.php?r=stats%2Fuser%2Fview&id=42', Url::toRoute(['user/view', 'id' => 42], true));
-        $this->assertEquals('https://example.com/base/index.php?r=stats%2Fuser%2Fview&id=42', Url::toRoute(['user/view', 'id' => 42], 'https'));
-        $this->assertEquals('//example.com/base/index.php?r=stats%2Fuser%2Fview&id=42', Url::toRoute(['user/view', 'id' => 42], ''));
 
-        // alias support
+        self::assertSame(
+            '/base/index.php?r=stats%2Fuser%2Fview',
+            Url::toRoute('user/view'),
+            "Module-relative 'route' should prepend module 'uniqueId'.",
+        );
+        self::assertSame(
+            '/base/index.php?r=stats%2Fuser%2Fview&id=42',
+            Url::toRoute(['user/view', 'id' => 42]),
+            "Module-relative 'route' with 'params' should include 'query' parameters.",
+        );
+        self::assertSame(
+            'http://example.com/base/index.php?r=stats%2Fuser%2Fview&id=42',
+            Url::toRoute(['user/view', 'id' => 42], true),
+            "Module-relative 'route' with absolute 'scheme' should include 'host' info.",
+        );
+        self::assertSame(
+            'https://example.com/base/index.php?r=stats%2Fuser%2Fview&id=42',
+            Url::toRoute(['user/view', 'id' => 42], 'https'),
+            "Module-relative 'route' with 'https' scheme should use 'https'.",
+        );
+        self::assertSame(
+            '//example.com/base/index.php?r=stats%2Fuser%2Fview&id=42',
+            Url::toRoute(['user/view', 'id' => 42], ''),
+            "Module-relative 'route' with empty 'scheme' should produce 'protocol-relative' URL.",
+        );
+
         Yii::setAlias('@userView', 'user/view');
-        $this->assertEquals('/base/index.php?r=stats%2Fuser%2Fview', Url::toRoute('@userView'));
+
+        self::assertSame(
+            '/base/index.php?r=stats%2Fuser%2Fview',
+            Url::toRoute('@userView'),
+            "Alias 'route' should resolve to the aliased 'route'.",
+        );
+
         Yii::setAlias('@userView', null);
 
-        // In case there is no controller, an exception should be thrown for relative route
         $this->removeMockedAction();
 
-        $this->expectException('yii\base\InvalidParamException');
+        $this->expectException(InvalidParamException::class);
+        $this->expectExceptionMessage(
+            'Unable to resolve the relative route: site/view. No active controller is available.',
+        );
+
         Url::toRoute('site/view');
     }
 
     public function testCurrent(): void
     {
         $this->mockAction('page', 'view', null, []);
+
         Yii::$app->request->setQueryParams(['id' => 10, 'name' => 'test', 10 => 0]);
+
         $uri = '/base/index.php?r=page%2Fview';
 
-        $this->assertEquals($uri . '&id=10&name=test&10=0', Url::current());
-        $this->assertEquals($uri . '&id=20&name=test&10=0', Url::current(['id' => 20]));
-        $this->assertEquals($uri . '&name=test&10=0', Url::current(['id' => null]));
-        $this->assertEquals($uri . '&name=test&10=0&1=yes', Url::current(['id' => [], 1 => 'yes']));
-        $this->assertEquals($uri . '&name=test&10=0', Url::current(['id' => []]));
-        $this->assertEquals($uri . '&name=test', Url::current(['id' => null, 10 => null]));
-        $this->assertEquals($uri . '&name=test&1=yes', Url::current(['id' => null, 10 => null, 1 => 'yes']));
+        self::assertSame(
+            $uri . '&id=10&name=test&10=0',
+            Url::current(),
+            "Should return current URL with all 'GET' params.",
+        );
+        self::assertSame(
+            $uri . '&id=20&name=test&10=0',
+            Url::current(['id' => 20]),
+            "Should override existing 'param' value.",
+        );
+        self::assertSame(
+            $uri . '&name=test&10=0',
+            Url::current(['id' => null]),
+            "Should remove 'param' when value is 'null'.",
+        );
+        self::assertSame(
+            $uri . '&name=test&10=0&1=yes',
+            Url::current(['id' => [], 1 => 'yes']),
+            "Should handle empty array 'param' and add new 'param'.",
+        );
+        self::assertSame(
+            $uri . '&name=test&10=0',
+            Url::current(['id' => []]),
+            "Should handle empty array 'param' removal.",
+        );
+        self::assertSame(
+            $uri . '&name=test',
+            Url::current(['id' => null, 10 => null]),
+            "Should remove multiple 'params' via 'null'.",
+        );
+        self::assertSame(
+            $uri . '&name=test&1=yes',
+            Url::current(['id' => null, 10 => null, 1 => 'yes']),
+            "Should remove and add 'params' simultaneously.",
+        );
 
         $params = ['arr' => ['attr_one' => 1, 'attr_two' => 2]];
+
         Yii::$app->request->setQueryParams($params);
 
-        $this->assertEquals($uri . '&arr%5Battr_one%5D=1&arr%5Battr_two%5D=2', Url::current());
-        $this->assertEquals($uri, Url::current(['arr' => null]));
-        $this->assertEquals($uri . '&arr%5Battr_two%5D=2', Url::current(['arr' => ['attr_one' => null]]));
-        $this->assertEquals($uri . '&arr%5Battr_one%5D=1&arr%5Battr_two%5D=two', Url::current(['arr' => ['attr_two' => 'two']]));
+        self::assertSame(
+            $uri . '&arr%5Battr_one%5D=1&arr%5Battr_two%5D=2',
+            Url::current(),
+            "Should encode nested array 'params'.",
+        );
+        self::assertSame(
+            $uri,
+            Url::current(['arr' => null]),
+            "Should remove entire nested array 'param' via 'null'.",
+        );
+        self::assertSame(
+            $uri . '&arr%5Battr_two%5D=2',
+            Url::current(['arr' => ['attr_one' => null]]),
+            "Should remove single nested array 'key' via 'null'.",
+        );
+        self::assertSame(
+            $uri . '&arr%5Battr_one%5D=1&arr%5Battr_two%5D=two',
+            Url::current(['arr' => ['attr_two' => 'two']]),
+            "Should override single nested array 'value'.",
+        );
     }
 
     public function testPrevious(): void
     {
         Yii::$app->getUser()->login(UserIdentity::findIdentity('user1'));
 
-        $this->assertNull(Url::previous('notExistedPage'));
-
-        $this->assertNull(Url::previous(Yii::$app->getUser()->returnUrlParam));
-
-        $this->assertEquals('/base/index.php', Url::previous());
+        self::assertNull(
+            Url::previous('notExistedPage'),
+            "Should return 'null' for non-existent named URL.",
+        );
+        self::assertNull(
+            Url::previous(Yii::$app->getUser()->returnUrlParam),
+            "Should return 'null' for unset return URL 'param'.",
+        );
+        self::assertSame(
+            '/base/index.php',
+            Url::previous(),
+            "Should return default 'returnUrl' when no name is specified.",
+        );
     }
 
     public function testTo(): void
     {
-        // is an array: the first array element is considered a route, while the rest of the name-value
-        // pairs are treated as the parameters to be used for URL creation using Url::toRoute.
         $this->mockAction('page', 'view', null, ['id' => 10]);
-        $this->assertEquals('/base/index.php?r=page%2Fedit&id=20', Url::to(['edit', 'id' => 20]));
-        $this->assertEquals('/base/index.php?r=page%2Fedit', Url::to(['edit']));
-        $this->assertEquals('/base/index.php?r=page%2Fview', Url::to(['']));
 
-        // alias support
+        self::assertSame(
+            '/base/index.php?r=page%2Fedit&id=20',
+            Url::to(['edit', 'id' => 20]),
+            "Array 'route' should create URL with 'route' and 'params'.",
+        );
+        self::assertSame(
+            '/base/index.php?r=page%2Fedit',
+            Url::to(['edit']),
+            "Array 'route' without 'params' should create URL with 'route' only.",
+        );
+        self::assertSame(
+            '/base/index.php?r=page%2Fview',
+            Url::to(['']),
+            "Empty array 'route' should resolve to current 'route'.",
+        );
+
         Yii::setAlias('@pageEdit', 'edit');
-        $this->assertEquals('/base/index.php?r=page%2Fedit&id=20', Url::to(['@pageEdit', 'id' => 20]));
+
+        self::assertSame(
+            '/base/index.php?r=page%2Fedit&id=20',
+            Url::to(['@pageEdit', 'id' => 20]),
+            "Alias in array 'route' should resolve to aliased 'route'.",
+        );
+
         Yii::setAlias('@pageEdit', null);
 
-        $this->assertEquals('http://example.com/base/index.php?r=page%2Fedit&id=20', Url::to(['edit', 'id' => 20], true));
-        $this->assertEquals('http://example.com/base/index.php?r=page%2Fedit', Url::to(['edit'], true));
-        $this->assertEquals('http://example.com/base/index.php?r=page%2Fview', Url::to([''], true));
+        self::assertSame(
+            'http://example.com/base/index.php?r=page%2Fedit&id=20',
+            Url::to(['edit', 'id' => 20], true),
+            "Array 'route' with absolute 'scheme' should include 'host' info.",
+        );
+        self::assertSame(
+            'http://example.com/base/index.php?r=page%2Fedit',
+            Url::to(['edit'], true),
+            "Array 'route' without 'params' and absolute 'scheme' should include 'host' info.",
+        );
+        self::assertSame(
+            'http://example.com/base/index.php?r=page%2Fview',
+            Url::to([''], true),
+            "Empty array 'route' with absolute 'scheme' should include 'host' info.",
+        );
+        self::assertSame(
+            'https://example.com/base/index.php?r=page%2Fedit&id=20',
+            Url::to(['edit', 'id' => 20], 'https'),
+            "Array 'route' with 'https' scheme should use 'https'.",
+        );
+        self::assertSame(
+            'https://example.com/base/index.php?r=page%2Fedit',
+            Url::to(['edit'], 'https'),
+            "Array 'route' without 'params' and 'https' scheme should use 'https'.",
+        );
+        self::assertSame(
+            'https://example.com/base/index.php?r=page%2Fview',
+            Url::to([''], 'https'),
+            "Empty array 'route' with 'https' scheme should use 'https'.",
+        );
 
-        $this->assertEquals('https://example.com/base/index.php?r=page%2Fedit&id=20', Url::to(['edit', 'id' => 20], 'https'));
-        $this->assertEquals('https://example.com/base/index.php?r=page%2Fedit', Url::to(['edit'], 'https'));
-        $this->assertEquals('https://example.com/base/index.php?r=page%2Fview', Url::to([''], 'https'));
-
-        // is an empty string: the currently requested URL will be returned;
         $this->mockAction('page', 'view', null, ['id' => 10]);
-        $this->assertEquals('/base/index.php&r=site%2Fcurrent&id=42', Url::to(''));
-        $this->assertEquals('http://example.com/base/index.php&r=site%2Fcurrent&id=42', Url::to('', true));
-        $this->assertEquals('https://example.com/base/index.php&r=site%2Fcurrent&id=42', Url::to('', 'https'));
 
-        // is a non-empty string: it will first be processed by [[Yii::getAlias()]]. If the result
-        // is an absolute URL, it will be returned either without any change or, if schema was specified, with schema
-        // replaced; Otherwise, the result will be prefixed with [[\yii\web\Request::baseUrl]] and returned.
+        self::assertSame(
+            '/base/index.php&r=site%2Fcurrent&id=42',
+            Url::to(''),
+            "Empty string should return currently requested 'URL'.",
+        );
+        self::assertSame(
+            'http://example.com/base/index.php&r=site%2Fcurrent&id=42',
+            Url::to('', true),
+            "Empty string with absolute 'scheme' should include 'host' info.",
+        );
+        self::assertSame(
+            'https://example.com/base/index.php&r=site%2Fcurrent&id=42',
+            Url::to('', 'https'),
+            "Empty string with 'https' scheme should use 'https'.",
+        );
+
         Yii::setAlias('@web1', 'http://test.example.com/test/me1');
         Yii::setAlias('@web2', 'test/me2');
         Yii::setAlias('@web3', '');
         Yii::setAlias('@web4', '/test');
         Yii::setAlias('@web5', '#test');
 
-        $this->assertEquals('test/me1', Url::to('test/me1'));
-        $this->assertEquals('javascript:test/me1', Url::to('javascript:test/me1'));
-        $this->assertEquals('java/script:test/me1', Url::to('java/script:test/me1'));
-        $this->assertEquals('#test/me1', Url::to('#test/me1'));
-        $this->assertEquals('.test/me1', Url::to('.test/me1'));
-        $this->assertEquals('http://example.com/test/me1', Url::to('test/me1', true));
-        $this->assertEquals('https://example.com/test/me1', Url::to('test/me1', 'https'));
-        $this->assertEquals('https://example.com/test/test/me1', Url::to('@web4/test/me1', 'https'));
-
-        $this->assertEquals('/test/me1', Url::to('/test/me1'));
-        $this->assertEquals('http://example.com/test/me1', Url::to('/test/me1', true));
-        $this->assertEquals('https://example.com/test/me1', Url::to('/test/me1', 'https'));
-        $this->assertEquals('./test/me1', Url::to('./test/me1'));
-
-        $this->assertEquals('http://test.example.com/test/me1', Url::to('@web1'));
-        $this->assertEquals('http://test.example.com/test/me1', Url::to('@web1', true));
-        $this->assertEquals('https://test.example.com/test/me1', Url::to('@web1', 'https'));
-
-        $this->assertEquals('test/me2', Url::to('@web2'));
-        $this->assertEquals('http://example.com/test/me2', Url::to('@web2', true));
-        $this->assertEquals('https://example.com/test/me2', Url::to('@web2', 'https'));
-
-        $this->assertEquals('/base/index.php&r=site%2Fcurrent&id=42', Url::to('@web3'));
-        $this->assertEquals('http://example.com/base/index.php&r=site%2Fcurrent&id=42', Url::to('@web3', true));
-        $this->assertEquals('https://example.com/base/index.php&r=site%2Fcurrent&id=42', Url::to('@web3', 'https'));
-
-        $this->assertEquals('/test', Url::to('@web4'));
-        $this->assertEquals('http://example.com/test', Url::to('@web4', true));
-        $this->assertEquals('https://example.com/test', Url::to('@web4', 'https'));
-
-        $this->assertEquals('#test', Url::to('@web5'));
-        $this->assertEquals('http://example.com/#test', Url::to('@web5', true));
-        $this->assertEquals('https://example.com/#test', Url::to('@web5', 'https'));
-        $this->assertEquals('//example.com/#test', Url::to('@web5', ''));
+        self::assertSame(
+            'test/me1',
+            Url::to('test/me1'),
+            "Relative string 'URL' should be returned as-is.",
+        );
+        self::assertSame(
+            'javascript:test/me1',
+            Url::to('javascript:test/me1'),
+            "JavaScript 'protocol' URL should be returned as-is.",
+        );
+        self::assertSame(
+            'java/script:test/me1',
+            Url::to('java/script:test/me1'),
+            "Non-protocol colon 'URL' should be returned as-is.",
+        );
+        self::assertSame(
+            '#test/me1',
+            Url::to('#test/me1'),
+            "Fragment-only 'URL' should be returned as-is.",
+        );
+        self::assertSame(
+            '.test/me1',
+            Url::to('.test/me1'),
+            "Dot-prefixed 'URL' should be returned as-is.",
+        );
+        self::assertSame(
+            'http://example.com/test/me1',
+            Url::to('test/me1', true),
+            "Relative string 'URL' with absolute 'scheme' should include 'host' info.",
+        );
+        self::assertSame(
+            'https://example.com/test/me1',
+            Url::to('test/me1', 'https'),
+            "Relative string 'URL' with 'https' scheme should use 'https'.",
+        );
+        self::assertSame(
+            'https://example.com/test/test/me1',
+            Url::to('@web4/test/me1', 'https'),
+            "Alias-prefixed 'path' with 'https' scheme should resolve correctly.",
+        );
+        self::assertSame(
+            '/test/me1',
+            Url::to('/test/me1'),
+            "Absolute 'path' URL should be returned as-is.",
+        );
+        self::assertSame(
+            'http://example.com/test/me1',
+            Url::to('/test/me1', true),
+            "Absolute 'path' URL with absolute 'scheme' should include 'host' info.",
+        );
+        self::assertSame(
+            'https://example.com/test/me1',
+            Url::to('/test/me1', 'https'),
+            "Absolute 'path' URL with 'https' scheme should use 'https'.",
+        );
+        self::assertSame(
+            './test/me1',
+            Url::to('./test/me1'),
+            "Dot-slash relative 'URL' should be returned as-is.",
+        );
+        self::assertSame(
+            'http://test.example.com/test/me1',
+            Url::to('@web1'),
+            "Absolute 'alias' URL should be returned as-is.",
+        );
+        self::assertSame(
+            'http://test.example.com/test/me1',
+            Url::to('@web1', true),
+            "Absolute 'alias' URL with absolute 'scheme' should preserve original 'scheme'.",
+        );
+        self::assertSame(
+            'https://test.example.com/test/me1',
+            Url::to('@web1', 'https'),
+            "Absolute 'alias' URL with 'https' scheme should replace 'scheme'.",
+        );
+        self::assertSame(
+            'test/me2',
+            Url::to('@web2'),
+            "Relative 'alias' URL should be returned as-is.",
+        );
+        self::assertSame(
+            'http://example.com/test/me2',
+            Url::to('@web2', true),
+            "Relative 'alias' URL with absolute 'scheme' should include 'host' info.",
+        );
+        self::assertSame(
+            'https://example.com/test/me2',
+            Url::to('@web2', 'https'),
+            "Relative 'alias' URL with 'https' scheme should use 'https'.",
+        );
+        self::assertSame(
+            '/base/index.php&r=site%2Fcurrent&id=42',
+            Url::to('@web3'),
+            "Empty 'alias' should return currently requested 'URL'.",
+        );
+        self::assertSame(
+            'http://example.com/base/index.php&r=site%2Fcurrent&id=42',
+            Url::to('@web3', true),
+            "Empty 'alias' with absolute 'scheme' should include 'host' info.",
+        );
+        self::assertSame(
+            'https://example.com/base/index.php&r=site%2Fcurrent&id=42',
+            Url::to('@web3', 'https'),
+            "Empty 'alias' with 'https' scheme should use 'https'.",
+        );
+        self::assertSame(
+            '/test',
+            Url::to('@web4'),
+            "Absolute 'path' alias should be returned as-is.",
+        );
+        self::assertSame(
+            'http://example.com/test',
+            Url::to('@web4', true),
+            "Absolute 'path' alias with absolute 'scheme' should include 'host' info.",
+        );
+        self::assertSame(
+            'https://example.com/test',
+            Url::to('@web4', 'https'),
+            "Absolute 'path' alias with 'https' scheme should use 'https'.",
+        );
+        self::assertSame(
+            '#test',
+            Url::to('@web5'),
+            "Fragment 'alias' should be returned as-is.",
+        );
+        self::assertSame(
+            'http://example.com/#test',
+            Url::to('@web5', true),
+            "Fragment 'alias' with absolute 'scheme' should include 'host' info.",
+        );
+        self::assertSame(
+            'https://example.com/#test',
+            Url::to('@web5', 'https'),
+            "Fragment 'alias' with 'https' scheme should use 'https'.",
+        );
+        self::assertSame(
+            '//example.com/#test',
+            Url::to('@web5', ''),
+            "Fragment 'alias' with empty 'scheme' should produce 'protocol-relative' URL.",
+        );
 
         // @see https://github.com/yiisoft/yii2/issues/13156
         Yii::setAlias('@cdn', '//cdn.example.com');
-        $this->assertEquals('http://cdn.example.com/images/logo.gif', Url::to('@cdn/images/logo.gif', 'http'));
-        $this->assertEquals('//cdn.example.com/images/logo.gif', Url::to('@cdn/images/logo.gif', ''));
-        $this->assertEquals('https://cdn.example.com/images/logo.gif', Url::to('@cdn/images/logo.gif', 'https'));
+
+        self::assertSame(
+            'http://cdn.example.com/images/logo.gif',
+            Url::to('@cdn/images/logo.gif', 'http'),
+            "Protocol-relative 'alias' with 'http' scheme should use 'http'.",
+        );
+        self::assertSame(
+            '//cdn.example.com/images/logo.gif',
+            Url::to('@cdn/images/logo.gif', ''),
+            "Protocol-relative 'alias' with empty 'scheme' should remain 'protocol-relative'.",
+        );
+        self::assertSame(
+            'https://cdn.example.com/images/logo.gif',
+            Url::to('@cdn/images/logo.gif', 'https'),
+            "Protocol-relative 'alias' with 'https' scheme should use 'https'.",
+        );
+
         Yii::setAlias('@cdn', null);
 
-        //In case there is no controller, throw an exception
         $this->removeMockedAction();
 
         $this->expectException('yii\base\InvalidParamException');
+
         Url::to(['site/view']);
     }
 
@@ -244,65 +551,286 @@ class UrlTest extends TestCase
      */
     public function testToWithSuffix(): void
     {
-        Yii::$app->set('urlManager', [
-            'class' => 'yii\web\UrlManager',
-            'enablePrettyUrl' => true,
-            'showScriptName' => false,
-            'cache' => null,
-            'rules' => [
-                '<controller:\w+>/<id:\d+>' => '<controller>/view',
-                '<controller:\w+>/<action:\w+>/<id:\d+>' => '<controller>/<action>',
-                '<controller:\w+>/<action:\w+>' => '<controller>/<action>',
+        Yii::$app->set(
+            'urlManager',
+            [
+                'class' => UrlManager::class,
+                'enablePrettyUrl' => true,
+                'showScriptName' => false,
+                'cache' => null,
+                'rules' => [
+                    '<controller:\w+>/<id:\d+>' => '<controller>/view',
+                    '<controller:\w+>/<action:\w+>/<id:\d+>' => '<controller>/<action>',
+                    '<controller:\w+>/<action:\w+>' => '<controller>/<action>',
+                ],
+                'baseUrl' => '/',
+                'scriptUrl' => '/index.php',
+                'suffix' => '.html',
             ],
-            'baseUrl' => '/',
-            'scriptUrl' => '/index.php',
-            'suffix' => '.html',
-        ]);
+        );
         $url = Yii::$app->urlManager->createUrl(['/site/page', 'view' => 'about']);
-        $this->assertEquals('/site/page.html?view=about', $url);
+
+        self::assertSame(
+            '/site/page.html?view=about',
+            $url,
+            "'UrlManager' should append 'suffix' before 'query' string.",
+        );
 
         $url = Url::to(['/site/page', 'view' => 'about']);
-        $this->assertEquals('/site/page.html?view=about', $url);
 
-        $output = Menu::widget([
-            'items' => [
-                ['label' => 'Test', 'url' => ['/site/page', 'view' => 'about']],
+        self::assertSame(
+            '/site/page.html?view=about',
+            $url,
+            "'Url::to()' should produce URL with 'suffix'.",
+        );
+
+        $output = Menu::widget(
+            [
+                'items' => [
+                    [
+                        'label' => 'Test',
+                        'url' => ['/site/page', 'view' => 'about'],
+                    ],
+                ],
             ],
-        ]);
-        $this->assertMatchesRegularExpression('~<a href="/site/page.html\?view=about">~', $output);
+        );
+
+        self::assertMatchesRegularExpression(
+            '~<a href="/site/page.html\?view=about">~',
+            $output,
+            "'Menu' widget should render URL with 'suffix'.",
+        );
     }
 
     public function testBase(): void
     {
         $this->mockAction('page', 'view', null, ['id' => 10]);
-        $this->assertEquals('/base', Url::base());
-        $this->assertEquals('http://example.com/base', Url::base(true));
-        $this->assertEquals('https://example.com/base', Url::base('https'));
-        $this->assertEquals('//example.com/base', Url::base(''));
+
+        self::assertSame(
+            '/base',
+            Url::base(),
+            "Should return relative 'base' URL.",
+        );
+        self::assertSame(
+            'http://example.com/base',
+            Url::base(true),
+            "Should return absolute 'base' URL with 'host' info.",
+        );
+        self::assertSame(
+            'https://example.com/base',
+            Url::base('https'),
+            "Should return absolute 'base' URL with 'https' scheme.",
+        );
+        self::assertSame(
+            '//example.com/base',
+            Url::base(''),
+            "Should return 'protocol-relative' base URL.",
+        );
     }
 
     public function testHome(): void
     {
-        $this->assertEquals('/base/index.php', Url::home());
-        $this->assertEquals('http://example.com/base/index.php', Url::home(true));
-        $this->assertEquals('https://example.com/base/index.php', Url::home('https'));
-        $this->assertEquals('//example.com/base/index.php', Url::home(''));
+        self::assertSame(
+            '/base/index.php',
+            Url::home(),
+            "Should return relative 'home' URL.",
+        );
+        self::assertSame(
+            'http://example.com/base/index.php',
+            Url::home(true),
+            "Should return absolute 'home' URL with 'host' info.",
+        );
+        self::assertSame(
+            'https://example.com/base/index.php',
+            Url::home('https'),
+            "Should return absolute 'home' URL with 'https' scheme.",
+        );
+        self::assertSame(
+            '//example.com/base/index.php',
+            Url::home(''),
+            "Should return 'protocol-relative' home URL.",
+        );
     }
 
     public function testCanonical(): void
     {
         $this->mockAction('page', 'view', null, ['id' => 10]);
-        $this->assertEquals('http://example.com/base/index.php?r=page%2Fview&id=10', Url::canonical());
+
+        self::assertSame(
+            'http://example.com/base/index.php?r=page%2Fview&id=10',
+            Url::canonical(),
+            "Should return 'canonical' URL with 'route' and action 'params'.",
+        );
+
         $this->removeMockedAction();
     }
 
     public function testIsRelative(): void
     {
-        $this->assertTrue(Url::isRelative('/test/index.php'));
-        $this->assertTrue(Url::isRelative('index.php'));
-        $this->assertFalse(Url::isRelative('//example.com/'));
-        $this->assertFalse(Url::isRelative('http://example.com/'));
-        $this->assertFalse(Url::isRelative('https://example.com/'));
+        self::assertTrue(
+            Url::isRelative('/test/index.php'),
+            "Path-only 'URL' should be considered 'relative'.",
+        );
+        self::assertTrue(
+            Url::isRelative('index.php'),
+            "Filename-only 'URL' should be considered 'relative'.",
+        );
+        self::assertFalse(
+            Url::isRelative('//example.com/'),
+            "'Protocol-relative' URL should not be considered 'relative'.",
+        );
+        self::assertFalse(
+            Url::isRelative('http://example.com/'),
+            "'HTTP' URL should not be considered 'relative'.",
+        );
+        self::assertFalse(
+            Url::isRelative('https://example.com/'),
+            "'HTTPS' URL should not be considered 'relative'.",
+        );
+    }
+
+    public function testAddQueryParamsNoExistingQuery(): void
+    {
+        self::assertSame(
+            '/path?a=1',
+            Url::addQueryParams('/path', ['a' => 1]),
+            "Should append 'query' params to a URL without existing 'query' string.",
+        );
+    }
+
+    public function testAddQueryParamsMergeWithExisting(): void
+    {
+        self::assertSame(
+            '/path?a=1&b=2',
+            Url::addQueryParams('/path?a=1', ['b' => 2]),
+            "Should merge new 'params' with existing 'query' string params.",
+        );
+    }
+
+    public function testAddQueryParamsOverrideExisting(): void
+    {
+        self::assertSame(
+            '/path?a=2',
+            Url::addQueryParams('/path?a=1', ['a' => 2]),
+            "Should override existing 'param' when same 'key' is provided.",
+        );
+    }
+
+    public function testAddQueryParamsRemoveViaNullValue(): void
+    {
+        self::assertSame(
+            '/path?b=2',
+            Url::addQueryParams('/path?a=1&b=2', ['a' => null]),
+            "Should remove 'param' when value is 'null'.",
+        );
+    }
+
+    public function testAddQueryParamsRemoveAllParams(): void
+    {
+        self::assertSame(
+            '/path',
+            Url::addQueryParams('/path?a=1', ['a' => null]),
+            "Should return URL without 'query' string when all 'params' are removed.",
+        );
+    }
+
+    public function testAddQueryParamsFragmentPreserved(): void
+    {
+        self::assertSame(
+            '/path?a=1&b=2#sec',
+            Url::addQueryParams('/path?a=1#sec', ['b' => 2]),
+            "Should preserve URL 'fragment' when adding 'params'.",
+        );
+    }
+
+    public function testAddQueryParamsFragmentOnlyNoQuery(): void
+    {
+        self::assertSame(
+            '/path?a=1#sec',
+            Url::addQueryParams('/path#sec', ['a' => 1]),
+            "Should add 'query' params before 'fragment' on URL with no existing 'query'.",
+        );
+    }
+
+    public function testAddQueryParamsEmptyUrl(): void
+    {
+        self::assertSame(
+            '?a=1',
+            Url::addQueryParams('', ['a' => 1]),
+            "Should produce 'query'-only string when URL is empty.",
+        );
+    }
+
+    public function testAddQueryParamsAbsoluteUrl(): void
+    {
+        self::assertSame(
+            'https://example.com/p?x=1&y=2',
+            Url::addQueryParams('https://example.com/p?x=1', ['y' => 2]),
+            "Should handle absolute 'URLs' with 'scheme'.",
+        );
+    }
+
+    public function testAddQueryParamsProtocolRelativeUrl(): void
+    {
+        self::assertSame(
+            '//cdn.example.com/p?v=3',
+            Url::addQueryParams('//cdn.example.com/p', ['v' => 3]),
+            "Should handle 'protocol-relative' URLs.",
+        );
+    }
+
+    public function testAddQueryParamsArrayParams(): void
+    {
+        self::assertSame(
+            '/path?arr%5Bk%5D=v',
+            Url::addQueryParams('/path', ['arr' => ['k' => 'v']]),
+            "Should support nested 'array' parameters.",
+        );
+    }
+
+    public function testAddQueryParamsEmptyParamsArray(): void
+    {
+        self::assertSame(
+            '/path?a=1',
+            Url::addQueryParams('/path?a=1', []),
+            "Should return URL unchanged when 'params' array is empty.",
+        );
+    }
+
+    public function testAddQueryParamsUrlWithPort(): void
+    {
+        self::assertSame(
+            'http://example.com:8080/path?a=1',
+            Url::addQueryParams('http://example.com:8080/path', ['a' => 1]),
+            "Should handle URLs with 'port' numbers.",
+        );
+    }
+
+    public function testAddQueryParamsNestedNullRemoval(): void
+    {
+        self::assertSame(
+            '/path?arr%5Bb%5D=2',
+            Url::addQueryParams('/path?arr[a]=1&arr[b]=2', ['arr' => ['a' => null]]),
+            "Should recursively remove nested 'params' set to 'null'.",
+        );
+    }
+
+    public function testAddQueryParamsNestedNullRemovalRemovesParentKey(): void
+    {
+        self::assertSame(
+            '/path',
+            Url::addQueryParams('/path?arr[a]=1&arr[b]=2', ['arr' => ['a' => null, 'b' => null]]),
+            "Should remove parent 'key' when all nested 'params' are set to 'null'.",
+        );
+    }
+
+    public function testAddQueryParamsSpecialCharacters(): void
+    {
+        self::assertSame(
+            '/path?msg=hello+world&key=a%26b%3Dc',
+            Url::addQueryParams('/path', ['msg' => 'hello world', 'key' => 'a&b=c']),
+            "Should properly encode special characters in 'param' values.",
+        );
     }
 
     public function testRemember(): void
@@ -310,11 +838,25 @@ class UrlTest extends TestCase
         Yii::$app->getUser()->login(UserIdentity::findIdentity('user1'));
 
         Url::remember('test');
-        $this->assertSame('test', Yii::$app->getUser()->getReturnUrl());
-        $this->assertSame('test', Yii::$app->getSession()->get(Yii::$app->getUser()->returnUrlParam));
+
+        self::assertSame(
+            'test',
+            Yii::$app->getUser()->getReturnUrl(),
+            "Should set 'returnUrl' via 'User' component.",
+        );
+        self::assertSame(
+            'test',
+            Yii::$app->getSession()->get(Yii::$app->getUser()->returnUrlParam),
+            "Should store 'returnUrl' in 'session' via 'User' returnUrlParam.",
+        );
 
         Yii::$app->getUser()->setReturnUrl(null);
         Url::remember('test', 'remember-test');
-        $this->assertSame('test', Yii::$app->getSession()->get('remember-test'));
+
+        self::assertSame(
+            'test',
+            Yii::$app->getSession()->get('remember-test'),
+            "Should store named URL in 'session' with given 'key'.",
+        );
     }
 }

@@ -11,6 +11,8 @@ namespace yii\helpers;
 use Yii;
 use yii\base\InvalidArgumentException;
 
+use function is_array;
+
 /**
  * BaseUrl provides concrete implementation for [[Url]].
  *
@@ -26,7 +28,6 @@ class BaseUrl
      * @since 2.0.8
      */
     public static $urlManager;
-
 
     /**
      * Creates a URL for the given route.
@@ -432,6 +433,100 @@ class BaseUrl
         $currentParams[0] = '/' . Yii::$app->controller->getRoute();
         $route = array_replace_recursive($currentParams, $params);
         return static::toRoute($route, $scheme);
+    }
+
+    /**
+     * Merges additional query parameters into an arbitrary URL string.
+     *
+     * Existing query parameters in the URL are preserved unless overridden. Setting a parameter value to `null` removes
+     * it from the URL. URL fragments (`#hash`) are preserved.
+     *
+     * Note: this method uses PHP's `parse_str()` to parse existing query parameters, which converts dots (`.`) and
+     * spaces in parameter names to underscores (`_`), and keeps only the last value for duplicate scalar keys.
+     *
+     * This is consistent with how PHP's `$_GET` superglobal and Yii's `Request::getQueryParams()` handle query strings.
+     *
+     * Usage example:
+     *
+     * ```php
+     * // https://example.com/page?foo=bar&baz=qux
+     * echo Url::addQueryParams('https://example.com/page?foo=bar', ['baz' => 'qux']);
+     *
+     * // https://example.com/page?baz=qux  (foo removed)
+     * echo Url::addQueryParams('https://example.com/page?foo=bar', ['foo' => null, 'baz' => 'qux']);
+     *
+     * // /path?a=1&b=2
+     * echo Url::addQueryParams('/path?a=1', ['b' => 2]);
+     *
+     * // /path?a=1&b=2#section  (fragment preserved)
+     * echo Url::addQueryParams('/path?a=1#section', ['b' => 2]);
+     * ```
+     *
+     * @param string $url The URL to add query parameters to. Accepts absolute, relative, or protocol-relative URLs.
+     * @param array $params An associative array of query parameters. If a value is `null`, the parameter is removed
+     * from the URL. Array values are supported for multi-value parameters.
+     *
+     * @return string The modified URL with the merged query parameters.
+     *
+     * @since 2.2
+     */
+    public static function addQueryParams(string $url, array $params): string
+    {
+        if ($params === []) {
+            return $url;
+        }
+
+        $fragment = '';
+
+        $fragmentPos = strpos($url, '#');
+
+        if ($fragmentPos !== false) {
+            $fragment = substr($url, $fragmentPos);
+            $url = substr($url, 0, $fragmentPos);
+        }
+
+        $queryString = '';
+
+        $queryPos = strpos($url, '?');
+
+        if ($queryPos !== false) {
+            $queryString = substr($url, $queryPos + 1);
+            $url = substr($url, 0, $queryPos);
+        }
+
+        $existingParams = [];
+
+        if ($queryString !== '') {
+            parse_str($queryString, $existingParams);
+        }
+
+        $merged = array_replace_recursive($existingParams, $params);
+
+        self::removeNullParams($merged);
+
+        $query = $merged !== [] ? '?' . http_build_query($merged) : '';
+
+        return $url . $query . $fragment;
+    }
+
+    /**
+     * Recursively removes keys with `null` values from a parameters array.
+     *
+     * @param array $params The parameters array to filter (modified in place).
+     */
+    private static function removeNullParams(array &$params): void
+    {
+        foreach ($params as $key => &$value) {
+            if ($value === null) {
+                unset($params[$key]);
+            } elseif (is_array($value)) {
+                self::removeNullParams($value);
+
+                if ($value === []) {
+                    unset($params[$key]);
+                }
+            }
+        }
     }
 
     /**

@@ -95,8 +95,7 @@ class Captcha extends InputWidget
      *
      * @see \yii\helpers\Html::renderTagAttributes() for details on how attributes are being rendered.
      */
-    public $options = ['class' => 'form-control'];
-
+    public $options = [];
 
     /**
      * Initializes the widget.

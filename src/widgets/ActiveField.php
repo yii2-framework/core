@@ -51,7 +51,7 @@ class ActiveField extends Component
      *
      * @see \yii\helpers\Html::renderTagAttributes() for details on how attributes are being rendered.
      */
-    public $options = ['class' => 'form-group'];
+    public $options = [];
     /**
      * @var string the template that is used to arrange the label, the input field, the error message and the hint text.
      * The following tokens will be replaced when [[render()]] is called: `{label}`, `{input}`, `{error}` and `{hint}`.
@@ -65,7 +65,7 @@ class ActiveField extends Component
      *
      * @see \yii\helpers\Html::renderTagAttributes() for details on how attributes are being rendered.
      */
-    public $inputOptions = ['class' => 'form-control'];
+    public $inputOptions = [];
     /**
      * @var array the default options for the error tags. The parameter passed to [[error()]] will be
      * merged with this property when rendering the error tag.
@@ -79,13 +79,13 @@ class ActiveField extends Component
      *
      * @see \yii\helpers\Html::renderTagAttributes() for details on how attributes are being rendered.
      */
-    public $errorOptions = ['class' => 'help-block'];
+    public $errorOptions = ['class' => 'field-error'];
     /**
      * @var array the default options for the label tags. The parameter passed to [[label()]] will be
      * merged with this property when rendering the label tag.
      * @see \yii\helpers\Html::renderTagAttributes() for details on how attributes are being rendered.
      */
-    public $labelOptions = ['class' => 'control-label'];
+    public $labelOptions = [];
     /**
      * @var array the default options for the hint tags. The parameter passed to [[hint()]] will be
      * merged with this property when rendering the hint tag.
@@ -498,7 +498,7 @@ class ActiveField extends Component
     public function fileInput($options = [])
     {
         // https://github.com/yiisoft/yii2/pull/795
-        if ($this->inputOptions !== ['class' => 'form-control']) {
+        if ($this->inputOptions !== []) {
             $options = array_merge($this->inputOptions, $options);
         }
         // https://github.com/yiisoft/yii2/issues/8779
@@ -981,7 +981,7 @@ class ActiveField extends Component
         // Get proper attribute name when attribute name is tabular.
         $attributeName = Html::getAttributeName($this->attribute);
 
-        if ($this->model->hasErrors($attributeName)) {
+        if ($this->model->hasErrors($attributeName) && $this->form->errorCssClass !== '') {
             Html::addCssClass($options, $this->form->errorCssClass);
         }
     }

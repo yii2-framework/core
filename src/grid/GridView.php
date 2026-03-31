@@ -82,7 +82,7 @@ class GridView extends BaseListView
      *
      * @see \yii\helpers\Html::renderTagAttributes() for details on how attributes are being rendered.
      */
-    public $tableOptions = ['class' => 'table table-striped table-bordered'];
+    public $tableOptions = [];
     /**
      * @var array The HTML attributes for the container tag of the grid view.
      *
@@ -280,7 +280,7 @@ class GridView extends BaseListView
      *
      * This is mainly used by [[Html::error()]] when rendering an error message next to every filter input field.
      */
-    public $filterErrorOptions = ['class' => 'help-block'];
+    public $filterErrorOptions = ['class' => 'field-error'];
     /**
      * @var bool Whether to apply filters on losing focus. Leaves an ability to manage filters via yiiGridView JS.
      *

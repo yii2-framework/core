@@ -80,11 +80,11 @@ class ActiveFieldTest extends TestCase
     public function testRenderNoContent(): void
     {
         $expectedValue = <<<EOD
-<div class="form-group field-activefieldtestmodel-attributename">
-<label class="control-label" for="activefieldtestmodel-attributename">Attribute Name</label>
-<input type="text" id="activefieldtestmodel-attributename" class="form-control" name="ActiveFieldTestModel[{$this->attributeName}]">
+<div class="field-activefieldtestmodel-attributename">
+<label for="activefieldtestmodel-attributename">Attribute Name</label>
+<input type="text" id="activefieldtestmodel-attributename" name="ActiveFieldTestModel[{$this->attributeName}]">
 <div class="hint-block">Hint for attributeName attribute</div>
-<div class="help-block"></div>
+<div class="field-error"></div>
 </div>
 EOD;
 
@@ -102,12 +102,12 @@ EOD;
         $content = static fn ($field) => "<div class=\"custom-container\"> $field </div>";
 
         $expectedValue = <<<EOD
-<div class="form-group field-activefieldtestmodel-attributename">
-<div class="custom-container"> <div class="form-group field-activefieldtestmodel-attributename">
-<label class="control-label" for="activefieldtestmodel-attributename">Attribute Name</label>
-<input type="text" id="activefieldtestmodel-attributename" class="form-control" name="ActiveFieldTestModel[{$this->attributeName}]">
+<div class="field-activefieldtestmodel-attributename">
+<div class="custom-container"> <div class="field-activefieldtestmodel-attributename">
+<label for="activefieldtestmodel-attributename">Attribute Name</label>
+<input type="text" id="activefieldtestmodel-attributename" name="ActiveFieldTestModel[{$this->attributeName}]">
 <div class="hint-block">Hint for attributeName attribute</div>
-<div class="help-block"></div>
+<div class="field-error"></div>
 </div> </div>
 </div>
 EOD;
@@ -122,11 +122,11 @@ EOD;
     public function testRenderWithCustomInputId(): void
     {
         $expectedValue = <<<EOD
-<div class="form-group field-custom-input-id">
-<label class="control-label" for="custom-input-id">Attribute Name</label>
-<input type="text" id="custom-input-id" class="form-control" name="ActiveFieldTestModel[{$this->attributeName}]">
+<div class="field-custom-input-id">
+<label for="custom-input-id">Attribute Name</label>
+<input type="text" id="custom-input-id" name="ActiveFieldTestModel[{$this->attributeName}]">
 <div class="hint-block">Hint for attributeName attribute</div>
-<div class="help-block"></div>
+<div class="field-error"></div>
 </div>
 EOD;
 
@@ -140,7 +140,7 @@ EOD;
     {
         $this->helperModel->addError($this->attributeName, 'Error Message');
 
-        $expectedValue = '<div class="form-group field-activefieldtestmodel-attributename has-error">';
+        $expectedValue = '<div class="field-activefieldtestmodel-attributename">';
         $actualValue = $this->activeField->begin();
 
         $this->assertEquals($expectedValue, $actualValue);
@@ -150,7 +150,7 @@ EOD;
     {
         $this->helperModel->addRule($this->attributeName, 'required');
 
-        $expectedValue = '<div class="form-group field-activefieldtestmodel-attributename required">';
+        $expectedValue = '<div class="field-activefieldtestmodel-attributename required">';
         $actualValue = $this->activeField->begin();
 
         $this->assertEquals($expectedValue, $actualValue);
@@ -161,7 +161,7 @@ EOD;
         $this->helperModel->addError($this->attributeName, 'Error Message');
         $this->helperModel->addRule($this->attributeName, 'required');
 
-        $expectedValue = '<div class="form-group field-activefieldtestmodel-attributename required has-error">';
+        $expectedValue = '<div class="field-activefieldtestmodel-attributename required">';
         $actualValue = $this->activeField->begin();
 
         $this->assertEquals($expectedValue, $actualValue);
@@ -169,7 +169,7 @@ EOD;
 
     public function testBegin(): void
     {
-        $expectedValue = '<article class="form-group field-activefieldtestmodel-attributename">';
+        $expectedValue = '<article class="field-activefieldtestmodel-attributename">';
         $this->activeField->options['tag'] = 'article';
         $actualValue = $this->activeField->begin();
 
@@ -218,7 +218,7 @@ EOD;
     public function testLabel(): void
     {
         $expectedValue = <<<HTML
-        <label class="control-label" for="activefieldtestmodel-attributename">Attribute Name</label>
+        <label for="activefieldtestmodel-attributename">Attribute Name</label>
         HTML;
 
         $this->activeField->label();
@@ -243,7 +243,7 @@ EOD;
         // $label = 'Label Name'
         $label = 'Label Name';
         $expectedValue = <<<HTML
-        <label class="control-label" for="activefieldtestmodel-attributename">{$label}</label>
+        <label for="activefieldtestmodel-attributename">{$label}</label>
         HTML;
 
         $this->activeField->label($label);
@@ -277,7 +277,7 @@ EOD;
 
         self::assertSame(
             <<<HTML
-            <label class="control-label" for="activefieldtestmodel-attributename">Parameter Label</label>
+            <label for="activefieldtestmodel-attributename">Parameter Label</label>
             HTML,
             $this->activeField->parts['{label}'],
             'Should prioritize the label provided as a parameter over the one in options',
@@ -288,7 +288,7 @@ EOD;
 
         self::assertSame(
             <<<HTML
-            <label class="control-label" for="activefieldtestmodel-attributename">Options Label</label>
+            <label for="activefieldtestmodel-attributename">Options Label</label>
             HTML,
             $this->activeField->parts['{label}'],
             'Should prioritize the label provided in options over the model attribute label',
@@ -343,7 +343,7 @@ EOD;
 
         self::assertSame(
             <<<HTML
-            <label class="control-label" for="activefieldtestmodel-attributename">Custom Text</label>
+            <label for="activefieldtestmodel-attributename">Custom Text</label>
             HTML,
             $this->activeField->parts['{label}'],
             'Should render the label with the provided custom text',
@@ -356,7 +356,7 @@ EOD;
 
         self::assertSame(
             <<<HTML
-            <label class="control-label" for="activefieldtestmodel-attributename"></label>
+            <label for="activefieldtestmodel-attributename"></label>
             HTML,
             $this->activeField->parts['{label}'],
             'Should render an empty label when an empty string is provided as the label content',
@@ -389,7 +389,7 @@ EOD;
 
     public function testError(): void
     {
-        $expectedValue = '<label class="control-label" for="activefieldtestmodel-attributename">Attribute Name</label>';
+        $expectedValue = '<label for="activefieldtestmodel-attributename">Attribute Name</label>';
         $this->activeField->label();
 
         $this->assertEquals($expectedValue, $this->activeField->parts['{label}']);
@@ -403,7 +403,7 @@ EOD;
         // $label = 'Label Name'
         $label = 'Label Name';
         $expectedValue = <<<EOT
-<label class="control-label" for="activefieldtestmodel-attributename">{$label}</label>
+<label for="activefieldtestmodel-attributename">{$label}</label>
 EOT;
         $this->activeField->label($label);
 
@@ -415,7 +415,7 @@ EOT;
         $this->activeField->attribute = '[0]' . $this->attributeName;
         $this->helperModel->addError($this->attributeName, 'Error Message');
 
-        $expectedValue = '<div class="form-group field-activefieldtestmodel-0-attributename has-error">';
+        $expectedValue = '<div class="field-activefieldtestmodel-0-attributename">';
         $actualValue = $this->activeField->begin();
 
         $this->assertEquals($expectedValue, $actualValue);
@@ -436,7 +436,7 @@ EOT;
     public function testInput(): void
     {
         $expectedValue = <<<'EOD'
-<input type="password" id="activefieldtestmodel-attributename" class="form-control" name="ActiveFieldTestModel[attributeName]">
+<input type="password" id="activefieldtestmodel-attributename" name="ActiveFieldTestModel[attributeName]">
 EOD;
         $this->activeField->input('password');
 
@@ -444,7 +444,7 @@ EOD;
 
         // with options
         $expectedValue = <<<'EOD'
-<input type="password" id="activefieldtestmodel-attributename" class="form-control" name="ActiveFieldTestModel[attributeName]" weird="value">
+<input type="password" id="activefieldtestmodel-attributename" name="ActiveFieldTestModel[attributeName]" weird="value">
 EOD;
         $this->activeField->input('password', ['weird' => 'value']);
 
@@ -454,7 +454,7 @@ EOD;
     public function testTextInput(): void
     {
         $expectedValue = <<<'EOD'
-<input type="text" id="activefieldtestmodel-attributename" class="form-control" name="ActiveFieldTestModel[attributeName]">
+<input type="text" id="activefieldtestmodel-attributename" name="ActiveFieldTestModel[attributeName]">
 EOD;
         $this->activeField->textInput();
         $this->assertEquals($expectedValue, $this->activeField->parts['{input}']);
@@ -463,7 +463,7 @@ EOD;
     public function testHiddenInput(): void
     {
         $expectedValue = <<<'EOD'
-<input type="hidden" id="activefieldtestmodel-attributename" class="form-control" name="ActiveFieldTestModel[attributeName]">
+<input type="hidden" id="activefieldtestmodel-attributename" name="ActiveFieldTestModel[attributeName]">
 EOD;
         $this->activeField->hiddenInput();
         $this->assertEquals($expectedValue, $this->activeField->parts['{input}']);
@@ -472,7 +472,7 @@ EOD;
     public function testListBox(): void
     {
         $expectedValue = <<<'EOD'
-<input type="hidden" name="ActiveFieldTestModel[attributeName]" value=""><select id="activefieldtestmodel-attributename" class="form-control" name="ActiveFieldTestModel[attributeName]" size="4">
+<input type="hidden" name="ActiveFieldTestModel[attributeName]" value=""><select id="activefieldtestmodel-attributename" name="ActiveFieldTestModel[attributeName]" size="4">
 <option value="1">Item One</option>
 <option value="2">Item 2</option>
 </select>
@@ -482,7 +482,7 @@ EOD;
 
         // https://github.com/yiisoft/yii2/issues/8848
         $expectedValue = <<<'EOD'
-<input type="hidden" name="ActiveFieldTestModel[attributeName]" value=""><select id="activefieldtestmodel-attributename" class="form-control" name="ActiveFieldTestModel[attributeName]" size="4">
+<input type="hidden" name="ActiveFieldTestModel[attributeName]" value=""><select id="activefieldtestmodel-attributename" name="ActiveFieldTestModel[attributeName]" size="4">
 <option value="value1" disabled>Item One</option>
 <option value="value2" label="value 2">Item 2</option>
 </select>
@@ -494,7 +494,7 @@ EOD;
         $this->assertEqualsWithoutLE($expectedValue, $this->activeField->parts['{input}']);
 
         $expectedValue = <<<'EOD'
-<input type="hidden" name="ActiveFieldTestModel[attributeName]" value=""><select id="activefieldtestmodel-attributename" class="form-control" name="ActiveFieldTestModel[attributeName]" size="4">
+<input type="hidden" name="ActiveFieldTestModel[attributeName]" value=""><select id="activefieldtestmodel-attributename" name="ActiveFieldTestModel[attributeName]" size="4">
 <option value="value1" disabled>Item One</option>
 <option value="value2" selected label="value 2">Item 2</option>
 </select>
@@ -510,11 +510,11 @@ EOD;
     public function testRadioList(): void
     {
         $expectedValue = <<<'EOD'
-<div class="form-group field-activefieldtestmodel-attributename">
-<label class="control-label">Attribute Name</label>
+<div class="field-activefieldtestmodel-attributename">
+<label>Attribute Name</label>
 <input type="hidden" name="ActiveFieldTestModel[attributeName]" value=""><div id="activefieldtestmodel-attributename" role="radiogroup"><label><input type="radio" name="ActiveFieldTestModel[attributeName]" value="1"> Item One</label></div>
 <div class="hint-block">Hint for attributeName attribute</div>
-<div class="help-block"></div>
+<div class="field-error"></div>
 </div>
 EOD;
         $this->activeField->radioList(['1' => 'Item One']);
@@ -661,11 +661,11 @@ EOD;
         $this->activeField->addAriaAttributes = true;
 
         $expectedValue = <<<'EOD'
-<div class="form-group field-activefieldtestmodel-attributename">
-<label class="control-label" for="activefieldtestmodel-attributename">Attribute Name</label>
-<input type="text" id="activefieldtestmodel-attributename" class="form-control" name="ActiveFieldTestModel[attributeName]">
+<div class="field-activefieldtestmodel-attributename">
+<label for="activefieldtestmodel-attributename">Attribute Name</label>
+<input type="text" id="activefieldtestmodel-attributename" name="ActiveFieldTestModel[attributeName]">
 <div class="hint-block">Hint for attributeName attribute</div>
-<div class="help-block"></div>
+<div class="field-error"></div>
 </div>
 EOD;
 
@@ -679,11 +679,11 @@ EOD;
         $this->helperModel->addRule([$this->attributeName], 'required');
 
         $expectedValue = <<<'EOD'
-<div class="form-group field-activefieldtestmodel-attributename required">
-<label class="control-label" for="activefieldtestmodel-attributename">Attribute Name</label>
-<input type="text" id="activefieldtestmodel-attributename" class="form-control" name="ActiveFieldTestModel[attributeName]" aria-required="true">
+<div class="field-activefieldtestmodel-attributename required">
+<label for="activefieldtestmodel-attributename">Attribute Name</label>
+<input type="text" id="activefieldtestmodel-attributename" name="ActiveFieldTestModel[attributeName]" aria-required="true">
 <div class="hint-block">Hint for attributeName attribute</div>
-<div class="help-block"></div>
+<div class="field-error"></div>
 </div>
 EOD;
 
@@ -697,11 +697,11 @@ EOD;
         $this->helperModel->addError($this->attributeName, 'Some error');
 
         $expectedValue = <<<'EOD'
-<div class="form-group field-activefieldtestmodel-attributename has-error">
-<label class="control-label" for="activefieldtestmodel-attributename">Attribute Name</label>
-<input type="text" id="activefieldtestmodel-attributename" class="form-control" name="ActiveFieldTestModel[attributeName]" aria-invalid="true">
+<div class="field-activefieldtestmodel-attributename">
+<label for="activefieldtestmodel-attributename">Attribute Name</label>
+<input type="text" id="activefieldtestmodel-attributename" name="ActiveFieldTestModel[attributeName]" aria-invalid="true">
 <div class="hint-block">Hint for attributeName attribute</div>
-<div class="help-block">Some error</div>
+<div class="field-error">Some error</div>
 </div>
 EOD;
 
@@ -715,11 +715,11 @@ EOD;
         $this->activeField->addAriaAttributes = true;
 
         $expectedValue = <<<'EOD'
-<div class="form-group field-activefieldtestmodel-0-attributename">
-<label class="control-label" for="activefieldtestmodel-0-attributename">Attribute Name</label>
-<input type="text" id="activefieldtestmodel-0-attributename" class="form-control" name="ActiveFieldTestModel[0][attributeName]">
+<div class="field-activefieldtestmodel-0-attributename">
+<label for="activefieldtestmodel-0-attributename">Attribute Name</label>
+<input type="text" id="activefieldtestmodel-0-attributename" name="ActiveFieldTestModel[0][attributeName]">
 <div class="hint-block">Hint for attributeName attribute</div>
-<div class="help-block"></div>
+<div class="field-error"></div>
 </div>
 EOD;
 
@@ -734,11 +734,11 @@ EOD;
         $this->helperModel->addRule([$this->attributeName], 'required');
 
         $expectedValue = <<<'EOD'
-<div class="form-group field-activefieldtestmodel-0-attributename required">
-<label class="control-label" for="activefieldtestmodel-0-attributename">Attribute Name</label>
-<input type="text" id="activefieldtestmodel-0-attributename" class="form-control" name="ActiveFieldTestModel[0][attributeName]" aria-required="true">
+<div class="field-activefieldtestmodel-0-attributename required">
+<label for="activefieldtestmodel-0-attributename">Attribute Name</label>
+<input type="text" id="activefieldtestmodel-0-attributename" name="ActiveFieldTestModel[0][attributeName]" aria-required="true">
 <div class="hint-block">Hint for attributeName attribute</div>
-<div class="help-block"></div>
+<div class="field-error"></div>
 </div>
 EOD;
 
@@ -753,11 +753,11 @@ EOD;
         $this->helperModel->addError($this->attributeName, 'Some error');
 
         $expectedValue = <<<'EOD'
-<div class="form-group field-activefieldtestmodel-0-attributename has-error">
-<label class="control-label" for="activefieldtestmodel-0-attributename">Attribute Name</label>
-<input type="text" id="activefieldtestmodel-0-attributename" class="form-control" name="ActiveFieldTestModel[0][attributeName]" aria-invalid="true">
+<div class="field-activefieldtestmodel-0-attributename">
+<label for="activefieldtestmodel-0-attributename">Attribute Name</label>
+<input type="text" id="activefieldtestmodel-0-attributename" name="ActiveFieldTestModel[0][attributeName]" aria-invalid="true">
 <div class="hint-block">Hint for attributeName attribute</div>
-<div class="help-block">Some error</div>
+<div class="field-error">Some error</div>
 </div>
 EOD;
 
@@ -768,7 +768,7 @@ EOD;
     public function testEmptyTag(): void
     {
         $this->activeField->options = ['tag' => false];
-        $expectedValue = '<input type="hidden" id="activefieldtestmodel-attributename" class="form-control" name="ActiveFieldTestModel[attributeName]">';
+        $expectedValue = '<input type="hidden" id="activefieldtestmodel-attributename" name="ActiveFieldTestModel[attributeName]">';
         $actualValue = $this->activeField->hiddenInput()->label(false)->error(false)->hint(false)->render();
         $this->assertEqualsWithoutLE($expectedValue, trim($actualValue));
     }
@@ -796,7 +796,6 @@ EOD;
         $this->activeField->widget(TestInputWidget::class);
         $widget = TestInputWidget::$lastInstance;
         $expectedOptions = [
-            'class' => 'form-control has-error',
             'aria-invalid' => 'true',
             'id' => 'activefieldtestmodel-attributename',
         ];
@@ -806,7 +805,6 @@ EOD;
         $this->activeField->widget(TestInputWidget::class);
         $widget = TestInputWidget::$lastInstance;
         $expectedOptions = [
-            'class' => 'has-error',
             'aria-invalid' => 'true',
             'id' => 'activefieldtestmodel-attributename',
         ];
@@ -823,7 +821,7 @@ EOD;
         $expectedValue = <<<'HTML'
 <div class="test-wrapper field-activefieldtestmodel-attributename">
 
-<input type="hidden" id="activefieldtestmodel-attributename" class="form-control" name="ActiveFieldTestModel[attributeName]">
+<input type="hidden" id="activefieldtestmodel-attributename" name="ActiveFieldTestModel[attributeName]">
 
 
 </div>
@@ -835,7 +833,7 @@ HTML;
         $expectedValue = <<<'HTML'
 <div class="test-wrapper test-add field-activefieldtestmodel-attributename">
 
-<input type="hidden" id="activefieldtestmodel-attributename" class="form-control" name="ActiveFieldTestModel[attributeName]">
+<input type="hidden" id="activefieldtestmodel-attributename" name="ActiveFieldTestModel[attributeName]">
 
 
 </div>

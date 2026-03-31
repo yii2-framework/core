@@ -21,8 +21,8 @@ use yii\helpers\Url;
  * AssetManager is configured as an application component in [[\yii\web\Application]] by default.
  * You can access that instance via `Yii::$app->assetManager`.
  *
- * You can modify its configuration by adding an array to your application config under `components`
- * as shown in the following example:
+ * You can modify its configuration by adding an array to your application config under `components` as shown in the
+ * following example:
  *
  * ```
  * 'assetManager' => [
@@ -34,8 +34,8 @@ use yii\helpers\Url;
  *
  * For more details and usage information on AssetManager, see the [guide article on assets](guide:structure-assets).
  *
- * @property AssetConverterInterface $converter The asset converter. Note that the type of this property
- * differs in getter and setter. See [[getConverter()]] and [[setConverter()]] for details.
+ * @property AssetConverterInterface $converter The asset converter. Note that the type of this property differs in
+ * getter and setter. See [[getConverter()]] and [[setConverter()]] for details.
  *
  * @author Qiang Xue <qiang.xue@gmail.com>
  * @since 2.0
@@ -63,12 +63,19 @@ class AssetManager extends Component
      * If this property is false, it means the whole asset bundle feature is disabled and [[getBundle()]]
      * will always return null.
      *
-     * The following example shows how to disable the bootstrap css file used by Bootstrap widgets
-     * (because you want to use your own styles):
+     * The following example shows how to fully disable a specific asset bundle:
      *
      * ```
      * [
-     *     'yii\bootstrap\BootstrapAsset' => [
+     *     'app\assets\AppAsset' => false,
+     * ]
+     * ```
+     *
+     * To override only specific files (e.g. suppress CSS without disabling the bundle):
+     *
+     * ```
+     * [
+     *     'app\assets\AppAsset' => [
      *         'css' => [],
      *     ],
      * ]

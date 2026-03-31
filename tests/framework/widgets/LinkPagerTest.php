@@ -171,7 +171,7 @@ class LinkPagerTest extends TestCase
 
         $this->assertEqualsWithoutLE(
             <<<HTML
-            <ul class="pagination"><li class="prev disabled"><span>&laquo;</span></li>
+            <ul><li class="prev disabled"><span>&laquo;</span></li>
             <li class="active"><a href="/?r=test&amp;page=1" data-page="0">1</a></li>
             <li><a href="/?r=test&amp;page=2" data-page="1">2</a></li>
             <li class="next"><a href="/?r=test&amp;page=2" data-page="1">&raquo;</a></li></ul>
@@ -186,7 +186,7 @@ class LinkPagerTest extends TestCase
 
         $this->assertEqualsWithoutLE(
             <<<HTML
-            <ul class="pagination"><li class="prev"><a href="/?r=test&amp;page=1" data-page="0">&laquo;</a></li>
+            <ul><li class="prev"><a href="/?r=test&amp;page=1" data-page="0">&laquo;</a></li>
             <li class="active"><a href="/?r=test&amp;page=2" data-page="1">2</a></li>
             <li><a href="/?r=test&amp;page=3" data-page="2">3</a></li>
             <li class="next"><a href="/?r=test&amp;page=3" data-page="2">&raquo;</a></li></ul>
@@ -204,7 +204,7 @@ class LinkPagerTest extends TestCase
 
         $this->assertEqualsWithoutLE(
             <<<HTML
-            <ul class="pagination"><li class="prev disabled"><span>&laquo;</span></li>
+            <ul><li class="prev disabled"><span>&laquo;</span></li>
             <li class="active"><a href="/?r=test&amp;page=1" data-page="0">1</a></li>
             <li class="next"><a href="/?r=test&amp;page=2" data-page="1">&raquo;</a></li></ul>
             HTML,
@@ -218,7 +218,7 @@ class LinkPagerTest extends TestCase
 
         $this->assertEqualsWithoutLE(
             <<<HTML
-            <ul class="pagination"><li class="prev"><a href="/?r=test&amp;page=1" data-page="0">&laquo;</a></li>
+            <ul><li class="prev"><a href="/?r=test&amp;page=1" data-page="0">&laquo;</a></li>
             <li class="active"><a href="/?r=test&amp;page=2" data-page="1">2</a></li>
             <li class="next"><a href="/?r=test&amp;page=3" data-page="2">&raquo;</a></li></ul>
             HTML,
@@ -235,7 +235,7 @@ class LinkPagerTest extends TestCase
 
         $this->assertEqualsWithoutLE(
             <<<HTML
-            <ul class="pagination"><li class="prev disabled"><span>&laquo;</span></li>
+            <ul><li class="prev disabled"><span>&laquo;</span></li>
             <li class="next"><a href="/?r=test&amp;page=2" data-page="1">&raquo;</a></li></ul>
             HTML,
             $output
@@ -248,7 +248,7 @@ class LinkPagerTest extends TestCase
 
         $this->assertEqualsWithoutLE(
             <<<HTML
-            <ul class="pagination"><li class="prev"><a href="/?r=test&amp;page=1" data-page="0">&laquo;</a></li>
+            <ul><li class="prev"><a href="/?r=test&amp;page=1" data-page="0">&laquo;</a></li>
             <li class="next"><a href="/?r=test&amp;page=3" data-page="2">&raquo;</a></li></ul>
             HTML,
             $output

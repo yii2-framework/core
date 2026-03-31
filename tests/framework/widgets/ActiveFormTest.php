@@ -37,8 +37,8 @@ class ActiveFormTest extends TestCase
 
         $this->assertEqualsWithoutLE(
             <<<'EOF'
-<div class="form-group field-dynamicmodel-name">
-<input type="email" id="dynamicmodel-name" class="form-control" name="DynamicModel[name]" required>
+<div class="field-dynamicmodel-name">
+<input type="email" id="dynamicmodel-name" name="DynamicModel[name]" required>
 </div>
 EOF,
             (string) $form->field($model, 'name', $o)->input('email', ['required' => true])
@@ -46,8 +46,8 @@ EOF,
 
         $this->assertEqualsWithoutLE(
             <<<'EOF'
-<div class="form-group field-dynamicmodel-name">
-<input type="email" id="dynamicmodel-name" class="form-control" name="DynamicModel[name]">
+<div class="field-dynamicmodel-name">
+<input type="email" id="dynamicmodel-name" name="DynamicModel[name]">
 </div>
 EOF,
             (string) $form->field($model, 'name', $o)->input('email', ['required' => false])
@@ -56,8 +56,8 @@ EOF,
 
         $this->assertEqualsWithoutLE(
             <<<'EOF'
-<div class="form-group field-dynamicmodel-name">
-<input type="email" id="dynamicmodel-name" class="form-control" name="DynamicModel[name]" required="test">
+<div class="field-dynamicmodel-name">
+<input type="email" id="dynamicmodel-name" name="DynamicModel[name]" required="test">
 </div>
 EOF,
             (string) $form->field($model, 'name', $o)->input('email', ['required' => 'test'])
@@ -78,8 +78,8 @@ EOF,
         // https://github.com/yiisoft/yii2/issues/5356
         $this->assertEqualsWithoutLE(
             <<<'EOF'
-<div class="form-group field-dynamicmodel-categories">
-<input type="hidden" name="DynamicModel[categories]" value=""><select id="dynamicmodel-categories" class="form-control" name="DynamicModel[categories][]" multiple size="4">
+<div class="field-dynamicmodel-categories">
+<input type="hidden" name="DynamicModel[categories]" value=""><select id="dynamicmodel-categories" name="DynamicModel[categories][]" multiple size="4">
 <option value="0">apple</option>
 <option value="1" selected>banana</option>
 <option value="2">avocado</option>
@@ -108,11 +108,11 @@ EOF,
         $this->assertEqualsWithoutLE(
             <<<'HTML'
 <form id="someform" action="/someform" method="post">
-<div class="form-group field-dynamicmodel-name">
-<label class="control-label" for="dynamicmodel-name">Name</label>
-<input type="text" id="dynamicmodel-name" class="form-control" name="DynamicModel[name]">
+<div class="field-dynamicmodel-name">
+<label for="dynamicmodel-name">Name</label>
+<input type="text" id="dynamicmodel-name" name="DynamicModel[name]">
 
-<div class="help-block"></div>
+<div class="field-error"></div>
 </div>
 </form>
 HTML,
@@ -189,11 +189,11 @@ HTML,
 
         $this->assertEqualsWithoutLE(
             <<<'EOF'
-<div class="form-group field-dynamicmodel-name">
-<label class="control-label" for="dynamicmodel-name">Name</label>
-<input type="text" id="dynamicmodel-name" class="form-control has-error" name="DynamicModel[name]" aria-invalid="true">
+<div class="field-dynamicmodel-name">
+<label for="dynamicmodel-name">Name</label>
+<input type="text" id="dynamicmodel-name" name="DynamicModel[name]" aria-invalid="true">
 
-<div class="help-block">I have an error!</div>
+<div class="field-error">I have an error!</div>
 </div>
 EOF,
             (string) $form->field($model, 'name')
@@ -202,11 +202,11 @@ EOF,
 
         $this->assertEqualsWithoutLE(
             <<<'EOF'
-<div class="form-group field-dynamicmodel-name">
+<div class="field-dynamicmodel-name">
 
-<input type="hidden" name="DynamicModel[name]" value="0"><label><input type="checkbox" id="dynamicmodel-name" class="has-error" name="DynamicModel[name]" value="1" aria-invalid="true"> Name</label>
+<input type="hidden" name="DynamicModel[name]" value="0"><label><input type="checkbox" id="dynamicmodel-name" name="DynamicModel[name]" value="1" aria-invalid="true"> Name</label>
 
-<div class="help-block">I have an error!</div>
+<div class="field-error">I have an error!</div>
 </div>
 EOF,
             (string) $form->field($model, 'name')->checkbox()
@@ -214,11 +214,11 @@ EOF,
 
         $this->assertEqualsWithoutLE(
             <<<'EOF'
-<div class="form-group field-dynamicmodel-name">
+<div class="field-dynamicmodel-name">
 
-<input type="hidden" name="DynamicModel[name]" value="0"><label><input type="radio" id="dynamicmodel-name" class="has-error" name="DynamicModel[name]" value="1" aria-invalid="true"> Name</label>
+<input type="hidden" name="DynamicModel[name]" value="0"><label><input type="radio" id="dynamicmodel-name" name="DynamicModel[name]" value="1" aria-invalid="true"> Name</label>
 
-<div class="help-block">I have an error!</div>
+<div class="field-error">I have an error!</div>
 </div>
 EOF,
             (string) $form->field($model, 'name')->radio()

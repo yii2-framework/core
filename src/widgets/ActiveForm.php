@@ -106,12 +106,12 @@ class ActiveForm extends Widget
     /**
      * @var string The CSS class that is added to a field container when the associated attribute has validation error.
      */
-    public $errorCssClass = 'has-error';
+    public $errorCssClass = '';
     /**
      * @var string The CSS class that is added to a field container when the associated attribute is successfully
      * validated.
      */
-    public $successCssClass = 'has-success';
+    public $successCssClass = '';
     /**
      * @var string The CSS class that is added to a field container when the associated attribute is being validated.
      */

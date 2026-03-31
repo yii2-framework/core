@@ -103,3 +103,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - fix(db): skip `null` values in composite-key eager loading (`filterByModels`) to avoid useless `IS NULL` conditions and improve query performance; deduplicate composite key value sets.
 - fix(db): unify OCI Schema `PDO::ATTR_CASE` handling via `normalizePdoRowKeyCase()` and lowercase SQL aliases; remove unsafe direct `slavePdo` access.
 - feat(helpers): add `Url::addQueryParams()` to merge query parameters into arbitrary URL strings; supports override, `null` removal, fragments, and nested arrays.
+- refactor!: remove Bootstrap CSS class defaults from `ActiveField`, `ActiveForm`, `GridView`, `DetailView`, `Breadcrumbs`, `LinkPager`, `DataColumn`, `Captcha`, and `ActionColumn`; framework is now CSS-agnostic.

@@ -800,16 +800,14 @@ class Session extends Component implements \IteratorAggregate, \ArrayAccess, \Co
      * ```
      * <?php
      * foreach (Yii::$app->session->getAllFlashes() as $key => $message) {
-     *     echo '<div class="alert alert-' . $key . '">' . $message . '</div>';
+     *     echo '<div class="flash-' . $key . '">' . $message . '</div>';
      * } ?>
      * ```
      *
-     * With the above code you can use the [bootstrap alert][] classes such as `success`, `info`, `danger`
-     * as the flash message key to influence the color of the div.
+     * The flash message key (e.g. `success`, `info`, `danger`) can be used as a CSS class suffix to apply
+     * styles appropriate to your chosen CSS framework.
      *
      * Note that if you use [[addFlash()]], `$message` will be an array, and you will have to adjust the above code.
-     *
-     * [bootstrap alert]: https://getbootstrap.com/docs/3.4/components/#alerts
      *
      * @param bool $delete whether to delete the flash messages right after this method is called.
      * If false, the flash messages will be automatically deleted in the next request.

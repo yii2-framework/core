@@ -2,6 +2,64 @@
 
 ## 0.1.0 Under development
 
+### Bootstrap CSS class defaults removed
+
+All default CSS class values that were Bootstrap-specific have been removed from the framework's widget and form
+properties. The framework is now CSS-agnostic; no CSS framework is required or assumed by default.
+
+The following property defaults have changed:
+
+| Class | Property | Old default | New default |
+|---|---|---|---|
+| `yii\widgets\ActiveField` | `$options` | `['class' => 'form-group']` | `[]` |
+| `yii\widgets\ActiveField` | `$inputOptions` | `['class' => 'form-control']` | `[]` |
+| `yii\widgets\ActiveField` | `$errorOptions` | `['class' => 'help-block']` | `['class' => 'field-error']` |
+| `yii\widgets\ActiveField` | `$labelOptions` | `['class' => 'control-label']` | `[]` |
+| `yii\widgets\ActiveForm` | `$errorCssClass` | `'has-error'` | `''` |
+| `yii\widgets\ActiveForm` | `$successCssClass` | `'has-success'` | `''` |
+| `yii\grid\GridView` | `$tableOptions` | `['class' => 'table table-striped table-bordered']` | `[]` |
+| `yii\grid\GridView` | `$filterErrorOptions` | `['class' => 'help-block']` | `['class' => 'field-error']` |
+| `yii\widgets\DetailView` | `$options` | `['class' => 'table table-striped table-bordered detail-view']` | `['class' => 'detail-view']` |
+| `yii\widgets\Breadcrumbs` | `$options` | `['class' => 'breadcrumb']` | `[]` |
+| `yii\widgets\LinkPager` | `$options` | `['class' => 'pagination']` | `[]` |
+| `yii\grid\DataColumn` | `$filterInputOptions` | `['class' => 'form-control', 'id' => null]` | `['id' => null]` |
+| `yii\captcha\Captcha` | `$options` | `['class' => 'form-control']` | `[]` |
+
+Additionally, `yii\grid\ActionColumn::initDefaultButton()` no longer uses Bootstrap glyphicon classes as a
+fallback when an icon name is not found in `$icons`. It now renders the icon name as plain text.
+
+**Migration:** If your application depends on Bootstrap CSS for these widgets, configure the old values explicitly
+in your application configuration or subclass. Example for an `ActiveField` using Bootstrap 3:
+
+```php
+// config/web.php
+'components' => [
+    // ...
+],
+
+// Or in a custom ActiveField subclass:
+public $options = ['class' => 'form-group'];
+public $inputOptions = ['class' => 'form-control'];
+public $errorOptions = ['class' => 'help-block'];
+public $labelOptions = ['class' => 'control-label'];
+```
+
+And for `ActiveForm`:
+
+```php
+$form = ActiveForm::begin([
+    'errorCssClass' => 'has-error',
+    'successCssClass' => 'has-success',
+]);
+```
+
+**Note on `yii2-framework/jquery` compatibility:** The `errorOptions` class was changed from `help-block` to
+`field-error`. The client-side validation selector in `yii.activeForm.js` (from `yii2-framework/jquery`) still
+defaults to `.help-block`. Since the new PHP default (`.field-error`) differs from the JS default, the updated
+selector is always sent to the client automatically — no manual configuration is required for client-side
+validation to work. However, you may wish to update your `yii2-framework/jquery` package when a new release
+aligns the JS default with the new PHP default.
+
 ### Yii autoloader removal
 
 - `Yii::autoload()` has been removed.

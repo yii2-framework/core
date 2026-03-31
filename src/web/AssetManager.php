@@ -63,12 +63,12 @@ class AssetManager extends Component
      * If this property is false, it means the whole asset bundle feature is disabled and [[getBundle()]]
      * will always return null.
      *
-     * The following example shows how to disable the bootstrap css file used by Bootstrap widgets
-     * (because you want to use your own styles):
+     * The following example shows how to disable a specific asset bundle
+     * (because you want to use your own assets):
      *
      * ```
      * [
-     *     'yii\bootstrap\BootstrapAsset' => [
+     *     'app\assets\AppAsset' => [
      *         'css' => [],
      *     ],
      * ]

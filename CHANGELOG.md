@@ -105,3 +105,5 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - feat(helpers): add `Url::addQueryParams()` to merge query parameters into arbitrary URL strings; supports override, `null` removal, fragments, and nested arrays.
 - refactor!: remove Bootstrap CSS class defaults from `ActiveField`, `ActiveForm`, `GridView`, `DetailView`, `Breadcrumbs`, `LinkPager`, `DataColumn`, `Captcha`, and `ActionColumn`; framework is now CSS-agnostic.
 - chore: update references to the yii2 package in documentation and class maps; improve clarity in comments and `README.md`.
+- chore: remove unsed dependency on `php-forge/foxy`.
+- chore: remove unused dependency on `php-forge/foxy`.

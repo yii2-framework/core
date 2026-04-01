@@ -1,11 +1,10 @@
 {
-    "name": "yii2-framework/core",
+    "name": "yii2-framework/yii2",
     "type": "library",
-    "description": "Yii2 Framework Core",
+    "description": "Yii2 Framework.",
     "keywords": [
         "yii2",
         "framework",
-        "core",
         "mvc",
         "php"
     ],

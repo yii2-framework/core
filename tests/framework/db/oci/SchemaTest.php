@@ -207,7 +207,7 @@ final class SchemaTest extends BaseSchema
      * {@see \yii\db\oci\Schema::loadTableIndexes()} results, preventing NULL column names and PHP deprecation
      * warnings in {@see \yii\db\oci\Schema::quoteColumnName()}.
      *
-     * @see https://github.com/yii2-framework/core/issues/21
+     * @see https://github.com/yii2-framework/yii2/issues/21
      */
     public function testLobIndexesExcluded(): void
     {

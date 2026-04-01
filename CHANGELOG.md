@@ -41,7 +41,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - refactor(db)!: remove SQLite `< 3.40.0` dead code drop `batchInsert()` UNION SELECT fallback for `< 3.7.11`, remove `testUpsert()` version guard for `< 3.8.3`, remove `DbSessionTest` version guard, and update Schema PHPDoc from `SQLite (2/3)` to `SQLite 3`; minimum supported version is now SQLite `3.40.0`.
 - fix(db): add Oracle BLOB `dbTypecast()` to `ColumnSchema` wrapping string values in `TO_BLOB(UTL_RAW.CAST_TO_RAW(:placeholder))` expressions to avoid direct string binding errors on BLOB columns.
 - fix(widgets): clear stale client-side errors for conditional (`whenClient`) validators after related field changes.
-- refactor(js): remove all ESLint warnings in core JS assets/tests and enforce `npm run lint` with `--max-warnings=0`.
+- refactor(js): remove all ESLint warnings in yii2 JS assets/tests and enforce `npm run lint` with `--max-warnings=0`.
 - refactor(db): consolidate MSSQL data type conversions into `ColumnSchema` absorb `(NULL)` and `CURRENT_TIMESTAMP` default handling into `defaultPhpTypecast()`, move OUTPUT clause type declarations into new `getOutputColumnDeclaration()`, and simplify `Schema::loadColumnSchema()` and `QueryBuilder::insert()`.
 - refactor(db): consolidate MySQL data type conversions into `ColumnSchema` absorb `CURRENT_TIMESTAMP` and bit default handling into `defaultPhpTypecast()`, simplify `Schema::loadColumnSchema()` to store raw defaults, and resolve defaults in `findColumns()`.
 - refactor(db): consolidate Oracle data type conversions into `ColumnSchema` absorb `CURRENT_TIMESTAMP` and timestamp default handling into `defaultPhpTypecast()`, simplify `Schema::createColumn()` to store raw defaults, and resolve defaults in `loadTableSchema()` after `findConstraints()` sets `isPrimaryKey`; fixes `ts_default` returning `null` instead of `Expression('CURRENT_TIMESTAMP')`.
@@ -96,7 +96,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - fix(db): `onCondition` added to WHERE in lazy/eager-loaded queries; filter foreign-table columns when no JOINs are present.
 - chore(tests): split monolithic `HtmlTest` into six focused test classes (`HtmlTagTest`, `HtmlFormTest`, `HtmlInputTest`, `HtmlListTest`, `HtmlAttributeTest`, `HtmlActiveTest`) with dedicated providers and keyed datasets.
 - fix(grid): `CheckboxColumn` now submits an empty unselect value by default when all row checkboxes are cleared, aligns hidden-input `form`/`disabled` attributes with checkbox options, and allows opt-out via `unselect = null`.
-- build!: extract jQuery integration layer into the `yii2-framework/jquery` package; `JqueryAsset`, all validator and widget client scripts, and jQuery-specific assets are no longer shipped with core.
+- build!: extract jQuery integration layer into the `yii2-framework/jquery` package; `JqueryAsset`, all validator and widget client scripts, and jQuery-specific assets are no longer shipped with yii2.
 - fix: add `@template` generics to `ClientScriptInterface<T of BaseObject>` and `ClientValidatorScriptInterface<T of Validator>` for PHPStan inference in implementations.
 - chore: update `composer.json` metadata, scripts, and `README.md` to match standardized package structure; remove `PunycodeAsset` and its class-map entry.
 - refactor(rbac)!: simplify `CascadeStrategyInterface` from 6 methods to 2 (`updateItem`, `updateRule`); inline shared delete-cascade logic directly in `DbManager`.
@@ -104,3 +104,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - fix(db): unify OCI Schema `PDO::ATTR_CASE` handling via `normalizePdoRowKeyCase()` and lowercase SQL aliases; remove unsafe direct `slavePdo` access.
 - feat(helpers): add `Url::addQueryParams()` to merge query parameters into arbitrary URL strings; supports override, `null` removal, fragments, and nested arrays.
 - refactor!: remove Bootstrap CSS class defaults from `ActiveField`, `ActiveForm`, `GridView`, `DetailView`, `Breadcrumbs`, `LinkPager`, `DataColumn`, `Captcha`, and `ActionColumn`; framework is now CSS-agnostic.
+- chore: update references to the yii2 package in documentation and class maps; improve clarity in comments and `README.md`.

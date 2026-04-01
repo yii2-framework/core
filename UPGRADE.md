@@ -137,9 +137,9 @@ remove those references.
 The jQuery integration layer has been moved to the separate package [`yii2-framework/jquery`](https://github.com/yii2-framework/jquery).
 `JqueryAsset`, all validator and widget jQuery client scripts (`*JqueryClientScript`), and the associated asset bundles
 (`ValidationAsset`, `ActiveFormAsset`, `GridViewAsset`, `PjaxAsset`, `MaskedInputAsset`, `CaptchaAsset`) are no longer
-shipped with core.
+shipped with yii2.
 
-Core no longer contains any jQuery class references or auto-wiring logic. The `Application::$useJquery` property has
+Yii2 no longer contains any jQuery class references or auto-wiring logic. The `Application::$useJquery` property has
 been removed. The `yii2-framework/jquery` package's `Bootstrap` class now configures all `$clientScript` defaults via
 the DI container (`Yii::$container->set()`).
 
@@ -157,7 +157,7 @@ Register the bootstrap class in `config/web.php`:
 ```
 
 **No action required** for applications that do not use any of the above widgets. The `$clientScript` extension points
-and all other core behavior remain unchanged.
+and all other yii2 behavior remain unchanged.
 
 #### New interfaces
 

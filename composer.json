@@ -16,7 +16,6 @@
         "lib-pcre": "*",
         "cebe/markdown": "^1.2.0",
         "ezyang/htmlpurifier": "^4.17",
-        "php-forge/foxy": "^0.2",
         "yiisoft/yii2-composer": "~2.0.4"
     },
     "require-dev": {
@@ -62,7 +61,6 @@
         "sort-packages": true,
         "allow-plugins": {
             "infection/extension-installer": true,
-            "php-forge/foxy": true,
             "phpstan/extension-installer": true,
             "yiisoft/yii2-composer": true
         }

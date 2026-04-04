@@ -106,4 +106,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - refactor!: remove Bootstrap CSS class defaults from `ActiveField`, `ActiveForm`, `GridView`, `DetailView`, `Breadcrumbs`, `LinkPager`, `DataColumn`, `Captcha`, and `ActionColumn`; framework is now CSS-agnostic.
 - chore: update references to the yii2 package in documentation and class maps; improve clarity in comments and `README.md`.
 - chore: remove unused dependency on `php-forge/foxy` from `composer.json`.
-- chore: remove unused dependency on `ext-ctype` from `composer.json`.
+- chore: remove redundant implicit dependencies on `ext-ctype` and `lib-pcre` from `composer.json`.
